@@ -1,0 +1,742 @@
+// !$*UTF8*$!
+{
+	1D3623240D0F684500981E51 /* CrossFaderAppDelegate.h */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {970, 872}}";
+			sepNavSelRange = "{304, 0}";
+			sepNavVisRange = "{0, 372}";
+		};
+	};
+	1D3623250D0F684500981E51 /* CrossFaderAppDelegate.m */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {970, 849}}";
+			sepNavSelRange = "{375, 0}";
+			sepNavVisRange = "{0, 945}";
+		};
+	};
+	1D6058900D05DD3D006BFB54 /* CrossFader */ = {
+		activeExec = 0;
+		executables = (
+			ADF06F8D1000690800632942 /* CrossFader */,
+		);
+	};
+	29B97313FDCFA39411CA2CEA /* Project object */ = {
+		activeBuildConfigurationName = Debug;
+		activeExecutable = ADF06F8D1000690800632942 /* CrossFader */;
+		activeSDKPreference = iphonesimulator2.2.1;
+		activeTarget = 1D6058900D05DD3D006BFB54 /* CrossFader */;
+		addToTargets = (
+			1D6058900D05DD3D006BFB54 /* CrossFader */,
+		);
+		breakpoints = (
+			ADF06FCD10006C5F00632942 /* untitled.m:66 */,
+		);
+		codeSenseManager = ADF06F941000691800632942 /* Code sense */;
+		executables = (
+			ADF06F8D1000690800632942 /* CrossFader */,
+		);
+		perUserDictionary = {
+			PBXConfiguration.PBXFileTableDataSource3.PBXErrorsWarningsDataSource = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
+				PBXFileTableDataSourceColumnSortingKey = PBXErrorsWarningsDataSource_MessageID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					20,
+					459,
+					416,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXErrorsWarningsDataSource_TypeID,
+					PBXErrorsWarningsDataSource_MessageID,
+					PBXErrorsWarningsDataSource_LocationID,
+				);
+			};
+			PBXConfiguration.PBXFileTableDataSource3.PBXExecutablesDataSource = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
+				PBXFileTableDataSourceColumnSortingKey = PBXExecutablesDataSource_NameID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					22,
+					300,
+					680,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXExecutablesDataSource_ActiveFlagID,
+					PBXExecutablesDataSource_NameID,
+					PBXExecutablesDataSource_CommentsID,
+				);
+			};
+			PBXConfiguration.PBXFileTableDataSource3.PBXFileTableDataSource = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
+				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					20,
+					685,
+					20,
+					48,
+					43,
+					43,
+					20,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXFileDataSource_FiletypeID,
+					PBXFileDataSource_Filename_ColumnID,
+					PBXFileDataSource_Built_ColumnID,
+					PBXFileDataSource_ObjectSize_ColumnID,
+					PBXFileDataSource_Errors_ColumnID,
+					PBXFileDataSource_Warnings_ColumnID,
+					PBXFileDataSource_Target_ColumnID,
+				);
+			};
+			PBXConfiguration.PBXTargetDataSource.PBXTargetDataSource = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
+				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					20,
+					645,
+					60,
+					20,
+					48,
+					43,
+					43,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXFileDataSource_FiletypeID,
+					PBXFileDataSource_Filename_ColumnID,
+					PBXTargetDataSource_PrimaryAttribute,
+					PBXFileDataSource_Built_ColumnID,
+					PBXFileDataSource_ObjectSize_ColumnID,
+					PBXFileDataSource_Errors_ColumnID,
+					PBXFileDataSource_Warnings_ColumnID,
+				);
+			};
+			PBXPerProjectTemplateStateSaveDate = 268569058;
+			PBXWorkspaceStateSaveDate = 268569058;
+		};
+		perUserProjectItems = {
+			ADC2F63B100209F300C688D3 /* PBXTextBookmark */ = ADC2F63B100209F300C688D3 /* PBXTextBookmark */;
+			ADC2F64710020BF100C688D3 /* PBXTextBookmark */ = ADC2F64710020BF100C688D3 /* PBXTextBookmark */;
+			ADC2F64810020BF100C688D3 /* PBXTextBookmark */ = ADC2F64810020BF100C688D3 /* PBXTextBookmark */;
+			ADC2F64910020BF100C688D3 /* PBXTextBookmark */ = ADC2F64910020BF100C688D3 /* PBXTextBookmark */;
+			ADC2F64A10020BF100C688D3 /* PBXTextBookmark */ = ADC2F64A10020BF100C688D3 /* PBXTextBookmark */;
+			ADC2F64B10020BF100C688D3 /* PBXTextBookmark */ = ADC2F64B10020BF100C688D3 /* PBXTextBookmark */;
+			ADC2F64C10020BF100C688D3 /* PBXTextBookmark */ = ADC2F64C10020BF100C688D3 /* PBXTextBookmark */;
+			ADC2F64D10020BF100C688D3 /* PBXTextBookmark */ = ADC2F64D10020BF100C688D3 /* PBXTextBookmark */;
+			ADC2F65910020C0D00C688D3 /* PBXTextBookmark */ = ADC2F65910020C0D00C688D3 /* PBXTextBookmark */;
+			ADC2F65D10020CC800C688D3 /* PBXTextBookmark */ = ADC2F65D10020CC800C688D3 /* PBXTextBookmark */;
+			ADC2F65E10020CC800C688D3 /* PBXTextBookmark */ = ADC2F65E10020CC800C688D3 /* PBXTextBookmark */;
+			ADC2F65F10020CC800C688D3 /* PBXTextBookmark */ = ADC2F65F10020CC800C688D3 /* PBXTextBookmark */;
+			ADC2F66010020CC800C688D3 /* PBXTextBookmark */ = ADC2F66010020CC800C688D3 /* PBXTextBookmark */;
+			ADC2F66110020CC800C688D3 /* PBXTextBookmark */ = ADC2F66110020CC800C688D3 /* PBXTextBookmark */;
+			ADC2F66210020CC800C688D3 /* PBXTextBookmark */ = ADC2F66210020CC800C688D3 /* PBXTextBookmark */;
+			ADC2F66310020CC800C688D3 /* PBXTextBookmark */ = ADC2F66310020CC800C688D3 /* PBXTextBookmark */;
+			ADC2F66410020CC800C688D3 /* PBXTextBookmark */ = ADC2F66410020CC800C688D3 /* PBXTextBookmark */;
+			ADC2F66510020CC800C688D3 /* PBXTextBookmark */ = ADC2F66510020CC800C688D3 /* PBXTextBookmark */;
+			ADC2F66610020CC800C688D3 /* PBXTextBookmark */ = ADC2F66610020CC800C688D3 /* PBXTextBookmark */;
+			ADC2F66710020CC800C688D3 /* PBXTextBookmark */ = ADC2F66710020CC800C688D3 /* PBXTextBookmark */;
+			ADC2F66810020CC800C688D3 /* PBXTextBookmark */ = ADC2F66810020CC800C688D3 /* PBXTextBookmark */;
+			ADC2F66910020CC800C688D3 /* PBXTextBookmark */ = ADC2F66910020CC800C688D3 /* PBXTextBookmark */;
+			ADC2F66A10020CC800C688D3 /* PBXTextBookmark */ = ADC2F66A10020CC800C688D3 /* PBXTextBookmark */;
+			ADC2F66B10020CC800C688D3 /* PBXTextBookmark */ = ADC2F66B10020CC800C688D3 /* PBXTextBookmark */;
+			ADD46D511001984000ADB7CE = ADD46D511001984000ADB7CE /* PBXTextBookmark */;
+			ADD46D9E10019BC900ADB7CE = ADD46D9E10019BC900ADB7CE /* PBXTextBookmark */;
+			ADD46D9F10019BC900ADB7CE = ADD46D9F10019BC900ADB7CE /* PBXTextBookmark */;
+			ADD46DB910019C3300ADB7CE = ADD46DB910019C3300ADB7CE /* PBXTextBookmark */;
+			ADD46DCD10019C7200ADB7CE = ADD46DCD10019C7200ADB7CE /* PBXTextBookmark */;
+			ADD46DE310019D1300ADB7CE = ADD46DE310019D1300ADB7CE /* PBXTextBookmark */;
+			ADD46DE410019D1300ADB7CE = ADD46DE410019D1300ADB7CE /* PBXTextBookmark */;
+			ADF024E41001EE02004820D9 = ADF024E41001EE02004820D9 /* PBXTextBookmark */;
+			ADF024EE1001EEE8004820D9 = ADF024EE1001EEE8004820D9 /* PBXTextBookmark */;
+			ADF06FD510006CC300632942 = ADF06FD510006CC300632942 /* PlistBookmark */;
+			ADF06FDB10006CC300632942 = ADF06FDB10006CC300632942 /* PBXTextBookmark */;
+			ADF06FDC10006CC300632942 = ADF06FDC10006CC300632942 /* PBXTextBookmark */;
+			ADF06FDF10006CC300632942 = ADF06FDF10006CC300632942 /* PlistBookmark */;
+			ADF07084100090AD00632942 = ADF07084100090AD00632942 /* PBXTextBookmark */;
+			ADF071161000A63A00632942 = ADF071161000A63A00632942 /* PBXTextBookmark */;
+			ADF071231000A63A00632942 = ADF071231000A63A00632942 /* PBXTextBookmark */;
+			ADF0F884100164A400AACC54 = ADF0F884100164A400AACC54 /* PBXTextBookmark */;
+			ADF0F88B100164A400AACC54 = ADF0F88B100164A400AACC54 /* PBXTextBookmark */;
+			ADF0F88C100164A400AACC54 = ADF0F88C100164A400AACC54 /* PBXTextBookmark */;
+		};
+		sourceControlManager = ADF06F931000691800632942 /* Source Control */;
+		userBuildSettings = {
+		};
+	};
+	8D1107310486CEB800E47090 /* Info.plist */ = {
+		uiCtxt = {
+			sepNavWindowFrame = "{{635, 17}, {1221, 1161}}";
+		};
+	};
+	ADC2F63B100209F300C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0702510007C5900632942 /* DJMixer.m */;
+		name = "DJMixer.m: 627";
+		rLen = 0;
+		rLoc = 10465;
+		rType = 0;
+		vrLen = 3155;
+		vrLoc = 9998;
+	};
+	ADC2F64710020BF100C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0705010007CF500632942 /* DJMixer.h */;
+		name = "DJMixer.h: 6";
+		rLen = 0;
+		rLoc = 106;
+		rType = 0;
+		vrLen = 914;
+		vrLoc = 0;
+	};
+	ADC2F64810020BF100C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0702510007C5900632942 /* DJMixer.m */;
+		name = "DJMixer.m: 106";
+		rLen = 0;
+		rLoc = 3045;
+		rType = 0;
+		vrLen = 1525;
+		vrLoc = 1906;
+	};
+	ADC2F64910020BF100C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0702510007C5900632942 /* DJMixer.m */;
+		name = "DJMixer.m: 106";
+		rLen = 0;
+		rLoc = 3045;
+		rType = 0;
+		vrLen = 1525;
+		vrLoc = 1906;
+	};
+	ADC2F64A10020BF100C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0705010007CF500632942 /* DJMixer.h */;
+		name = "DJMixer.h: 6";
+		rLen = 0;
+		rLoc = 106;
+		rType = 0;
+		vrLen = 914;
+		vrLoc = 0;
+	};
+	ADC2F64B10020BF100C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0702510007C5900632942 /* DJMixer.m */;
+		name = "DJMixer.m: 106";
+		rLen = 0;
+		rLoc = 3045;
+		rType = 0;
+		vrLen = 1525;
+		vrLoc = 1906;
+	};
+	ADC2F64C10020BF100C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0705010007CF500632942 /* DJMixer.h */;
+		name = "DJMixer.h: 6";
+		rLen = 0;
+		rLoc = 106;
+		rType = 0;
+		vrLen = 914;
+		vrLoc = 0;
+	};
+	ADC2F64D10020BF100C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0702510007C5900632942 /* DJMixer.m */;
+		name = "DJMixer.m: 8";
+		rLen = 0;
+		rLoc = 132;
+		rType = 0;
+		vrLen = 1756;
+		vrLoc = 0;
+	};
+	ADC2F65910020C0D00C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0702510007C5900632942 /* DJMixer.m */;
+		name = "DJMixer.m: 8";
+		rLen = 0;
+		rLoc = 132;
+		rType = 0;
+		vrLen = 1756;
+		vrLoc = 0;
+	};
+	ADC2F65D10020CC800C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF06FAF10006AF000632942 /* DJMixerViewController.h */;
+		name = "DJMixerViewController.h: 25";
+		rLen = 21;
+		rLoc = 500;
+		rType = 0;
+		vrLen = 528;
+		vrLoc = 0;
+	};
+	ADC2F65E10020CC800C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADD46D9010019BA000ADB7CE /* DJMixerViewController.m */;
+		name = "DJMixerViewController.m: 22";
+		rLen = 0;
+		rLoc = 414;
+		rType = 0;
+		vrLen = 1541;
+		vrLoc = 0;
+	};
+	ADC2F65F10020CC800C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0705010007CF500632942 /* DJMixer.h */;
+		name = "DJMixer.h: 40";
+		rLen = 12;
+		rLoc = 908;
+		rType = 0;
+		vrLen = 927;
+		vrLoc = 0;
+	};
+	ADC2F66010020CC800C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0F873100162C300AACC54 /* InMemoryAudioFile.h */;
+		name = "InMemoryAudioFile.h: 42";
+		rLen = 0;
+		rLoc = 1168;
+		rType = 0;
+		vrLen = 1325;
+		vrLoc = 0;
+	};
+	ADC2F66110020CC800C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0F874100162C300AACC54 /* InMemoryAudioFile.m */;
+		name = "InMemoryAudioFile.m: 36";
+		rLen = 0;
+		rLoc = 532;
+		rType = 0;
+		vrLen = 1500;
+		vrLoc = 0;
+	};
+	ADC2F66210020CC800C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0702510007C5900632942 /* DJMixer.m */;
+		name = "DJMixer.m: 139";
+		rLen = 0;
+		rLoc = 3815;
+		rType = 0;
+		vrLen = 1707;
+		vrLoc = 3048;
+	};
+	ADC2F66310020CC800C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0705010007CF500632942 /* DJMixer.h */;
+		name = "DJMixer.h: 6";
+		rLen = 0;
+		rLoc = 106;
+		rType = 0;
+		vrLen = 914;
+		vrLoc = 0;
+	};
+	ADC2F66410020CC800C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0702510007C5900632942 /* DJMixer.m */;
+		name = "DJMixer.m: 8";
+		rLen = 0;
+		rLoc = 132;
+		rType = 0;
+		vrLen = 1848;
+		vrLoc = 0;
+	};
+	ADC2F66510020CC800C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF06FAF10006AF000632942 /* DJMixerViewController.h */;
+		name = "DJMixerViewController.h: 25";
+		rLen = 21;
+		rLoc = 500;
+		rType = 0;
+		vrLen = 528;
+		vrLoc = 0;
+	};
+	ADC2F66610020CC800C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADD46D9010019BA000ADB7CE /* DJMixerViewController.m */;
+		name = "DJMixerViewController.m: 22";
+		rLen = 0;
+		rLoc = 414;
+		rType = 0;
+		vrLen = 1541;
+		vrLoc = 0;
+	};
+	ADC2F66710020CC800C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0705010007CF500632942 /* DJMixer.h */;
+		name = "DJMixer.h: 40";
+		rLen = 12;
+		rLoc = 908;
+		rType = 0;
+		vrLen = 927;
+		vrLoc = 0;
+	};
+	ADC2F66810020CC800C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0702510007C5900632942 /* DJMixer.m */;
+		name = "DJMixer.m: 139";
+		rLen = 0;
+		rLoc = 3815;
+		rType = 0;
+		vrLen = 1707;
+		vrLoc = 3048;
+	};
+	ADC2F66910020CC800C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0F873100162C300AACC54 /* InMemoryAudioFile.h */;
+		name = "InMemoryAudioFile.h: 42";
+		rLen = 0;
+		rLoc = 1168;
+		rType = 0;
+		vrLen = 1325;
+		vrLoc = 0;
+	};
+	ADC2F66A10020CC800C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0F874100162C300AACC54 /* InMemoryAudioFile.m */;
+		name = "InMemoryAudioFile.m: 36";
+		rLen = 0;
+		rLoc = 532;
+		rType = 0;
+		vrLen = 1500;
+		vrLoc = 0;
+	};
+	ADC2F66B10020CC800C688D3 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0702510007C5900632942 /* DJMixer.m */;
+		name = "DJMixer.m: 119";
+		rLen = 0;
+		rLoc = 3290;
+		rType = 0;
+		vrLen = 1707;
+		vrLoc = 3048;
+	};
+	ADD46D511001984000ADB7CE /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF06FAF10006AF000632942 /* DJMixerViewController.h */;
+		name = "DJMixerViewController.h: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 505;
+		vrLoc = 0;
+	};
+	ADD46D9010019BA000ADB7CE /* DJMixerViewController.m */ = {
+		isa = PBXFileReference;
+		lastKnownFileType = sourcecode.c.objc;
+		name = DJMixerViewController.m;
+		path = /Users/arabstab/Development/CrossFader/Classes/DJMixerViewController.m;
+		sourceTree = "<group>";
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {863, 1638}}";
+			sepNavSelRange = "{414, 0}";
+			sepNavVisRange = "{0, 1541}";
+		};
+	};
+	ADD46D9E10019BC900ADB7CE /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADD46D9010019BA000ADB7CE /* DJMixerViewController.m */;
+		name = "DJMixerViewController.m: 17";
+		rLen = 0;
+		rLoc = 338;
+		rType = 0;
+		vrLen = 1504;
+		vrLoc = 0;
+	};
+	ADD46D9F10019BC900ADB7CE /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0702510007C5900632942 /* DJMixer.m */;
+		name = "DJMixer.m: 161";
+		rLen = 0;
+		rLoc = 3523;
+		rType = 0;
+		vrLen = 1613;
+		vrLoc = 3249;
+	};
+	ADD46DB910019C3300ADB7CE /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0710C1000A5AF00632942 /* CrossFaderAppDelegate.m */;
+		name = "CrossFaderAppDelegate.m: 28";
+		rLen = 0;
+		rLoc = 697;
+		rType = 0;
+		vrLen = 1026;
+		vrLoc = 0;
+	};
+	ADD46DCD10019C7200ADB7CE /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0702410007C5900632942 /* DJMixer.h */;
+		name = "DJMixer.h: 33";
+		rLen = 0;
+		rLoc = 627;
+		rType = 0;
+		vrLen = 1393;
+		vrLoc = 0;
+	};
+	ADD46DE310019D1300ADB7CE /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0F874100162C300AACC54 /* InMemoryAudioFile.m */;
+		name = "InMemoryAudioFile.m: 145";
+		rLen = 0;
+		rLoc = 3944;
+		rType = 0;
+		vrLen = 1109;
+		vrLoc = 3359;
+	};
+	ADD46DE410019D1300ADB7CE /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF06FB010006AF000632942 /* DJMixerViewController.m */;
+		name = "DJMixerViewController.m: 16";
+		rLen = 0;
+		rLoc = 276;
+		rType = 0;
+		vrLen = 1503;
+		vrLoc = 0;
+	};
+	ADF024E41001EE02004820D9 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0702510007C5900632942 /* DJMixer.m */;
+		rLen = 0;
+		rLoc = 7280;
+		rType = 0;
+	};
+	ADF024EE1001EEE8004820D9 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0702510007C5900632942 /* DJMixer.m */;
+		name = "DJMixer.m: 627";
+		rLen = 0;
+		rLoc = 10465;
+		rType = 0;
+		vrLen = 3061;
+		vrLoc = 8035;
+	};
+	ADF06F8D1000690800632942 /* CrossFader */ = {
+		isa = PBXExecutable;
+		activeArgIndices = (
+		);
+		argumentStrings = (
+		);
+		autoAttachOnCrash = 1;
+		breakpointsEnabled = 1;
+		configStateDict = {
+		};
+		customDataFormattersEnabled = 1;
+		debuggerPlugin = GDBDebugging;
+		disassemblyDisplayState = 0;
+		dylibVariantSuffix = "";
+		enableDebugStr = 1;
+		environmentEntries = (
+		);
+		executableSystemSymbolLevel = 0;
+		executableUserSymbolLevel = 0;
+		libgmallocEnabled = 0;
+		name = CrossFader;
+		savedGlobals = {
+		};
+		sourceDirectories = (
+		);
+		variableFormatDictionary = {
+			"channelOneMixerDescription.componentManufacturer-OSType--[DJMixer method]" = 5;
+			"channelOneMixerDescription.componentSubType-OSType--[DJMixer method]" = 5;
+			"channelTwoMixerDescription.componentManufacturer-OSType--[DJMixer method]" = 5;
+			"channelTwoMixerDescription.componentSubType-OSType--[DJMixer method]" = 5;
+			"componentManufacturer-OSType--[DJMixer method]" = 5;
+			"componentSubType-OSType--[DJMixer method]" = 5;
+			"componentType-OSType--[DJMixer method]" = 5;
+			"crossFaderMixerDescription.componentSubType-OSType--[DJMixer method]" = 5;
+			"masterFaderDescription.componentManufacturer-OSType--[DJMixer method]" = 5;
+		};
+	};
+	ADF06F931000691800632942 /* Source Control */ = {
+		isa = PBXSourceControlManager;
+		fallbackIsa = XCSourceControlManager;
+		isSCMEnabled = 0;
+		scmConfiguration = {
+		};
+	};
+	ADF06F941000691800632942 /* Code sense */ = {
+		isa = PBXCodeSenseManager;
+		indexTemplatePath = "";
+	};
+	ADF06FAF10006AF000632942 /* DJMixerViewController.h */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {863, 872}}";
+			sepNavSelRange = "{500, 21}";
+			sepNavVisRange = "{0, 528}";
+		};
+	};
+	ADF06FB010006AF000632942 /* DJMixerViewController.m */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {863, 1554}}";
+			sepNavSelRange = "{278, 0}";
+			sepNavVisRange = "{0, 1503}";
+		};
+	};
+	ADF06FCA10006C4600632942 /* untitled.m */ = {
+		isa = PBXFileReference;
+		fileEncoding = 4;
+		lastKnownFileType = sourcecode.c.objc;
+		name = untitled.m;
+		path = /Users/arabstab/Development/CrossFader/Classes/untitled.m;
+		sourceTree = "<absolute>";
+	};
+	ADF06FCD10006C5F00632942 /* untitled.m:66 */ = {
+		isa = PBXFileBreakpoint;
+		actions = (
+		);
+		breakpointStyle = 0;
+		continueAfterActions = 0;
+		countType = 0;
+		delayBeforeContinue = 0;
+		fileReference = ADF06FCA10006C4600632942 /* untitled.m */;
+		hitCount = 0;
+		ignoreCount = 0;
+		lineNumber = 66;
+		modificationTime = 268569866.667073;
+		state = 0;
+	};
+	ADF06FD510006CC300632942 /* PlistBookmark */ = {
+		isa = PlistBookmark;
+		fRef = 8D1107310486CEB800E47090 /* Info.plist */;
+		fallbackIsa = PBXBookmark;
+		isK = 0;
+		kPath = (
+		);
+		name = /Users/arabstab/Development/CrossFader/Info.plist;
+		rLen = 0;
+		rLoc = 2147483647;
+	};
+	ADF06FDB10006CC300632942 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF06FAF10006AF000632942 /* DJMixerViewController.h */;
+		name = "DJMixerViewController.h: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 238;
+		vrLoc = 0;
+	};
+	ADF06FDC10006CC300632942 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 1D3623240D0F684500981E51 /* CrossFaderAppDelegate.h */;
+		name = "CrossFaderAppDelegate.h: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 333;
+		vrLoc = 0;
+	};
+	ADF06FDF10006CC300632942 /* PlistBookmark */ = {
+		isa = PlistBookmark;
+		fRef = 8D1107310486CEB800E47090 /* Info.plist */;
+		fallbackIsa = PBXBookmark;
+		isK = 0;
+		kPath = (
+		);
+		name = /Users/arabstab/Development/CrossFader/Info.plist;
+		rLen = 0;
+		rLoc = 2147483647;
+	};
+	ADF0702410007C5900632942 /* DJMixer.h */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {863, 849}}";
+			sepNavSelRange = "{685, 0}";
+			sepNavVisRange = "{0, 1393}";
+		};
+	};
+	ADF0702510007C5900632942 /* DJMixer.m */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {870, 4942}}";
+			sepNavSelRange = "{3290, 0}";
+			sepNavVisRange = "{3048, 1707}";
+			sepNavWindowFrame = "{{1017, 17}, {1221, 1161}}";
+		};
+	};
+	ADF0705010007CF500632942 /* DJMixer.h */ = {
+		isa = PBXFileReference;
+		lastKnownFileType = sourcecode.c.h;
+		name = DJMixer.h;
+		path = /Users/arabstab/Development/CrossFader/Classes/DJMixer.h;
+		sourceTree = "<absolute>";
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {863, 872}}";
+			sepNavSelRange = "{908, 12}";
+			sepNavVisRange = "{0, 927}";
+		};
+	};
+	ADF07084100090AD00632942 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0705010007CF500632942 /* DJMixer.h */;
+		name = "DJMixer.h: 33";
+		rLen = 0;
+		rLoc = 920;
+		rType = 0;
+		vrLen = 702;
+		vrLoc = 275;
+	};
+	ADF0710C1000A5AF00632942 /* CrossFaderAppDelegate.m */ = {
+		isa = PBXFileReference;
+		lastKnownFileType = sourcecode.c.objc;
+		name = CrossFaderAppDelegate.m;
+		path = /Users/arabstab/Development/CrossFader/Classes/CrossFaderAppDelegate.m;
+		sourceTree = "<absolute>";
+	};
+	ADF071161000A63A00632942 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 1D3623240D0F684500981E51 /* CrossFaderAppDelegate.h */;
+		name = "CrossFaderAppDelegate.h: 14";
+		rLen = 0;
+		rLoc = 302;
+		rType = 0;
+		vrLen = 370;
+		vrLoc = 0;
+	};
+	ADF071231000A63A00632942 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0710C1000A5AF00632942 /* CrossFaderAppDelegate.m */;
+		name = "CrossFaderAppDelegate.m: 20";
+		rLen = 0;
+		rLoc = 403;
+		rType = 0;
+		vrLen = 985;
+		vrLoc = 0;
+	};
+	ADF0F873100162C300AACC54 /* InMemoryAudioFile.h */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {863, 872}}";
+			sepNavSelRange = "{1168, 0}";
+			sepNavVisRange = "{0, 1325}";
+		};
+	};
+	ADF0F874100162C300AACC54 /* InMemoryAudioFile.m */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {1452, 2590}}";
+			sepNavSelRange = "{532, 0}";
+			sepNavVisRange = "{0, 1500}";
+		};
+	};
+	ADF0F884100164A400AACC54 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0F873100162C300AACC54 /* InMemoryAudioFile.h */;
+		name = "InMemoryAudioFile.h: 42";
+		rLen = 0;
+		rLoc = 1168;
+		rType = 0;
+		vrLen = 1325;
+		vrLoc = 0;
+	};
+	ADF0F88B100164A400AACC54 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0F873100162C300AACC54 /* InMemoryAudioFile.h */;
+		name = "InMemoryAudioFile.h: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 1325;
+		vrLoc = 0;
+	};
+	ADF0F88C100164A400AACC54 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0F874100162C300AACC54 /* InMemoryAudioFile.m */;
+		name = "InMemoryAudioFile.m: 164";
+		rLen = 0;
+		rLoc = 4355;
+		rType = 0;
+		vrLen = 1114;
+		vrLoc = 3359;
+	};
+}

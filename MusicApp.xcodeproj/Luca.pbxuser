@@ -1,0 +1,171 @@
+// !$*UTF8*$!
+{
+	1D3623250D0F684500981E51 /* MusicAppAppDelegate.m */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {1684, 909}}";
+			sepNavSelRange = "{0, 0}";
+			sepNavVisRange = "{0, 1026}";
+			sepNavWindowFrame = "{{130, 70}, {1731, 998}}";
+		};
+	};
+	1D6058900D05DD3D006BFB54 /* MusicAppApp */ = {
+		activeExec = 0;
+		executables = (
+			81E8CA79157ACD8100CC5F42 /* CrossFader */,
+		);
+	};
+	29B97313FDCFA39411CA2CEA /* Project object */ = {
+		activeBuildConfigurationName = Debug;
+		activeExecutable = 81E8CA79157ACD8100CC5F42 /* CrossFader */;
+		activeSDKPreference = iphoneos4.3;
+		activeTarget = 1D6058900D05DD3D006BFB54 /* MusicAppApp */;
+		addToTargets = (
+			1D6058900D05DD3D006BFB54 /* MusicAppApp */,
+		);
+		breakpoints = (
+		);
+		codeSenseManager = 81E8CA97157ACDA800CC5F42 /* Code sense */;
+		executables = (
+			81E8CA79157ACD8100CC5F42 /* CrossFader */,
+		);
+		perUserDictionary = {
+			PBXConfiguration.PBXFileTableDataSource3.PBXFileTableDataSource = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
+				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					20,
+					10,
+					20,
+					48,
+					43,
+					43,
+					20,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXFileDataSource_FiletypeID,
+					PBXFileDataSource_Filename_ColumnID,
+					PBXFileDataSource_Built_ColumnID,
+					PBXFileDataSource_ObjectSize_ColumnID,
+					PBXFileDataSource_Errors_ColumnID,
+					PBXFileDataSource_Warnings_ColumnID,
+					PBXFileDataSource_Target_ColumnID,
+				);
+			};
+			PBXPerProjectTemplateStateSaveDate = 361153199;
+			PBXWorkspaceStateSaveDate = 361153199;
+		};
+		perUserProjectItems = {
+			810228E91582AD210013FC5A /* PBXTextBookmark */ = 810228E91582AD210013FC5A /* PBXTextBookmark */;
+			81C033A01586C2B90005939A /* PBXTextBookmark */ = 81C033A01586C2B90005939A /* PBXTextBookmark */;
+		};
+		sourceControlManager = 81E8CA96157ACDA800CC5F42 /* Source Control */;
+		userBuildSettings = {
+		};
+	};
+	810228E91582AD210013FC5A /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0702510007C5900632942 /* DJMixer.m */;
+		name = "DJMixer.m: 389";
+		rLen = 0;
+		rLoc = 11387;
+		rType = 0;
+		vrLen = 1269;
+		vrLoc = 4934;
+	};
+	81C033A01586C2B90005939A /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ADF0702510007C5900632942 /* DJMixer.m */;
+		name = "DJMixer.m: 388";
+		rLen = 0;
+		rLoc = 11387;
+		rType = 0;
+		vrLen = 1269;
+		vrLoc = 4949;
+	};
+	81E8CA79157ACD8100CC5F42 /* CrossFader */ = {
+		isa = PBXExecutable;
+		activeArgIndices = (
+		);
+		argumentStrings = (
+		);
+		autoAttachOnCrash = 1;
+		breakpointsEnabled = 1;
+		configStateDict = {
+		};
+		customDataFormattersEnabled = 1;
+		dataTipCustomDataFormattersEnabled = 1;
+		dataTipShowTypeColumn = 1;
+		dataTipSortType = 0;
+		debuggerPlugin = GDBDebugging;
+		disassemblyDisplayState = 0;
+		dylibVariantSuffix = "";
+		enableDebugStr = 1;
+		environmentEntries = (
+		);
+		executableSystemSymbolLevel = 0;
+		executableUserSymbolLevel = 0;
+		libgmallocEnabled = 0;
+		name = CrossFader;
+		savedGlobals = {
+		};
+		showTypeColumn = 0;
+		sourceDirectories = (
+		);
+		variableFormatDictionary = {
+		};
+	};
+	81E8CA96157ACDA800CC5F42 /* Source Control */ = {
+		isa = PBXSourceControlManager;
+		fallbackIsa = XCSourceControlManager;
+		isSCMEnabled = 0;
+		scmConfiguration = {
+			repositoryNamesForRoots = {
+				"" = "";
+			};
+		};
+	};
+	81E8CA97157ACDA800CC5F42 /* Code sense */ = {
+		isa = PBXCodeSenseManager;
+		indexTemplatePath = "";
+	};
+	ADF06FB010006AF000632942 /* DJMixerViewController.m */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {1684, 1680}}";
+			sepNavSelRange = "{403, 0}";
+			sepNavVisRange = "{1096, 1750}";
+			sepNavWindowFrame = "{{153, 49}, {1731, 998}}";
+		};
+	};
+	ADF0702410007C5900632942 /* DJMixer.h */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {1684, 909}}";
+			sepNavSelRange = "{735, 9}";
+			sepNavVisRange = "{0, 1131}";
+			sepNavWindowFrame = "{{84, 112}, {1731, 998}}";
+		};
+	};
+	ADF0702510007C5900632942 /* DJMixer.m */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {1257, 8400}}";
+			sepNavSelRange = "{11387, 0}";
+			sepNavVisRange = "{4949, 1269}";
+			sepNavWindowFrame = "{{327, 85}, {1304, 995}}";
+		};
+	};
+	ADF0F873100162C300AACC54 /* InMemoryAudioFile.h */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {1684, 909}}";
+			sepNavSelRange = "{1299, 0}";
+			sepNavVisRange = "{0, 1327}";
+			sepNavWindowFrame = "{{107, 91}, {1731, 998}}";
+		};
+	};
+	ADF0F874100162C300AACC54 /* InMemoryAudioFile.m */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {1684, 2490}}";
+			sepNavSelRange = "{2091, 0}";
+			sepNavVisRange = "{1490, 1908}";
+			sepNavWindowFrame = "{{152, 157}, {1731, 998}}";
+		};
+	};
+}
