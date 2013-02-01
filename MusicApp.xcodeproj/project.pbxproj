@@ -13,6 +13,7 @@
 		8100169D15ABE3550098EE87 /* FileTableController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8100169C15ABE3550098EE87 /* FileTableController.m */; };
 		81068BAB161933B5006A803A /* AURecorder.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81068BAA161933AA006A803A /* AURecorder.mm */; };
 		810C3D5F16ADF076009839BE /* Karaoke.mm in Sources */ = {isa = PBXBuildFile; fileRef = 810C3D5D16ADEF55009839BE /* Karaoke.mm */; };
+		810D2C6716BB4F9F005F4D30 /* KaraokeTableCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 810D2C6616BB4F9F005F4D30 /* KaraokeTableCell.m */; };
 		810FBECD15AA522000AEFB2F /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 810FBEC615AA522000AEFB2F /* AVFoundation.framework */; };
 		810FBECE15AA522000AEFB2F /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 810FBEC715AA522000AEFB2F /* AudioToolbox.framework */; };
 		810FBECF15AA522000AEFB2F /* MediaPlayer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 810FBEC815AA522000AEFB2F /* MediaPlayer.framework */; };
@@ -53,6 +54,8 @@
 		81068BAA161933AA006A803A /* AURecorder.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AURecorder.mm; sourceTree = "<group>"; };
 		810C3D5C16ADEF55009839BE /* Karaoke.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Karaoke.h; sourceTree = "<group>"; };
 		810C3D5D16ADEF55009839BE /* Karaoke.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Karaoke.mm; sourceTree = "<group>"; };
+		810D2C6516BB4F9F005F4D30 /* KaraokeTableCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KaraokeTableCell.h; sourceTree = "<group>"; };
+		810D2C6616BB4F9F005F4D30 /* KaraokeTableCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = KaraokeTableCell.m; sourceTree = "<group>"; };
 		810FBEC615AA522000AEFB2F /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		810FBEC715AA522000AEFB2F /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		810FBEC815AA522000AEFB2F /* MediaPlayer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaPlayer.framework; path = System/Library/Frameworks/MediaPlayer.framework; sourceTree = SDKROOT; };
@@ -242,6 +245,8 @@
 				81B315BD158E4E9A009F6D8D /* SelectionViewController.mm */,
 				81E9650016AF77AA00C1A67B /* KaraokeViewController.h */,
 				81E9650116AF77AA00C1A67B /* KaraokeViewController.mm */,
+				810D2C6516BB4F9F005F4D30 /* KaraokeTableCell.h */,
+				810D2C6616BB4F9F005F4D30 /* KaraokeTableCell.m */,
 				81E9650616AF88FB00C1A67B /* KeyboardToolbarController.h */,
 				81E9650716AF88FB00C1A67B /* KeyboardToolbarController.mm */,
 				81E9650816AF88FB00C1A67B /* KeyboardToolbarView.h */,
@@ -342,6 +347,7 @@
 				81E9650216AF77AB00C1A67B /* KaraokeViewController.mm in Sources */,
 				81E9651016AF9B3300C1A67B /* KeyboardToolbarView.mm in Sources */,
 				81E9651116AF9B4B00C1A67B /* KeyboardToolbarController.mm in Sources */,
+				810D2C6716BB4F9F005F4D30 /* KaraokeTableCell.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -382,6 +388,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				ONLY_ACTIVE_ARCH = YES;
 				PROVISIONING_PROFILE = "B6444FC9-B989-4E60-BFD7-75A70ED01649";
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "B6444FC9-B989-4E60-BFD7-75A70ED01649";
@@ -400,6 +407,7 @@
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				PROVISIONING_PROFILE = "B6444FC9-B989-4E60-BFD7-75A70ED01649";
 				"PROVISIONING_PROFILE[sdk=*]" = "B6444FC9-B989-4E60-BFD7-75A70ED01649";
 				SDKROOT = iphoneos;

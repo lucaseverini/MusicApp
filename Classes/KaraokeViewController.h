@@ -7,9 +7,16 @@
 
 #import <UIKit/UIKit.h>
 
+@class NSIndexPath;
+@class UIToolbar;
+@class UITextField;
+@class KaraokeTableCell;
+
 @interface KaraokeViewController : UIViewController <UITableViewDelegate, UITableViewDataSource, UITextFieldDelegate>
 {
     UITextField *editingTextField;
+    int tapCount;
+    NSIndexPath *tableSelection;
 }
 
 @property (nonatomic, retain) IBOutlet UITableView *karaokeTable;
@@ -20,7 +27,12 @@
 @property (nonatomic, retain) IBOutlet UIButton *backButton;
 @property (nonatomic, retain) IBOutlet UIToolbar *keyboardToolbar;
 
-- (IBAction)goBack:(UIButton*)sender;
+@property (nonatomic, retain) NSMutableArray *dataSourceArray;
+@property (nonatomic, assign) NSUInteger selectedCellIndex;
+@property (nonatomic, assign) BOOL isEditing;
+@property (nonatomic, retain) KaraokeTableCell *activeCell;
+
+- (IBAction) goBack:(UIButton*)sender;
 - (IBAction) doPrevTextField:(id)sender;
 - (IBAction) doNextTextField:(id)sender;
 - (IBAction) doDoneKeybInput:(id)sender;
