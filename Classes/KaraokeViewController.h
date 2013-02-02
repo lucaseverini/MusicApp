@@ -7,27 +7,34 @@
 
 #import <UIKit/UIKit.h>
 
+
+static NSString *kWordsKey = @"wordsKey";
+static NSString *kTimeKey = @"timeKey";
+static NSString *kTypeKey = @"typeKey";
+
 @class NSIndexPath;
 @class UIToolbar;
 @class UITextField;
 @class KaraokeTableCell;
+@class KeyboardToolbarController;
 
-@interface KaraokeViewController : UIViewController <UITableViewDelegate, UITableViewDataSource, UITextFieldDelegate>
+@interface KaraokeViewController : UIViewController <UITableViewDelegate, UITableViewDataSource, UITextFieldDelegate, UINavigationBarDelegate>
 {
     UITextField *editingTextField;
     int tapCount;
-    NSIndexPath *tableSelection;
 }
 
+@property (nonatomic, retain) IBOutlet UINavigationBar *tableBar;
+@property (nonatomic, retain) IBOutlet UINavigationItem *tableBarItem;
+@property (nonatomic, retain) IBOutlet UIBarButtonItem *tableBarEditButton;
+@property (nonatomic, retain) IBOutlet UIBarButtonItem *tableBarDoneButton;
 @property (nonatomic, retain) IBOutlet UITableView *karaokeTable;
-@property (nonatomic, retain) IBOutlet UITextField *editText;
-@property (nonatomic, retain) IBOutlet UITextField *editTime;
-@property (nonatomic, retain) IBOutlet UIButton *addButton;
-@property (nonatomic, retain) IBOutlet UIButton *removeButton;
 @property (nonatomic, retain) IBOutlet UIButton *backButton;
 @property (nonatomic, retain) IBOutlet UIToolbar *keyboardToolbar;
+@property (nonatomic, retain) IBOutlet KeyboardToolbarController *keyboardController;
 
 @property (nonatomic, retain) NSMutableArray *dataSourceArray;
+@property (nonatomic, retain) NSIndexPath *tableSelection;
 @property (nonatomic, assign) NSUInteger selectedCellIndex;
 @property (nonatomic, assign) BOOL isEditing;
 @property (nonatomic, retain) KaraokeTableCell *activeCell;
@@ -39,5 +46,7 @@
 
 - (IBAction) doNextTextPosition:(id)sender;
 - (IBAction) doPrevTextPosition:(id)sender;
+
+- (IBAction) EditTable:(id)sender;
 
 @end

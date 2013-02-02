@@ -21,6 +21,7 @@
 		810FBED115AA522000AEFB2F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 810FBECA15AA522000AEFB2F /* Foundation.framework */; };
 		810FBED215AA522000AEFB2F /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 810FBECB15AA522000AEFB2F /* CoreGraphics.framework */; };
 		810FBED315AA522000AEFB2F /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 810FBECC15AA522000AEFB2F /* CoreMedia.framework */; };
+		81520D6416BD2214000F917E /* MyNavigationController.m in Sources */ = {isa = PBXBuildFile; fileRef = 81520D6316BD2214000F917E /* MyNavigationController.m */; };
 		816BD38C15CE004400F61337 /* AQRecorder.mm in Sources */ = {isa = PBXBuildFile; fileRef = 816BD38B15CE004400F61337 /* AQRecorder.mm */; };
 		816BD38F15CE009000F61337 /* iPublicUtility in Resources */ = {isa = PBXBuildFile; fileRef = 816BD38E15CE009000F61337 /* iPublicUtility */; };
 		81B2A20016ACE20D00DB8E11 /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81B2A1FF16ACE20D00DB8E11 /* CoreText.framework */; };
@@ -63,6 +64,8 @@
 		810FBECA15AA522000AEFB2F /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		810FBECB15AA522000AEFB2F /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		810FBECC15AA522000AEFB2F /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
+		81520D6216BD2214000F917E /* MyNavigationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MyNavigationController.h; sourceTree = "<group>"; };
+		81520D6316BD2214000F917E /* MyNavigationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MyNavigationController.m; sourceTree = "<group>"; };
 		816BD38A15CE004400F61337 /* AQRecorder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AQRecorder.h; sourceTree = "<group>"; };
 		816BD38B15CE004400F61337 /* AQRecorder.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AQRecorder.mm; sourceTree = "<group>"; };
 		816BD38E15CE009000F61337 /* iPublicUtility */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iPublicUtility; sourceTree = "<group>"; };
@@ -241,6 +244,8 @@
 			children = (
 				ADF06FAF10006AF000632942 /* DJMixerViewController.h */,
 				ADF06FB010006AF000632942 /* DJMixerViewController.mm */,
+				81520D6216BD2214000F917E /* MyNavigationController.h */,
+				81520D6316BD2214000F917E /* MyNavigationController.m */,
 				81B315BC158E4E9A009F6D8D /* SelectionViewController.h */,
 				81B315BD158E4E9A009F6D8D /* SelectionViewController.mm */,
 				81E9650016AF77AA00C1A67B /* KaraokeViewController.h */,
@@ -348,6 +353,7 @@
 				81E9651016AF9B3300C1A67B /* KeyboardToolbarView.mm in Sources */,
 				81E9651116AF9B4B00C1A67B /* KeyboardToolbarController.mm in Sources */,
 				810D2C6716BB4F9F005F4D30 /* KaraokeTableCell.m in Sources */,
+				81520D6416BD2214000F917E /* MyNavigationController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

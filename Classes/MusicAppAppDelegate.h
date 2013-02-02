@@ -1,5 +1,5 @@
 //
-//  MusicAppAppDelegate.h
+//  MusicAppDelegate.h
 //  MusicApp
 //
 //  Created by Luca Severini on 6/1/2012.
@@ -10,7 +10,7 @@
 @class DJMixer;
 @class DJMixerViewController;
 
-@interface MusicAppAppDelegate : NSObject <UIApplicationDelegate> 
+@interface MusicAppDelegate : NSObject <UIApplicationDelegate> 
 {
     UIWindow *window;
 @public
@@ -19,6 +19,7 @@
 
 @property (nonatomic, retain) IBOutlet UIWindow *window;
 @property (nonatomic, retain) DJMixerViewController *viewController;
+@property (nonatomic, retain) NSMutableArray *karaokeData;
 
 @end
 

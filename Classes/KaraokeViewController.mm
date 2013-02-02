@@ -10,54 +10,112 @@
 #import "KaraokeTableCell.h"
 #import "KeyboardToolbarController.h"
 
-static NSString *kWordsKey = @"wordsKey";
-static NSString *kTimeKey = @"timeKey";
-static NSString *kViewKey = @"viewKey";
-static NSString *kTypeKey = @"typeKey";
-
-static NSMutableArray *gData;
 
 @implementation KaraokeViewController
 
+@synthesize tableBar;
+@synthesize tableBarItem;
+@synthesize tableBarEditButton;
+@synthesize tableBarDoneButton;
 @synthesize karaokeTable;
-@synthesize editText;
-@synthesize editTime;
-@synthesize addButton;
-@synthesize removeButton;
 @synthesize backButton;
 @synthesize keyboardToolbar;
+@synthesize keyboardController;
 
+@synthesize tableSelection;
 @synthesize dataSourceArray;
 @synthesize selectedCellIndex;
 @synthesize isEditing;
 @synthesize activeCell;
 
 
+- (id)initWithNibName:(NSString*)nibNameOrNil bundle:(NSBundle*)nibBundleOrNil
+{
+    if((self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil]))
+    {
+    }
+    
+    return self;
+}
+
+
 - (void) viewDidLoad
 {
     [super viewDidLoad];
-    
-    if(gData == nil)
-    {
-        gData = [[NSMutableArray alloc] init];
-        
-        id obj = [NSDictionary dictionaryWithObjectsAndKeys:@"Normal", kTypeKey, @"", kWordsKey, [NSNumber numberWithDouble:0.0], kTimeKey, nil];
-        [gData addObject:obj];
-  	}
-    self.dataSourceArray = gData;
-    
-    self.editing = NO;
+}
+
+
+- (void) viewDidUnload
+{
+    [super viewDidUnload];
 }
 
 
 - (void) viewWillDisappear:(BOOL)animated
 {
+    [super viewWillDisappear:animated];
+
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIKeyboardWillShowNotification object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIKeyboardWillHideNotification object:nil];
+
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory , NSUserDomainMask, YES);
+    NSString *filePath = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"KaraokeData.plist"];
+    
+    if(self.dataSourceArray.count > 0)
+    {
+        if([self.dataSourceArray writeToFile:filePath atomically:YES])
+        {
+            NSLog(@"File %@ written", filePath);
+        }
+        else
+        {
+            NSLog(@"File %@ not written", filePath);
+        }
+    }
+    else
+    {
+        if([[NSFileManager defaultManager] fileExistsAtPath:filePath])
+        {
+            NSError *error;
+            if(![[NSFileManager defaultManager] removeItemAtPath:filePath error:&error])
+            {
+                NSLog(@"Unable to delete file: %@", [error localizedDescription]);
+            }
+        }
+    }
+    
+    [self.dataSourceArray release];
+    self.dataSourceArray = nil;
 }
 
 
 - (void) viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
+
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory , NSUserDomainMask, YES);
+    NSString *filePath = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"KaraokeData.plist"];
+    if([[NSFileManager defaultManager] fileExistsAtPath:filePath])
+    {
+        NSLog(@"File %@ is available", filePath);
+        
+        self.dataSourceArray = [[NSMutableArray alloc] initWithContentsOfFile:filePath];
+    }
+    else
+    {
+        NSLog(@"File %@ is missing", filePath);
+
+        self.dataSourceArray = [[NSMutableArray alloc] init];
+    }
+    
+    self.editing = NO;
+    
+    [self.tableBarItem setLeftBarButtonItem:self.tableBarEditButton];
+    
+    self.keyboardController.hideDoneButton = YES;
 }
 
 
@@ -67,7 +125,7 @@ static NSMutableArray *gData;
     {
         // Because of how is implemented this table implemented both are needed
         [self setEditing:NO];
-        [self.karaokeTable setEditing:YES animated:NO];
+        [self.karaokeTable setEditing:NO animated:NO];
     }
     
     // Custom animated transition
@@ -99,13 +157,6 @@ static NSMutableArray *gData;
 - (void) dealloc 
 {
     [super dealloc];
-    
-    if(gData == nil)
-    {
-        [gData release];
-        gData = nil;
-  	}
-    self.dataSourceArray = gData;
 }
 
 
@@ -157,54 +208,57 @@ static NSMutableArray *gData;
         cell.words.delegate = self;
         cell.words.text = [[self.dataSourceArray objectAtIndex: row] valueForKey:kWordsKey];
         cell.words.enabled = self.isEditing;
-        cell.words.returnKeyType = UIReturnKeyDone;
+        cell.words.returnKeyType = UIReturnKeyDefault;
         
         cell.time.delegate = self;
         NSNumber *value = [[self.dataSourceArray objectAtIndex: row] valueForKey:kTimeKey];
         cell.time.text = (cell.words.text.length == 0) ? nil : [ value stringValue];
         cell.time.enabled = self.isEditing;
-        cell.time.returnKeyType = UIReturnKeyDone;
+        cell.time.returnKeyType = UIReturnKeyDefault;
     }
     
     return cell;
 }
 
 
-- (void) textFieldDidBeginEditing:(UITextField*)textField
-{
-    editingTextField = textField;
-/*
-    KeyboardToolbarController *controller = (KeyboardToolbarController*)[keyboardToolbar nextResponder];
-    assert(controller != nil);
-    controller.editingTextField = textField;
-    controller.hidePrevNextRowButtons = YES;
-*/    
-    [textField setInputAccessoryView:keyboardToolbar];
-}
-
-
 - (IBAction) doPrevTextField:(id)sender
 {
-    if(editingTextField == editText)
+    if(editingTextField.tag == 1)
     {
-        [editTime becomeFirstResponder];
+        // [activeCell.time becomeFirstResponder];
     }
-    else if(editingTextField == editTime)
+    else if(editingTextField.tag == 2)
     {
-        [editText becomeFirstResponder];
+        [activeCell.words becomeFirstResponder];
     }
 }
 
 
 - (IBAction) doNextTextField:(id)sender
 {
-    if(editingTextField == editText)
+    if(editingTextField.tag == 1)
     {
-        [editTime becomeFirstResponder];
+        [activeCell.time becomeFirstResponder];
     }
-    else if(editingTextField == editTime)
+    else if(editingTextField.tag == 2)
     {
-        [editText becomeFirstResponder];
+        [self.tableSelection autorelease];
+        
+        NSIndexPath *newSelection;
+        
+        if((self.dataSourceArray.count - 1) > self.tableSelection.row + 1)
+        {
+            newSelection = [NSIndexPath indexPathForRow:self.tableSelection.row + 1 inSection:0];
+        }
+        else
+        {
+            newSelection = [NSIndexPath indexPathForRow:0 inSection:0];
+        }
+        
+        [self.karaokeTable selectRowAtIndexPath:newSelection animated:NO scrollPosition:UITableViewScrollPositionNone];
+        [self tableView:self.karaokeTable didSelectRowAtIndexPath:newSelection];
+        
+        [activeCell.words becomeFirstResponder];
     }
 }
 
@@ -295,7 +349,19 @@ static NSMutableArray *gData;
             NSLog(@"commitEditingStyle: Delete row %d", [indexPath row]);
             
             [self.dataSourceArray removeObjectAtIndex:[indexPath row]];
-            [self.karaokeTable reloadData];
+
+            if([indexPath row] == [self.karaokeTable indexPathForCell:activeCell].row)
+            {
+                if(self.isEditing)
+                {
+                    [self.karaokeTable reloadData];
+                }
+            }
+            else
+            {
+                NSArray *rowArray = [NSArray arrayWithObject:indexPath];
+                [self.karaokeTable deleteRowsAtIndexPaths:rowArray withRowAnimation:UITableViewRowAnimationMiddle];
+            }
         }
             break;
             
@@ -305,13 +371,15 @@ static NSMutableArray *gData;
             
             id obj = [NSDictionary dictionaryWithObjectsAndKeys:@"Normal", kTypeKey, @"", kWordsKey, [NSNumber numberWithDouble:0.0], kTimeKey, nil];
             [self.dataSourceArray insertObject:obj atIndex:[indexPath row]];
-            [self.karaokeTable reloadData];
             
-            activeCell = (KaraokeTableCell*)[self.karaokeTable cellForRowAtIndexPath:indexPath];
+            NSArray *rowArray = [NSArray arrayWithObject:indexPath];
+            [self.karaokeTable insertRowsAtIndexPaths:rowArray withRowAnimation:UITableViewRowAnimationMiddle];
             
-            [activeCell.words becomeFirstResponder];
+            //activeCell = (KaraokeTableCell*)[self.karaokeTable cellForRowAtIndexPath:indexPath];
+            //[activeCell.words becomeFirstResponder];
             
-            [self.karaokeTable selectRowAtIndexPath:indexPath animated:NO scrollPosition:UITableViewScrollPositionMiddle];
+            //[self.karaokeTable selectRowAtIndexPath:indexPath animated:NO scrollPosition:UITableViewScrollPositionNone];
+            //[self tableView:self.karaokeTable didSelectRowAtIndexPath:indexPath];
         }
             break;
             
@@ -375,82 +443,85 @@ static NSMutableArray *gData;
     }
     
     [self.karaokeTable reloadData];
-    
-    activeCell = nil;
 }
 
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    // NSUInteger row = [indexPath row];
-    tableSelection = indexPath;
-    tapCount++;
+    self.tableSelection = [indexPath copy];
+    NSLog(@"didSelectRowAtIndexPath: %@", self.tableSelection);
     
+    tapCount++;
     switch (tapCount)
     {
         case 1: // single tap
-            [self performSelector:@selector(singleTap) withObject: nil afterDelay: .4];
+            [self performSelector:@selector(singleTap:) withObject:indexPath afterDelay: .4];
             break;
             
         case 2: // double tap
             [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(singleTap) object:nil];
-            [self performSelector:@selector(doubleTap) withObject: nil];
+            [self performSelector:@selector(doubleTap:) withObject:indexPath];
             break;
             
         default:
             break;
     }
-    
-    // we row this to top
-    [tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionTop animated:YES];
 }
 
 
-- (void)singleTap
+- (void)singleTap:(NSIndexPath*)rowIndex
 {
     tapCount = 0;
     
-    NSUInteger row = [tableSelection row];
-    NSLog(@"Single tap on row %d", row);
+    NSLog(@"Single tap on row %d", [rowIndex row]);
+
+    self.activeCell = (KaraokeTableCell*)[self.karaokeTable cellForRowAtIndexPath:rowIndex];
 }
 
 
-- (void)doubleTap
+- (void)doubleTap:(NSIndexPath*)rowIndex
 {
     tapCount = 0;
     
-    NSUInteger row = [tableSelection row];
-    NSLog(@"Double tap on row %d", row);
+    NSLog(@"Double tap on row %d", [rowIndex row]);
     
-    // Because of how is implemented this table implemented both are needed
-    [self setEditing:YES];                              // Set the controller as editing
-    [self.karaokeTable setEditing:YES animated:YES];    // Set the table editing
+    self.activeCell = (KaraokeTableCell*)[self.karaokeTable cellForRowAtIndexPath:rowIndex];
+    
+    if(!self.isEditing)
+    {
+        [self EditTable:nil];
+    }
 }
 
 #pragma mark - UITextField Delegate methods
 
 - (BOOL)textFieldShouldBeginEditing:(UITextField *)textField
 {
+    return YES;
+}
+
+
+- (void)textFieldDidBeginEditing:(UITextField *)textField
+{
     // The textfield's superview's superview is TextField Cell
     if([[[textField superview] superview] isKindOfClass:[KaraokeTableCell class]])
     {
         activeCell = (KaraokeTableCell*)[[textField superview] superview];
     }
+
+    editingTextField = textField;
     
-    textField.inputAccessoryView = keyboardToolbar;
-    
-    return YES;
+    [textField setInputAccessoryView:keyboardToolbar];
 }
 
 
 - (BOOL)textFieldShouldEndEditing:(UITextField*)textField
 {
     NSLog(@"textFieldDidEndEditing: %@", textField.text);
-    
-    NSString *text = textField.text;
-    
+/*
     if(textField.tag == 1)
     {
+        NSString *text = textField.text;
         if(text.length == 0)
         {
             UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error!" message:@"The Text can't be empty" delegate:self
@@ -463,16 +534,17 @@ static NSMutableArray *gData;
     }
     else if(textField.tag == 2)
     {
+        NSString *text = textField.text;
         double value = [text doubleValue];
         if(text.length == 0 || (value < 0.0 || value > 300))
         {
-            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error!" message:@"The Time must be defined and between 0 and 300 seconds." delegate:self
-                                                  cancelButtonTitle:@"OK" otherButtonTitles:nil];
+            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error!" message:@"The value for the Time must be defined and between 0 and 300 seconds."
+                                                           delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
             [alert show];
             return NO;
         }
     }
-    
+*/   
     return YES;
 }
 
@@ -510,6 +582,49 @@ static NSMutableArray *gData;
 }
 
 
+- (void)keyboardWillShow:(NSNotification*)note
+{
+    NSDictionary* info = [note userInfo];
+    CGSize kbSize = [[info objectForKey:UIKeyboardFrameBeginUserInfoKey] CGRectValue].size;
+    
+    UIEdgeInsets contentInsets = UIEdgeInsetsMake(0.0, 0.0, kbSize.height, 0.0);
+    self.karaokeTable.contentInset = contentInsets;
+    self.karaokeTable.scrollIndicatorInsets = contentInsets;
+    
+    NSIndexPath *addRowPath = [NSIndexPath indexPathForRow:self.tableSelection.row + 1 inSection:0];
+    [self.karaokeTable scrollToRowAtIndexPath:addRowPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
+}
+
+
+- (void)keyboardWillHide:(NSNotification*)note
+{
+    [UIView animateWithDuration:.3 animations:^(void)
+    {
+        self.karaokeTable.contentInset = UIEdgeInsetsZero;
+        self.karaokeTable.scrollIndicatorInsets = UIEdgeInsetsZero;
+    }];
+}
+
+
+- (IBAction) EditTable:(id)sender
+{
+    if(self.tableBarItem.leftBarButtonItem == self.tableBarEditButton)
+    {
+        [self setEditing:YES];                              // Set the controller as editing
+        [self.karaokeTable setEditing:YES animated:YES];    // Set the table editing
+
+        [self.tableBarItem setLeftBarButtonItem:self.tableBarDoneButton];
+    }
+    else
+    {
+        [self setEditing:NO];                              // Set the controller as editing
+        [self.karaokeTable setEditing:NO animated:YES];    // Set the table editing
+
+        [self.tableBarItem setLeftBarButtonItem:self.tableBarEditButton];
+    }
+}
+
 @end
+
 
 

@@ -17,9 +17,10 @@
 @property (nonatomic, retain) IBOutlet UIBarButtonItem *keyboardToolbarNextChar;
 @property (nonatomic, retain) IBOutlet UIBarButtonItem *keyboardToolbarPrevField;
 @property (nonatomic, retain) IBOutlet UIBarButtonItem *keyboardToolbarNextField;
+@property (nonatomic, retain) IBOutlet UIBarButtonItem *keyboardToolbarDone;
 @property (nonatomic) BOOL hidePrevNextCharButtons;
-@property (nonatomic) BOOL hidePrevNextRowButtons;
 @property (nonatomic) BOOL hidePrevNextFieldButtons;
+@property (nonatomic) BOOL hideDoneButton;
 @property (nonatomic, retain) UITextField *editingTextField;
 
 - (IBAction) doNextTextPosition:(id)sender;

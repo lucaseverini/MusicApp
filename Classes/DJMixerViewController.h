@@ -19,7 +19,8 @@
     UISlider* sliders[9];
 }
 
-@property (nonatomic, retain) DJMixer *djMixer;
+@property (nonatomic, retain) IBOutlet UIView *portraitView;
+@property (nonatomic, retain) IBOutlet UIView *landscapeView;
 @property (nonatomic, retain) IBOutlet UIButton *playButton;
 @property (nonatomic, retain) IBOutlet UIButton *selectButton;
 @property (nonatomic, retain) IBOutlet UISwitch *pauseSwitch;
@@ -43,6 +44,7 @@
 @property (nonatomic, retain) IBOutlet UILabel *channel8Label;
 @property (nonatomic, retain) IBOutlet UILabel *audioInputLabel;
 @property (nonatomic, retain) IBOutlet UITextScroll *karaokeText;
+@property (nonatomic, retain) DJMixer *djMixer;
 @property (nonatomic, retain) Karaoke *karaoke;
 @property (nonatomic, retain) NSTimer *karaokeTimer;
 

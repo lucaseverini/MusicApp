@@ -1,5 +1,5 @@
 //
-//  MusicAppAppDelegate.mm
+// MusicAppDelegate.mm
 //  MusicApp
 //
 //  Created by Luca Severini on 6/1/2012.
@@ -8,34 +8,18 @@
 #import "MusicAppAppDelegate.h"
 #import "DJMixerViewController.h"
 #import "DJMixer.h"
+#import "MyNavigationController.h"
 
-@implementation MusicAppAppDelegate
+@implementation MusicAppDelegate
 
 @synthesize window;
 @synthesize viewController;
+@synthesize karaokeData;
 
 
 - (BOOL) application:(UIApplication*)application didFinishLaunchingWithOptions:(NSDictionary*)launchOptions 
 {    	
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-
-    NSInteger buffers = [defaults integerForKey:@"Buffers"];
-    if(buffers == 0)
-    {
-        buffers = kNumberRecordBuffers;
-        
-        [defaults setInteger:buffers forKey:@"Buffers"];
-        [defaults synchronize];
-    }
-    
-    float duration = [defaults floatForKey:@"Duration"];
-    if(duration == 0.0)
-    {
-        duration = kBufferDurationSeconds;
-        
-        [defaults setFloat:duration forKey:@"Duration"];
-        [defaults synchronize];
-    }
+    // NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
 	viewController = [[DJMixerViewController alloc] initWithNibName:@"DJMixerView" bundle:[NSBundle mainBundle]];
 	
@@ -43,7 +27,11 @@
 	djMixer = [[DJMixer alloc] init];
     viewController.djMixer = djMixer;
 
-	[window addSubview:viewController.view];
+    // setRootViewController is necessary for correct multiple orientation support on iOS6
+    MyNavigationController *navControl = [[MyNavigationController alloc]initWithRootViewController:viewController];
+    navControl.navigationBarHidden = YES;
+    [window setRootViewController:navControl];
+   
     [window makeKeyAndVisible];
 	
     return YES;

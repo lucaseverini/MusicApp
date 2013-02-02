@@ -15,9 +15,10 @@
 @synthesize keyboardToolbarNextChar;
 @synthesize keyboardToolbarPrevField;
 @synthesize keyboardToolbarNextField;
+@synthesize keyboardToolbarDone;
 @synthesize hidePrevNextCharButtons;
-@synthesize hidePrevNextRowButtons;
 @synthesize hidePrevNextFieldButtons;
+@synthesize hideDoneButton;
 @synthesize editingTextField;
 
 
@@ -31,10 +32,8 @@
     {
         [buttons removeObject:keyboardToolbarPrevChar];
         [buttons removeObject:keyboardToolbarNextChar];
-    }
-    
-    if(hidePrevNextCharButtons && hidePrevNextRowButtons)
-    {
+
+        // Remove the spacing
         [buttons removeObjectAtIndex:0];
     }
 
@@ -42,7 +41,11 @@
     {
         [buttons removeObject:keyboardToolbarPrevField];
         [buttons removeObject:keyboardToolbarNextField];
-        [buttons removeObjectAtIndex:[buttons count] - 2];
+    }
+    
+    if(hideDoneButton)
+    {
+        [buttons removeObject:keyboardToolbarDone];
     }
     
     ((UIToolbar*)self.view).items = buttons;                // Set the buttons on the toolbar
@@ -54,10 +57,6 @@
 - (void) viewDidDisappear:(BOOL)animated
 {
     ((UIToolbar*)self.view).items = allButtons;             // Restore all the original buttons on the toolbar
-    
-    hidePrevNextCharButtons = NO;
-    hidePrevNextRowButtons = NO;
-    hidePrevNextFieldButtons = NO;
     
     [super viewDidDisappear:animated]; 
 }

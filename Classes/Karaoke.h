@@ -17,7 +17,7 @@
 @property (nonatomic, retain) NSArray *time;
 @property (nonatomic, assign) NSInteger step;
 
-- (id)initKaraoke:(NSArray*)Rows timing:(NSArray*)timing;
+- (id)initKaraoke:(NSArray*)karaokeData;
 
 - (BOOL)advanceRedRow;
 - (void)resetRedRow;

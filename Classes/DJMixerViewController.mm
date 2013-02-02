@@ -5,6 +5,7 @@
 //  Created by Luca Severini on 6/1/2012.
 //
 
+#import "MusicAppAppDelegate.h"
 #import "DJMixer.h"
 #import "DJMixerViewController.h"
 #import "SelectionViewController.h"
@@ -12,9 +13,11 @@
 #import "UITextScroll.h"
 #import "Karaoke.h"
 
+
 @implementation DJMixerViewController
 
-@synthesize djMixer;
+@synthesize portraitView;
+@synthesize landscapeView;
 @synthesize playButton;
 @synthesize pauseSwitch;
 @synthesize channel1VolumeSlider;
@@ -38,6 +41,7 @@
 @synthesize selectButton;
 @synthesize karaokeButton;
 @synthesize karaokeText;
+@synthesize djMixer;
 @synthesize karaoke;
 @synthesize karaokeTimer;
 
@@ -71,11 +75,19 @@
  
     [self saveControlsValue];
     
-    [karaokeTimer invalidate];
-    karaokeTimer = nil;
+    if(self.karaoke != nil)
+    {
+        if(karaokeTimer != nil)
+        {
+            [karaokeTimer invalidate];
+            karaokeTimer = nil;
+        }
+        
+        [self.karaokeButton setHighlighted:NO];
 
-    [self.karaoke release];
-    self.karaoke = nil;
+        [self.karaoke release];
+        self.karaoke = nil;
+    }
 }
 
 
@@ -356,7 +368,21 @@
     
     [karaokeText setAttributedText:nil];
     
-    self.karaoke = [[Karaoke alloc] initKaraoke:nil timing:nil];
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory , NSUserDomainMask, YES);
+    NSString *filePath = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"KaraokeData.plist"];
+    if([[NSFileManager defaultManager] fileExistsAtPath:filePath])
+    {
+        NSLog(@"File %@ is available", filePath);
+        
+        NSArray *data = [NSArray arrayWithContentsOfFile:filePath];
+        self.karaoke = [[Karaoke alloc] initKaraoke:data];
+    }
+    else
+    {
+        NSLog(@"File %@ is missing", filePath);
+    }
+
+    [self.karaokeButton setEnabled: (self.karaoke != nil)];
 }
 
 
@@ -493,14 +519,6 @@
 }
 
 
-// Override to allow orientations other than the default portrait orientation.
-- (BOOL) shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation 
-{
-    // Return YES for supported orientations
-    return (interfaceOrientation == UIDeviceOrientationPortrait);
-}
-
-
 - (void) didReceiveMemoryWarning 
 {
     [super didReceiveMemoryWarning]; // Releases the view if it doesn't have a superview
@@ -530,7 +548,22 @@
     
         NSTimeInterval interval = [[self.karaoke.time objectAtIndex:self.karaoke.step] doubleValue];
         karaokeTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(karaokeStep) userInfo:nil repeats:YES];
+        
+        [self performSelector:@selector(doHighlight:) withObject:self.karaokeButton afterDelay:0];
     }
+    else
+    {
+        [self.karaokeButton setHighlighted:NO];
+        
+        [karaokeTimer invalidate];
+        karaokeTimer = nil;
+    }
+}
+
+
+- (void)doHighlight:(UIButton*)btn
+{
+    [btn setHighlighted:YES];
 }
 
 
@@ -557,7 +590,9 @@
             [karaokeText setContentOffset:position animated:YES];
         }
         else
-        {        
+        {
+            [self.karaokeButton setHighlighted:NO];
+            
             [karaokeTimer invalidate];
             karaokeTimer = nil;
             
@@ -565,11 +600,79 @@
         }
     }
     
-    self.karaoke.step++;
+    if(++self.karaoke.step < self.karaoke.time.count)
+    {
+        NSTimeInterval newInterval = [[self.karaoke.time objectAtIndex:self.karaoke.step] doubleValue];
+        NSDate *fireDate = [NSDate dateWithTimeIntervalSinceNow:newInterval];
+        [karaokeTimer setFireDate:fireDate];
+    }
+    else
+    {
+        [self.karaokeButton setHighlighted:NO];
+
+        [karaokeTimer invalidate];
+        karaokeTimer = nil;
+    }
+}
+
+
+// Override to allow orientations other than the default portrait orientation.
+// Called if iOS < 6
+- (BOOL) shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
+{
+    if(interfaceOrientation == UIDeviceOrientationLandscapeLeft || interfaceOrientation == UIDeviceOrientationLandscapeRight)
+    {
+        return YES;
+    }
+    else if(interfaceOrientation == UIDeviceOrientationPortrait)
+    {
+        return YES;
+    }
+    else
+    {
+        return NO;
+    }
+}
+
+
+// Override to allow orientations other than the default portrait orientation.
+// Called if iOS >= 6
+- (NSUInteger)supportedInterfaceOrientations
+{
+    return (UIInterfaceOrientationMaskPortrait + UIInterfaceOrientationMaskLandscape);
+}
+
+
+// Called if iOS >= 6
+- (UIInterfaceOrientation)preferredInterfaceOrientationForPresentation
+{
+    return UIInterfaceOrientationPortrait;
+}
+
+
+// Called if iOS >= 6
+- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)orientation duration:(NSTimeInterval)duration
+{
+    NSLog(@"to %d", orientation);
     
-    NSTimeInterval newInterval = [[self.karaoke.time objectAtIndex:self.karaoke.step] doubleValue];
-    NSDate *fireDate = [NSDate dateWithTimeIntervalSinceNow:newInterval];
-    [karaokeTimer setFireDate:fireDate];
+    if(orientation == UIInterfaceOrientationLandscapeLeft || orientation == UIInterfaceOrientationLandscapeRight)
+    {
+        if(self.karaokeButton.highlighted)
+        {
+            self.view = self.landscapeView;
+        }
+    }
+    else if(orientation == UIInterfaceOrientationPortrait)
+    {
+        self.view = self.portraitView;
+    }
+}
+
+
+// Called if iOS >= 6
+- (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation
+{
+    NSLog(@"from %d to %d", fromInterfaceOrientation, self.interfaceOrientation);
 }
 
 @end
