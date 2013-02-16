@@ -9,6 +9,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <MediaPlayer/MediaPlayer.h>
 #import "InMemoryAudioFile.h"
+#import "LoadAudioOperation.h"
 
 #define STAY_SYNCHRONIZED // If defined a paused channel maintains synchronization with other channels
 
@@ -27,25 +28,27 @@
 - (id) initForChannel:(NSInteger)numChannel
 { 
     [super init];
+    if(self != nil)
+    {
+        channel = numChannel;
+        leftPacketIndex = 0;
+        rightPacketIndex = 0;
+        packetIndex = 0;
+        playing = NO;
+        paused = NO;
+        audioData = NULL;
+        leftAudioData = NULL;
+        rightAudioData = NULL;	
+        monoFloatDataLeft = NULL;
+        monoFloatDataRight = NULL;
+        mPacketDescs = NULL;
+        playFromAudioInput = NO;
+        inputAudioData = NULL;
+        lastInputAudioValue = 0;
+        workerThread = NULL;
+        quitWorkerThread = NO;
+    }
     
-    channel = numChannel;
-	leftPacketIndex = 0;
-	rightPacketIndex = 0;
-	packetIndex = 0;
- 	playing = NO;
- 	paused = NO;
-    audioData = NULL;
-	leftAudioData = NULL;
-	rightAudioData = NULL;	
-	monoFloatDataLeft = NULL;
-	monoFloatDataRight = NULL;
-    mPacketDescs = NULL;
-    playFromAudioInput = NO;
-    inputAudioData = NULL;
-    lastInputAudioValue = 0;
-    workerThread = NULL;
-    quitWorkerThread = NO;
-     
 	return self;
 }
 
@@ -197,10 +200,10 @@
 		// How many packets read? (packets are the number of stereo samples in this case)
 		// NSLog([NSString stringWithFormat:@"File Opened, packet Count: %d", packetCount]);
 		
-		UInt32 packetsRead = packetCount;
-		OSStatus result = -1;
-		        
+		UInt32 packetsRead = packetCount;		        
 		UInt32 numBytesRead = -1;
+		OSStatus result = -1;
+        
 		if(packetCount > 0)     // Fill our in memory audio buffer with the whole file (I wouldnt use this with very large files btw)
 		{
 			// Allocate the buffer
@@ -323,23 +326,51 @@
     }
     else
     {
-        if(audioData == NULL)
+        if(operation != nil)
         {
-            return 0;
-        }
+            if(operation.noDataAvailable)
+            {
+                return 0;
+            }
             
-        if(packetIndex >= packetCount)
-        {
-            packetIndex = 0;
-        }
-        
-        if(!playing || paused)
-        {
-            return 0;
+            if(packetIndex >= packetCount)
+            {
+                packetIndex = 0;
+                
+                NSUInteger numOfPackets;
+                audioData = [operation getNextAudioBuffer:&numOfPackets];
+                packetCount = (SInt64)numOfPackets;
+            }
+
+            if(!playing || paused)
+            {
+                return 0;
+            }
+            else
+            {
+                return audioData[packetIndex++];
+            }
         }
         else
         {
-            return audioData[packetIndex++];
+            if(audioData == NULL)
+            {
+                return 0;
+            }
+                
+            if(packetIndex >= packetCount)
+            {
+                packetIndex = 0;
+            }
+            
+            if(!playing || paused)
+            {
+                return 0;
+            }
+            else
+            {
+                return audioData[packetIndex++];
+            }
         }
     }
 }
@@ -360,7 +391,6 @@
 }
 
 
-// Read data from memory
 - (OSStatus) mediaItem:(MPMediaItem*)mediaItem
 {
     [self freeBuffers];
@@ -437,23 +467,28 @@
 }
 
 
+- (void) setLoadOperation:(LoadAudioOperation*)loadOperation
+{
+    if(operation != nil)
+    {
+        [operation cancel];
+        [operation release];
+    }
+    
+    operation = loadOperation;
+    trackCount = loadOperation.trackCount;
+    packetCount = 0;
+    
+    loaded = YES;
+}
+
+
 - (NSMutableData*) ReadAudioData:(NSURL*)audioFileURL
 {
     NSMutableData *data = nil;
     
     AVURLAsset *asset = [[AVURLAsset alloc] initWithURL:audioFileURL options:nil];
     assert(asset != nil);
-    
-    BOOL isReadable = [asset isReadable];
-    BOOL isPlayable = [asset isPlayable];
-    if(!isReadable || !isPlayable)
-    {
-        NSLog(@"Audio file not readable/playable");
-
-        [asset release];
-
-        return data;
-    }
     
     NSArray *tracks = [asset tracks];
     trackCount = [tracks count];

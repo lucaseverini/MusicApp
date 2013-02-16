@@ -8,11 +8,6 @@
 
 @interface AURecorder : NSObject
 {
-@private
-	float tempbuf[1024];
-	float inputbuf[1024]; 
-	float outputbuf[1024]; 
-	
 @public
 	int audioproblems;
     BOOL startedCallback;

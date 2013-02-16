@@ -12,6 +12,7 @@
 #import <sys/time.h>
 
 @class MPMediaItem;
+@class LoadAudioOperation;
 
 @interface InMemoryAudioFile : NSObject 
 {
@@ -45,6 +46,7 @@
     BOOL                            quitWorkerThread;
 
     AURecorder                      *recorder;
+    LoadAudioOperation              *operation;
 }
 
 @property (nonatomic, retain) NSString *fileName;
@@ -65,6 +67,9 @@
 - (OSStatus) mediaItem:(MPMediaItem*)mediaItem;
 // Read data from a audio Input
 - (OSStatus) audioInput;
+
+// Read data from a NSOperation
+- (void) setLoadOperation:(LoadAudioOperation*)loadOperation;
 
 // Gets the info about a wav file
 - (OSStatus) getFileInfo;

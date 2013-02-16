@@ -13,6 +13,7 @@
 
 @synthesize text;
 @synthesize attribText;
+@synthesize attribTextLS;
 @synthesize time;
 @synthesize step;
 
@@ -21,6 +22,7 @@
 {
     [text release];
     [attribText release];
+    [attribTextLS release];
     [time release];
     
     [super dealloc];
@@ -66,16 +68,23 @@
 #endif
         text = [[NSString alloc] initWithString:mutText];
         attribText = [[NSMutableAttributedString alloc] initWithString:text];
-        time = [[NSArray alloc] initWithArray:mutTime];
+        attribTextLS = [[NSMutableAttributedString alloc] initWithString:text];
 
         UIFont *font = [UIFont fontWithName:@"Helvetica-Bold" size:16.0];
         [attribText addAttribute:NSFontAttributeName value:font range:NSMakeRange(0, [text length])];
-        
+ 
+        font = [UIFont fontWithName:@"Helvetica-Bold" size:26.0];
+        [attribTextLS addAttribute:NSFontAttributeName value:font range:NSMakeRange(0, [text length])];
+
         NSMutableParagraphStyle *paragraph = [[[NSMutableParagraphStyle alloc] init] autorelease];
         paragraph.alignment = NSTextAlignmentCenter;
+        
         [attribText addAttribute:NSParagraphStyleAttributeName value:paragraph range:NSMakeRange(0, [text length])];
+        [attribTextLS addAttribute:NSParagraphStyleAttributeName value:paragraph range:NSMakeRange(0, [text length])];
  
         [self resetRedRow];
+
+        time = [[NSArray alloc] initWithArray:mutTime];
     }
     
     return self;
@@ -89,9 +98,14 @@
         return NO;
     }
     
-    [attribText addAttribute:NSForegroundColorAttributeName value:[UIColor blackColor] range:NSMakeRange(0, [text length])];
     NSRange parRange = [text paragraphRangeForRange:NSMakeRange(colorStart, 1)];
+
+    [attribText addAttribute:NSForegroundColorAttributeName value:[UIColor blackColor] range:NSMakeRange(0, [text length])];
     [attribText addAttribute:NSForegroundColorAttributeName value:[UIColor redColor] range:parRange];
+
+    [attribTextLS addAttribute:NSForegroundColorAttributeName value:[UIColor blackColor] range:NSMakeRange(0, [text length])];
+    [attribTextLS addAttribute:NSForegroundColorAttributeName value:[UIColor redColor] range:parRange];
+    
     colorStart += parRange.length;
     
     return YES;
@@ -103,9 +117,14 @@
     colorStart = 1;
     step = 0;
     
-    [attribText addAttribute:NSForegroundColorAttributeName value:[UIColor blackColor] range:NSMakeRange(0, [text length])];
     NSRange parRange = [text paragraphRangeForRange:NSMakeRange(colorStart, 1)];
+
+    [attribText addAttribute:NSForegroundColorAttributeName value:[UIColor blackColor] range:NSMakeRange(0, [text length])];
     [attribText addAttribute:NSForegroundColorAttributeName value:[UIColor redColor] range:parRange];
+
+    [attribTextLS addAttribute:NSForegroundColorAttributeName value:[UIColor blackColor] range:NSMakeRange(0, [text length])];
+    [attribTextLS addAttribute:NSForegroundColorAttributeName value:[UIColor redColor] range:parRange];
+    
     colorStart += parRange.length;
 }
 

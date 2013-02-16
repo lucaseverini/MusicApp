@@ -14,6 +14,7 @@
 
 @property (nonatomic, retain) NSString *text;
 @property (nonatomic, retain) NSMutableAttributedString *attribText;
+@property (nonatomic, retain) NSMutableAttributedString *attribTextLS;
 @property (nonatomic, retain) NSArray *time;
 @property (nonatomic, assign) NSInteger step;
 

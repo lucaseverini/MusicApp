@@ -16,6 +16,7 @@
     UIViewController *topController = [self.viewControllers objectAtIndex:0];
     if([topController isKindOfClass:[DJMixerViewController class]])
     {
+/*
         DJMixerViewController *controller = (DJMixerViewController*)topController;
         
         if(controller.karaokeButton.highlighted)
@@ -27,6 +28,8 @@
         {
             return YES;
         }
+*/
+        return YES;
     }
     
     return NO;

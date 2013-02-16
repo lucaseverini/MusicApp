@@ -14,6 +14,7 @@
 		81068BAB161933B5006A803A /* AURecorder.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81068BAA161933AA006A803A /* AURecorder.mm */; };
 		810C3D5F16ADF076009839BE /* Karaoke.mm in Sources */ = {isa = PBXBuildFile; fileRef = 810C3D5D16ADEF55009839BE /* Karaoke.mm */; };
 		810D2C6716BB4F9F005F4D30 /* KaraokeTableCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 810D2C6616BB4F9F005F4D30 /* KaraokeTableCell.m */; };
+		810E023616CEF45D00D1FCC7 /* LoadAudioOperation.mm in Sources */ = {isa = PBXBuildFile; fileRef = 810E023516CEF45D00D1FCC7 /* LoadAudioOperation.mm */; };
 		810FBECD15AA522000AEFB2F /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 810FBEC615AA522000AEFB2F /* AVFoundation.framework */; };
 		810FBECE15AA522000AEFB2F /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 810FBEC715AA522000AEFB2F /* AudioToolbox.framework */; };
 		810FBECF15AA522000AEFB2F /* MediaPlayer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 810FBEC815AA522000AEFB2F /* MediaPlayer.framework */; };
@@ -24,6 +25,8 @@
 		81520D6416BD2214000F917E /* MyNavigationController.m in Sources */ = {isa = PBXBuildFile; fileRef = 81520D6316BD2214000F917E /* MyNavigationController.m */; };
 		816BD38C15CE004400F61337 /* AQRecorder.mm in Sources */ = {isa = PBXBuildFile; fileRef = 816BD38B15CE004400F61337 /* AQRecorder.mm */; };
 		816BD38F15CE009000F61337 /* iPublicUtility in Resources */ = {isa = PBXBuildFile; fileRef = 816BD38E15CE009000F61337 /* iPublicUtility */; };
+		81AA156416CD8EDB0068669D /* SettingsView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 81AA156316CD8EDB0068669D /* SettingsView.xib */; };
+		81AA156716CD90040068669D /* SettingsViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81AA156616CD90040068669D /* SettingsViewController.mm */; };
 		81B2A20016ACE20D00DB8E11 /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81B2A1FF16ACE20D00DB8E11 /* CoreText.framework */; };
 		81B315BE158E4E9A009F6D8D /* SelectionViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81B315BD158E4E9A009F6D8D /* SelectionViewController.mm */; };
 		81B315C0158E4EC7009F6D8D /* SelectionView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 81B315BF158E4EC7009F6D8D /* SelectionView.xib */; };
@@ -57,6 +60,8 @@
 		810C3D5D16ADEF55009839BE /* Karaoke.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Karaoke.mm; sourceTree = "<group>"; };
 		810D2C6516BB4F9F005F4D30 /* KaraokeTableCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KaraokeTableCell.h; sourceTree = "<group>"; };
 		810D2C6616BB4F9F005F4D30 /* KaraokeTableCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = KaraokeTableCell.m; sourceTree = "<group>"; };
+		810E023416CEF45D00D1FCC7 /* LoadAudioOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LoadAudioOperation.h; sourceTree = SOURCE_ROOT; };
+		810E023516CEF45D00D1FCC7 /* LoadAudioOperation.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LoadAudioOperation.mm; sourceTree = SOURCE_ROOT; };
 		810FBEC615AA522000AEFB2F /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		810FBEC715AA522000AEFB2F /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		810FBEC815AA522000AEFB2F /* MediaPlayer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaPlayer.framework; path = System/Library/Frameworks/MediaPlayer.framework; sourceTree = SDKROOT; };
@@ -69,6 +74,9 @@
 		816BD38A15CE004400F61337 /* AQRecorder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AQRecorder.h; sourceTree = "<group>"; };
 		816BD38B15CE004400F61337 /* AQRecorder.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AQRecorder.mm; sourceTree = "<group>"; };
 		816BD38E15CE009000F61337 /* iPublicUtility */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iPublicUtility; sourceTree = "<group>"; };
+		81AA156316CD8EDB0068669D /* SettingsView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = SettingsView.xib; sourceTree = "<group>"; };
+		81AA156516CD90040068669D /* SettingsViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SettingsViewController.h; sourceTree = "<group>"; };
+		81AA156616CD90040068669D /* SettingsViewController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SettingsViewController.mm; sourceTree = "<group>"; };
 		81B2A1FF16ACE20D00DB8E11 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
 		81B315BC158E4E9A009F6D8D /* SelectionViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SelectionViewController.h; sourceTree = "<group>"; };
 		81B315BD158E4E9A009F6D8D /* SelectionViewController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SelectionViewController.mm; sourceTree = "<group>"; };
@@ -170,13 +178,11 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				81E9650C16AF8A9500C1A67B /* UIButtonBarArrowLeft.png */,
-				81E9650D16AF8A9500C1A67B /* UIButtonBarArrowRight.png */,
-				81D8E10015A8CACA00E2DCB4 /* checkbox_empty.png */,
-				81D8E10115A8CACA00E2DCB4 /* checkbox_full.png */,
+				8187031316BDC5DE00615D2C /* Images */,
 				81E8CBDB157AE2A500CC5F42 /* Sound */,
 				28AD733E0D9D9553002E5188 /* MainWindow.xib */,
 				ADF06FAB100069A800632942 /* DJMixerView.xib */,
+				81AA156316CD8EDB0068669D /* SettingsView.xib */,
 				81B315BF158E4EC7009F6D8D /* SelectionView.xib */,
 				81E964FE16AF771800C1A67B /* KaraokeView.xib */,
 				8D1107310486CEB800E47090 /* Info.plist */,
@@ -211,6 +217,17 @@
 			name = Record;
 			sourceTree = "<group>";
 		};
+		8187031316BDC5DE00615D2C /* Images */ = {
+			isa = PBXGroup;
+			children = (
+				81E9650C16AF8A9500C1A67B /* UIButtonBarArrowLeft.png */,
+				81E9650D16AF8A9500C1A67B /* UIButtonBarArrowRight.png */,
+				81D8E10015A8CACA00E2DCB4 /* checkbox_empty.png */,
+				81D8E10115A8CACA00E2DCB4 /* checkbox_full.png */,
+			);
+			name = Images;
+			sourceTree = "<group>";
+		};
 		81E8CBDB157AE2A500CC5F42 /* Sound */ = {
 			isa = PBXGroup;
 			children = (
@@ -233,6 +250,8 @@
 				ADF0F874100162C300AACC54 /* InMemoryAudioFile.mm */,
 				ADF0702410007C5900632942 /* DJMixer.h */,
 				ADF0702510007C5900632942 /* DJMixer.mm */,
+				810E023416CEF45D00D1FCC7 /* LoadAudioOperation.h */,
+				810E023516CEF45D00D1FCC7 /* LoadAudioOperation.mm */,
 				810C3D5C16ADEF55009839BE /* Karaoke.h */,
 				810C3D5D16ADEF55009839BE /* Karaoke.mm */,
 			);
@@ -246,6 +265,8 @@
 				ADF06FB010006AF000632942 /* DJMixerViewController.mm */,
 				81520D6216BD2214000F917E /* MyNavigationController.h */,
 				81520D6316BD2214000F917E /* MyNavigationController.m */,
+				81AA156516CD90040068669D /* SettingsViewController.h */,
+				81AA156616CD90040068669D /* SettingsViewController.mm */,
 				81B315BC158E4E9A009F6D8D /* SelectionViewController.h */,
 				81B315BD158E4E9A009F6D8D /* SelectionViewController.mm */,
 				81E9650016AF77AA00C1A67B /* KaraokeViewController.h */,
@@ -327,6 +348,7 @@
 				81E964FF16AF771800C1A67B /* KaraokeView.xib in Resources */,
 				81E9650E16AF8A9500C1A67B /* UIButtonBarArrowLeft.png in Resources */,
 				81E9650F16AF8A9500C1A67B /* UIButtonBarArrowRight.png in Resources */,
+				81AA156416CD8EDB0068669D /* SettingsView.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -354,6 +376,8 @@
 				81E9651116AF9B4B00C1A67B /* KeyboardToolbarController.mm in Sources */,
 				810D2C6716BB4F9F005F4D30 /* KaraokeTableCell.m in Sources */,
 				81520D6416BD2214000F917E /* MyNavigationController.m in Sources */,
+				81AA156716CD90040068669D /* SettingsViewController.mm in Sources */,
+				810E023616CEF45D00D1FCC7 /* LoadAudioOperation.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -396,8 +420,8 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				ONLY_ACTIVE_ARCH = YES;
-				PROVISIONING_PROFILE = "B6444FC9-B989-4E60-BFD7-75A70ED01649";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "B6444FC9-B989-4E60-BFD7-75A70ED01649";
+				PROVISIONING_PROFILE = "29B91406-A46A-45D7-891F-8F0B23150A70";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "29B91406-A46A-45D7-891F-8F0B23150A70";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -414,8 +438,8 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
-				PROVISIONING_PROFILE = "B6444FC9-B989-4E60-BFD7-75A70ED01649";
-				"PROVISIONING_PROFILE[sdk=*]" = "B6444FC9-B989-4E60-BFD7-75A70ED01649";
+				PROVISIONING_PROFILE = "29B91406-A46A-45D7-891F-8F0B23150A70";
+				"PROVISIONING_PROFILE[sdk=*]" = "29B91406-A46A-45D7-891F-8F0B23150A70";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

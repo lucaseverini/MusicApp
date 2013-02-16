@@ -19,7 +19,6 @@
 
 @synthesize backButton;
 @synthesize clearButton;
-@synthesize configKaraoke;
 @synthesize fileTable;
 @synthesize fileTableController;
 @synthesize versionLabel;
@@ -109,7 +108,7 @@
     // The media item picker uses the default UI style, so it needs a default-style status bar to match it visually
     [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleDefault animated:YES];
     
-    [self presentModalViewController: picker animated: YES];
+    [self presentViewController:picker animated:YES completion:nil];
     
     [picker release];
 }
@@ -119,7 +118,7 @@
 - (void) mediaPicker:(MPMediaPickerController*)mediaPicker didPickMediaItems:(MPMediaItemCollection*)mediaItemCollection 
 {    
 	// Dismiss the media item picker.
-	[self dismissModalViewControllerAnimated:YES];
+	[self dismissViewControllerAnimated:YES completion:nil];
     
 	[[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleBlackOpaque animated:YES];
     
@@ -136,20 +135,36 @@
         NSString *title = [audioFile valueForProperty:MPMediaItemPropertyTitle];
         NSNumber *duration = [audioFile valueForProperty:MPMediaItemPropertyPlaybackDuration];
         NSNumber *volume = [NSNumber numberWithFloat:1.0];
-        
-        if([duration floatValue] > 300)
+
+        AVURLAsset *songAsset = [[[AVURLAsset alloc] initWithURL:[NSURL URLWithString:Url] options:nil] autorelease];
+        assert(songAsset != nil);        
+        BOOL isReadable = [songAsset isReadable];
+        BOOL isPlayable = [songAsset isPlayable];
+        if(!isReadable || !isPlayable)
         {
-            NSString *messageStr = [NSString stringWithFormat:@"The duration of %@ is more than 300 seconds.", title];
+            NSString *messageStr = [NSString stringWithFormat:@"The track %@ can't be read or played.", title];
             UIAlertView *alert = [[[UIAlertView alloc] initWithTitle:nil message:messageStr delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:nil] autorelease];
             [alert show];
             return;
         }
-        
-        // Retain objs goinf to be added to dictionary to avoid later problems
-        [Url retain];
-        [title retain];
-        [duration retain];
-        [volume retain];
+/*
+        NSString* lyrics = [songAsset lyrics];
+        NSLog(@"Lyrics: (%d chars)", lyrics.length);
+ 
+        NSArray *metaData = [songAsset commonMetadata];
+        NSLog(@"MetaData: %@", metaData);
+        for(AVMetadataItem* item in metaData)
+        {
+            NSString *key = [item commonKey];
+            NSString *value = [item stringValue];
+            NSLog(@"key = %@, value = %@", key, value);
+        }
+*/        
+        // Retain objs going to be added to dictionary to avoid later problems
+        // [Url retain];
+        // [title retain];
+        // [duration retain];
+        // [volume retain];
         
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];        
         NSDictionary *channelDict = [NSDictionary dictionaryWithObjectsAndKeys:Url, @"AudioUrl", title, @"AudioTitle", duration, @"AudioDuration", volume, @"AudioVolume", nil];         
@@ -169,7 +184,7 @@
 // Invoked when the user taps the Done button in the media item picker having chosen zero media items to play
 - (void) mediaPickerDidCancel:(MPMediaPickerController*)mediaPicker 
 {
-	[self dismissModalViewControllerAnimated:YES];
+	[self dismissViewControllerAnimated:YES completion:nil];
 	
 	[[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleBlackOpaque animated:YES];
 }
@@ -233,24 +248,6 @@
     //  NSLog(@"total buffs %d", totalBuff);
     //  fclose(f);
     [fileHandle closeFile];
-}
-
-- (IBAction) doConfigKaraoke:(UIButton*)sender
-{
-    if(karaokeController == nil)
-    {
-        karaokeController = [[KaraokeViewController alloc] initWithNibName:@"KaraokeView" bundle:nil];
-        assert(karaokeController != nil);
-    }
-    
-    // Custom animated transition
-    [UIView beginAnimations:nil context:nil];
-    [UIView setAnimationDuration: 0.5];
-    [UIView setAnimationTransition:UIViewAnimationTransitionFlipFromRight forView:self.view.window cache:YES];
-    
-    [self presentModalViewController:karaokeController animated:NO];   // Show the new view
-    
-    [UIView commitAnimations];    // Play the animation
 }
 
 @end

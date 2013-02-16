@@ -7,8 +7,8 @@
 
 #import "DJMixer.h"
 
-#pragma mark Listeners
 
+#pragma mark Listeners
 
 void propListener (void                     *inClientData,
 				  AudioSessionPropertyID	inID,
@@ -139,6 +139,8 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	return noErr;
 }
 
+#pragma mark DJMixer
+
 @implementation DJMixer
 
 @synthesize crossFaderMixer;
@@ -150,25 +152,31 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 @synthesize packetIndex;
 @synthesize inputAudioData;
 @synthesize recordingStarted;
+@synthesize loadAudioQueue;
 
 - (id) init
 {	
 	self = [super init];
-    
-    loop = (InMemoryAudioFile**)calloc(kNumChannels, sizeof(InMemoryAudioFile*));
-	
-	loop[0] = [[InMemoryAudioFile alloc]initForChannel:1];
-	loop[1] = [[InMemoryAudioFile alloc]initForChannel:2];
-	loop[2] = [[InMemoryAudioFile alloc]initForChannel:3];
-	loop[3] = [[InMemoryAudioFile alloc]initForChannel:4];
-	loop[4] = [[InMemoryAudioFile alloc]initForChannel:5];
-	loop[5] = [[InMemoryAudioFile alloc]initForChannel:6];
-	loop[6] = [[InMemoryAudioFile alloc]initForChannel:7];
-	loop[7] = [[InMemoryAudioFile alloc]initForChannel:8];
-	// loop[8] = [[InMemoryAudioFile alloc]initForChannel:9];
+    if(self != nil)
+    {    
+        loop = (InMemoryAudioFile**)calloc(kNumChannels, sizeof(InMemoryAudioFile*));
+        
+        loop[0] = [[InMemoryAudioFile alloc]initForChannel:1];
+        loop[1] = [[InMemoryAudioFile alloc]initForChannel:2];
+        loop[2] = [[InMemoryAudioFile alloc]initForChannel:3];
+        loop[3] = [[InMemoryAudioFile alloc]initForChannel:4];
+        loop[4] = [[InMemoryAudioFile alloc]initForChannel:5];
+        loop[5] = [[InMemoryAudioFile alloc]initForChannel:6];
+        loop[6] = [[InMemoryAudioFile alloc]initForChannel:7];
+        loop[7] = [[InMemoryAudioFile alloc]initForChannel:8];
+        // loop[8] = [[InMemoryAudioFile alloc]initForChannel:9];
+        
+        loadAudioQueue = [[NSOperationQueue alloc] init];
+        [loadAudioQueue setMaxConcurrentOperationCount:10];
 
-	[self initAudio];
-	
+        [self initAudio];
+	}
+    
 	return self;
 }
 
@@ -213,6 +221,8 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
     free(loop);
     
     [self freeData];
+    
+    [loadAudioQueue release];
     
     [super dealloc];
 }

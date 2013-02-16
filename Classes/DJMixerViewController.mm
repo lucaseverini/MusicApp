@@ -8,18 +8,18 @@
 #import "MusicAppAppDelegate.h"
 #import "DJMixer.h"
 #import "DJMixerViewController.h"
+#import "SettingsViewController.h"
 #import "SelectionViewController.h"
 #import "CoreText/CoreText.h"
 #import "UITextScroll.h"
 #import "Karaoke.h"
+#import "LoadAudioOperation.h"
 
 
 @implementation DJMixerViewController
 
 @synthesize portraitView;
 @synthesize landscapeView;
-@synthesize playButton;
-@synthesize pauseSwitch;
 @synthesize channel1VolumeSlider;
 @synthesize channel2VolumeSlider;
 @synthesize channel3VolumeSlider;
@@ -38,12 +38,23 @@
 @synthesize channel7Label;
 @synthesize channel8Label;
 @synthesize audioInputLabel;
+@synthesize playButton;
+@synthesize pauseSwitch;
 @synthesize selectButton;
 @synthesize karaokeButton;
 @synthesize karaokeText;
+
+@synthesize playButtonLS;
+@synthesize pauseSwitchLS;
+@synthesize selectButtonLS;
+@synthesize karaokeButtonLS;
+@synthesize karaokeTextLS;
+
 @synthesize djMixer;
 @synthesize karaoke;
 @synthesize karaokeTimer;
+@synthesize isPortrait;
+
 
 - (id) initWithNibName:(NSString*)nibNameOrNil bundle:(NSBundle*)nibBundleOrNil
 {
@@ -84,6 +95,7 @@
         }
         
         [self.karaokeButton setHighlighted:NO];
+        [self.karaokeButtonLS setHighlighted:NO];
 
         [self.karaoke release];
         self.karaoke = nil;
@@ -94,6 +106,8 @@
 - (void) viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+    
+    [djMixer.loadAudioQueue cancelAllOperations];
 
     int totLoadedChannels = 0;
     
@@ -109,9 +123,13 @@
         }
         else
         {
-            [djMixer.loop[0] mediaItemUrl:url];
+            // [djMixer.loop[0] mediaItemUrl:url]; // Init/load audio data
+
+            LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
+            [djMixer.loadAudioQueue addOperation:loadOperation];
+            [djMixer.loop[0] setLoadOperation:loadOperation];
         }
-    }    
+    }
     if(djMixer.loop[0].loaded)
     {
         totLoadedChannels++;
@@ -140,7 +158,11 @@
         }
         else
         {
-            [djMixer.loop[1] mediaItemUrl:url];
+            // [djMixer.loop[1] mediaItemUrl:url]; // Init/load audio data
+
+            LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
+            [djMixer.loadAudioQueue addOperation:loadOperation];
+            [djMixer.loop[1] setLoadOperation:loadOperation];
         }
     }
     if(djMixer.loop[1].loaded)
@@ -171,7 +193,11 @@
         }
         else
         {
-            [djMixer.loop[2] mediaItemUrl:url];
+            // [djMixer.loop[2] mediaItemUrl:url]; // Init/load audio data
+
+            LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
+            [djMixer.loadAudioQueue addOperation:loadOperation];
+            [djMixer.loop[2] setLoadOperation:loadOperation];
         }
     }
     if(djMixer.loop[2].loaded)
@@ -202,7 +228,12 @@
         }
         else
         {
-            [djMixer.loop[3] mediaItemUrl:url];
+            // [djMixer.loop[3] mediaItemUrl:url]; // Init/load audio data
+ 
+            LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
+            [djMixer.loadAudioQueue addOperation:loadOperation];
+            [djMixer.loop[3] setLoadOperation:loadOperation];
+
         }
     }
     if(djMixer.loop[3].loaded)
@@ -233,7 +264,11 @@
         }
         else
         {
-            [djMixer.loop[4] mediaItemUrl:url];
+            // [djMixer.loop[4] mediaItemUrl:url]; // Init/load audio data
+
+            LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
+            [djMixer.loadAudioQueue addOperation:loadOperation];
+            [djMixer.loop[4] setLoadOperation:loadOperation];
         }
     }
     if(djMixer.loop[4].loaded)
@@ -264,7 +299,11 @@
         }
         else
         {
-            [djMixer.loop[5] mediaItemUrl:url];
+            // [djMixer.loop[5] mediaItemUrl:url]; // Init/load audio data
+
+            LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
+            [djMixer.loadAudioQueue addOperation:loadOperation];
+            [djMixer.loop[5] setLoadOperation:loadOperation];
         }
     }
     if(djMixer.loop[5].loaded)
@@ -295,7 +334,11 @@
         }
         else
         {
-            [djMixer.loop[6] mediaItemUrl:url];
+            // [djMixer.loop[6] mediaItemUrl:url]; // Init/load audio data
+
+            LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
+            [djMixer.loadAudioQueue addOperation:loadOperation];
+            [djMixer.loop[6] setLoadOperation:loadOperation];
         }
     }
     if(djMixer.loop[6].loaded)
@@ -326,7 +369,11 @@
         }
         else
         {
-            [djMixer.loop[7] mediaItemUrl:url];
+            // [djMixer.loop[7] mediaItemUrl:url]; // Init/load audio data
+
+            LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
+            [djMixer.loadAudioQueue addOperation:loadOperation];
+            [djMixer.loop[7] setLoadOperation:loadOperation];
         }
     }
     if(djMixer.loop[7].loaded)
@@ -364,25 +411,32 @@
     }
 
     [playButton setEnabled:(totLoadedChannels != 0)];
+    [playButtonLS setEnabled:(totLoadedChannels != 0)];
+
     [pauseSwitch setEnabled:NO];
-    
+    [pauseSwitchLS setEnabled:NO];
+   
     [karaokeText setAttributedText:nil];
+    [karaokeTextLS setAttributedText:nil];
     
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory , NSUserDomainMask, YES);
     NSString *filePath = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"KaraokeData.plist"];
     if([[NSFileManager defaultManager] fileExistsAtPath:filePath])
     {
-        NSLog(@"File %@ is available", filePath);
+        NSLog(@"Karaoke file %@ is available", filePath);
         
         NSArray *data = [NSArray arrayWithContentsOfFile:filePath];
         self.karaoke = [[Karaoke alloc] initKaraoke:data];
     }
     else
     {
-        NSLog(@"File %@ is missing", filePath);
+        NSLog(@"Karaoke file %@ is missing", filePath);
     }
 
     [self.karaokeButton setEnabled: (self.karaoke != nil)];
+    [self.karaokeButtonLS setEnabled: (self.karaoke != nil)];
+    
+    self.isPortrait = (self.interfaceOrientation == UIDeviceOrientationPortrait || self.interfaceOrientation == UIDeviceOrientationPortraitUpsideDown);
 }
 
 
@@ -458,7 +512,7 @@
     [djMixer changeCrossFaderAmount:sender.value forChannel:sender.tag];
     
     // Delay execution of my block for 2 seconds.
-    dispatch_async(dispatch_get_current_queue(), 
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), 
     ^{
         [self updateDefaults:sender];
     });
@@ -476,46 +530,70 @@
 	if([djMixer isPlaying])
     {
         [djMixer stop];
+        
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        if([defaults boolForKey:@"KaraokeAutoOn"])
+        {
+            [self doKaraoke:nil];
+        }
+
         [playButton setTitle:@"Play" forState:UIControlStateNormal];
+        [playButtonLS setTitle:@"Play" forState:UIControlStateNormal];
         
         [selectButton setEnabled:YES];
-        [pauseSwitch setEnabled:NO];
-       
+        [selectButtonLS setEnabled:YES];
+        
+        [pauseSwitch setEnabled:NO];       
+        [pauseSwitchLS setEnabled:NO];
+        
         [pauseSwitch setOn:NO];
-        [self pause:pauseSwitch];
+        [pauseSwitchLS setOn:NO];
+        
+        [self pause:pauseSwitch];        
     }
     else
     {
         [djMixer play];
+        
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        if([defaults boolForKey:@"KaraokeAutoOn"])
+        {
+            [self doKaraoke:nil];
+        }
+
         [playButton setTitle:@"Stop" forState:UIControlStateNormal];
+        [playButtonLS setTitle:@"Stop" forState:UIControlStateNormal];
         
         [selectButton setEnabled:NO];
+        [selectButtonLS setEnabled:NO];
+        
         [pauseSwitch setEnabled:YES];
+        [pauseSwitchLS setEnabled:YES];
     }
 }
 
 
-- (IBAction) selectTracks:(UIButton*)sender
+- (IBAction) goSettings:(UIButton*)sender
 {
-    if(selViewController == nil)
+    if(!self.isPortrait)
     {
-        selViewController = [[SelectionViewController alloc] initWithNibName:@"SelectionView" bundle:nil];
-        assert(selViewController != nil);
+		UIAlertView *anAlert = [[UIAlertView alloc] initWithTitle:@"Error!"  message:@"The Settings can be accessed only with the Screen in Portrait orientation."
+                                                         delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+		[anAlert show];        
+        return;
     }
+
+    SettingsViewController *settings = [[[SettingsViewController alloc] initWithNibName:@"SettingsView" bundle:nil] autorelease];
+    assert(settings != nil);
     
     // Custom animated transition
     [UIView beginAnimations:nil context:nil];
     [UIView setAnimationDuration: 0.5];    
     [UIView setAnimationTransition:UIViewAnimationTransitionFlipFromRight forView:self.view.window cache:YES];
     
-    [self presentModalViewController:selViewController animated:NO];   // Show the new view
+    [self presentViewController:settings animated:NO completion:nil];   // Show the new view
     
     [UIView commitAnimations];    // Play the animation
-    
-    // self.modalTransitionStyle = UIModalTransitionStyleFlipHorizontal;  // Set the style for the transition when is back
-    
-    // selViewController.modalTransitionStyle = UIModalTransitionStyleFlipHorizontal;  // Set the animation transition style    
-    // [self presentModalViewController:selViewController animated:YES];               // Show the new view
 }
 
 
@@ -528,12 +606,6 @@
 
 - (void) dealloc 
 {
-    if(selViewController != nil)
-    {
-        [selViewController release];
-        selViewController = nil;
-    }
-        
     [super dealloc];
 }
 
@@ -545,15 +617,18 @@
         [self.karaoke resetRedRow];
         
         [karaokeText setAttributedText:nil];
+        [karaokeTextLS setAttributedText:nil];
     
         NSTimeInterval interval = [[self.karaoke.time objectAtIndex:self.karaoke.step] doubleValue];
         karaokeTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(karaokeStep) userInfo:nil repeats:YES];
         
         [self performSelector:@selector(doHighlight:) withObject:self.karaokeButton afterDelay:0];
+        [self performSelector:@selector(doHighlight:) withObject:self.karaokeButtonLS afterDelay:0];
     }
     else
     {
         [self.karaokeButton setHighlighted:NO];
+        [self.karaokeButtonLS setHighlighted:NO];
         
         [karaokeTimer invalidate];
         karaokeTimer = nil;
@@ -572,26 +647,38 @@
     if(self.karaoke.step == 0)
     {
         [karaokeText setAttributedText:self.karaoke.attribText];
-  
         [karaokeText setContentOffset:CGPointMake(0, 1) animated:NO];
+
+        [karaokeTextLS setAttributedText:self.karaoke.attribTextLS];
+        [karaokeTextLS setContentOffset:CGPointMake(0, 1) animated:NO];
     }
     else
     {
         BOOL advanced = [self.karaoke advanceRedRow];
         if(advanced)
         {
+            // Do for Portrait
             [karaokeText setAttributedText:self.karaoke.attribText];
-            
-            CGPoint position = [karaokeText contentOffset];
-            
+                
+            CGPoint position = [karaokeText contentOffset];                
             CGFloat LINE_HEIGHT = 20.2f;  // Line height is fixed for now (find a way for get it from used font).
             position.y += LINE_HEIGHT;
 
             [karaokeText setContentOffset:position animated:YES];
+ 
+            // Do for Landscape
+            [karaokeTextLS setAttributedText:self.karaoke.attribTextLS];
+    
+            position = [karaokeTextLS contentOffset];                
+            CGFloat LINE_HEIGHT_LS = 31.0f;  // Line height is fixed for now (find a way for get it from used font).
+            position.y += LINE_HEIGHT_LS;
+                
+            [karaokeTextLS setContentOffset:position animated:YES];
         }
         else
         {
             [self.karaokeButton setHighlighted:NO];
+            [self.karaokeButtonLS setHighlighted:NO];
             
             [karaokeTimer invalidate];
             karaokeTimer = nil;
@@ -609,6 +696,7 @@
     else
     {
         [self.karaokeButton setHighlighted:NO];
+        [self.karaokeButtonLS setHighlighted:NO];
 
         [karaokeTimer invalidate];
         karaokeTimer = nil;
@@ -657,14 +745,13 @@
     
     if(orientation == UIInterfaceOrientationLandscapeLeft || orientation == UIInterfaceOrientationLandscapeRight)
     {
-        if(self.karaokeButton.highlighted)
-        {
-            self.view = self.landscapeView;
-        }
+        self.view = self.landscapeView;
+        self.isPortrait = NO;
     }
-    else if(orientation == UIInterfaceOrientationPortrait)
+    else
     {
         self.view = self.portraitView;
+        self.isPortrait = YES;
     }
 }
 

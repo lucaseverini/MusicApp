@@ -19,6 +19,7 @@
 @synthesize tableBarDoneButton;
 @synthesize karaokeTable;
 @synthesize backButton;
+@synthesize autoActivate;
 @synthesize keyboardToolbar;
 @synthesize keyboardController;
 
@@ -116,17 +117,17 @@
     [self.tableBarItem setLeftBarButtonItem:self.tableBarEditButton];
     
     self.keyboardController.hideDoneButton = YES;
+    
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self.autoActivate setOn:[defaults boolForKey:@"KaraokeAutoOn"]];
 }
 
 
 - (IBAction) goBack:(UIButton*)sender
 {
-    if(self.isEditing)
-    {
-        // Because of how is implemented this table implemented both are needed
-        [self setEditing:NO];
-        [self.karaokeTable setEditing:NO animated:NO];
-    }
+    // Because of how is implemented this table implemented both are needed
+    [self setEditing:NO];
+    [self.karaokeTable setEditing:NO animated:NO];
     
     // Custom animated transition
     [UIView beginAnimations:nil context:NULL];
@@ -212,7 +213,7 @@
         
         cell.time.delegate = self;
         NSNumber *value = [[self.dataSourceArray objectAtIndex: row] valueForKey:kTimeKey];
-        cell.time.text = (cell.words.text.length == 0) ? nil : [ value stringValue];
+        cell.time.text = (cell.words.text.length == 0) ? nil : [value stringValue];
         cell.time.enabled = self.isEditing;
         cell.time.returnKeyType = UIReturnKeyDefault;
     }
@@ -300,6 +301,14 @@
             [editingTextField setSelectedTextRange:newRange];
         }
     }
+}
+
+
+- (IBAction) doAutoActivate:(id)sender
+{
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setBool:[self.autoActivate isOn] forKey:@"KaraokeAutoOn"];
+    [defaults synchronize];
 }
 
 
@@ -614,6 +623,8 @@
         [self.karaokeTable setEditing:YES animated:YES];    // Set the table editing
 
         [self.tableBarItem setLeftBarButtonItem:self.tableBarDoneButton];
+        
+        self.backButton.enabled = NO;
     }
     else
     {
@@ -621,6 +632,8 @@
         [self.karaokeTable setEditing:NO animated:YES];    // Set the table editing
 
         [self.tableBarItem setLeftBarButtonItem:self.tableBarEditButton];
+
+        self.backButton.enabled = YES;
     }
 }
 

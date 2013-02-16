@@ -31,6 +31,7 @@
 @property (nonatomic, assign) SInt32 packetIndex;
 @property (nonatomic, assign) UInt16 *inputAudioData;
 @property (nonatomic, assign) BOOL recordingStarted;
+@property (nonatomic, retain) NSOperationQueue *loadAudioQueue;
 
 - (void) initAudio;
 - (void) changeCrossFaderAmount:(float)volume forChannel:(NSInteger)channel;
