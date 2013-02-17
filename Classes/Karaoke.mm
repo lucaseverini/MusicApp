@@ -17,7 +17,6 @@
 @synthesize time;
 @synthesize step;
 
-
 - (void)dealloc
 {
     [text release];

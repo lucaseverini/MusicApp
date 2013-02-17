@@ -16,6 +16,8 @@
 {
 	DJMixer *djMixer;	
     UISlider* sliders[9];
+    NSDate *karaokePauseStart;
+    NSDate *karaokePrevFireDate;
 }
 
 @property (nonatomic, retain) IBOutlet UIView *portraitView;
@@ -44,6 +46,7 @@
 @property (nonatomic, retain) IBOutlet UISwitch *pauseSwitch;
 @property (nonatomic, retain) IBOutlet UIButton *karaokeButton;
 @property (nonatomic, retain) IBOutlet UITextScroll *karaokeText;
+@property (atomic, assign) BOOL karaokeActivated;
 
 @property (nonatomic, retain) IBOutlet UIButton *playButtonLS;
 @property (nonatomic, retain) IBOutlet UIButton *selectButtonLS;

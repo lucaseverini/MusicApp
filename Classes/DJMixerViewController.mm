@@ -43,6 +43,7 @@
 @synthesize selectButton;
 @synthesize karaokeButton;
 @synthesize karaokeText;
+@synthesize karaokeActivated;
 
 @synthesize playButtonLS;
 @synthesize pauseSwitchLS;
@@ -64,6 +65,21 @@
     }
     
     return self;
+}
+
+
+- (void) didReceiveMemoryWarning
+{
+    NSLog(@"didReceiveMemoryWarning sent to %@", self);
+    
+    [super didReceiveMemoryWarning]; // Releases the view if it doesn't have a superview
+                                     // Release anything that's not essential, such as cached data
+}
+
+
+- (void) dealloc
+{
+    [super dealloc];
 }
 
 
@@ -106,8 +122,6 @@
 - (void) viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
-    
-    [djMixer.loadAudioQueue cancelAllOperations];
 
     int totLoadedChannels = 0;
     
@@ -119,12 +133,10 @@
         NSString *url = [channelDict objectForKey:@"AudioUrl"];
         if(url == nil)
         {
-            [djMixer.loop[0] freeBuffers];
+            [djMixer.loop[0] freeStuff];
         }
         else
         {
-            // [djMixer.loop[0] mediaItemUrl:url]; // Init/load audio data
-
             LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
             [djMixer.loadAudioQueue addOperation:loadOperation];
             [djMixer.loop[0] setLoadOperation:loadOperation];
@@ -154,11 +166,11 @@
         NSString *url = [channelDict objectForKey:@"AudioUrl"];
         if(url == nil)
         {
-            [djMixer.loop[1] freeBuffers];
+            [djMixer.loop[1] freeStuff];
         }
         else
         {
-            // [djMixer.loop[1] mediaItemUrl:url]; // Init/load audio data
+            [djMixer.loop[1] removeLoadOperation]; // Remove the previous operation if present
 
             LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
             [djMixer.loadAudioQueue addOperation:loadOperation];
@@ -189,11 +201,11 @@
         NSString *url = [channelDict objectForKey:@"AudioUrl"];
         if(url == nil)
         {
-            [djMixer.loop[2] freeBuffers];
+            [djMixer.loop[2] freeStuff];
         }
         else
         {
-            // [djMixer.loop[2] mediaItemUrl:url]; // Init/load audio data
+            [djMixer.loop[2] removeLoadOperation]; // Remove the previous operation if present
 
             LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
             [djMixer.loadAudioQueue addOperation:loadOperation];
@@ -224,12 +236,12 @@
         NSString *url = [channelDict objectForKey:@"AudioUrl"];
         if(url == nil)
         {
-            [djMixer.loop[3] freeBuffers];
+            [djMixer.loop[3] freeStuff];
         }
         else
         {
-            // [djMixer.loop[3] mediaItemUrl:url]; // Init/load audio data
- 
+            [djMixer.loop[3] removeLoadOperation]; // Remove the previous operation if present
+
             LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
             [djMixer.loadAudioQueue addOperation:loadOperation];
             [djMixer.loop[3] setLoadOperation:loadOperation];
@@ -260,11 +272,11 @@
         NSString *url = [channelDict objectForKey:@"AudioUrl"];
         if(url == nil)
         {
-            [djMixer.loop[4] freeBuffers];
+            [djMixer.loop[4] freeStuff];
         }
         else
         {
-            // [djMixer.loop[4] mediaItemUrl:url]; // Init/load audio data
+            [djMixer.loop[4] removeLoadOperation]; // Remove the previous operation if present
 
             LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
             [djMixer.loadAudioQueue addOperation:loadOperation];
@@ -295,11 +307,11 @@
         NSString *url = [channelDict objectForKey:@"AudioUrl"];
         if(url == nil)
         {
-            [djMixer.loop[5] freeBuffers];
+            [djMixer.loop[5] freeStuff];
         }
         else
         {
-            // [djMixer.loop[5] mediaItemUrl:url]; // Init/load audio data
+            [djMixer.loop[5] removeLoadOperation]; // Remove the previous operation if present
 
             LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
             [djMixer.loadAudioQueue addOperation:loadOperation];
@@ -330,11 +342,11 @@
         NSString *url = [channelDict objectForKey:@"AudioUrl"];
         if(url == nil)
         {
-            [djMixer.loop[6] freeBuffers];
+            [djMixer.loop[6] freeStuff];
         }
         else
         {
-            // [djMixer.loop[6] mediaItemUrl:url]; // Init/load audio data
+            [djMixer.loop[6] removeLoadOperation]; // Remove the previous operation if present
 
             LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
             [djMixer.loadAudioQueue addOperation:loadOperation];
@@ -365,12 +377,12 @@
         NSString *url = [channelDict objectForKey:@"AudioUrl"];
         if(url == nil)
         {
-            [djMixer.loop[7] freeBuffers];
+            [djMixer.loop[7] freeStuff];
         }
         else
         {
-            // [djMixer.loop[7] mediaItemUrl:url]; // Init/load audio data
-
+            [djMixer.loop[7] removeLoadOperation]; // Remove the previous operation if present
+            
             LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
             [djMixer.loadAudioQueue addOperation:loadOperation];
             [djMixer.loop[7] setLoadOperation:loadOperation];
@@ -409,10 +421,10 @@
             [djMixer changeCrossFaderAmount:sliderValue forChannel:9];
         }
     }
-
+/*
     [playButton setEnabled:(totLoadedChannels != 0)];
     [playButtonLS setEnabled:(totLoadedChannels != 0)];
-
+*/
     [pauseSwitch setEnabled:NO];
     [pauseSwitchLS setEnabled:NO];
    
@@ -519,12 +531,6 @@
 }
 
 
-- (IBAction) pause:(UISwitch*)sender
-{
-    [djMixer pause:sender.on];
-}
-
-
 - (IBAction) playOrStop
 {
 	if([djMixer isPlaying])
@@ -532,7 +538,7 @@
         [djMixer stop];
         
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-        if([defaults boolForKey:@"KaraokeAutoOn"])
+        if([defaults boolForKey:@"KaraokeAutoOn"] && karaokeActivated)
         {
             [self doKaraoke:nil];
         }
@@ -556,7 +562,7 @@
         [djMixer play];
         
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-        if([defaults boolForKey:@"KaraokeAutoOn"])
+        if([defaults boolForKey:@"KaraokeAutoOn"] && !karaokeActivated)
         {
             [self doKaraoke:nil];
         }
@@ -597,52 +603,44 @@
 }
 
 
-- (void) didReceiveMemoryWarning 
-{
-    [super didReceiveMemoryWarning]; // Releases the view if it doesn't have a superview
-    // Release anything that's not essential, such as cached data
-}
-
-
-- (void) dealloc 
-{
-    [super dealloc];
-}
-
-
-- (IBAction) doKaraoke:(UIButton*)sender
-{
-    if(karaokeTimer == nil)
-    {
-        [self.karaoke resetRedRow];
-        
-        [karaokeText setAttributedText:nil];
-        [karaokeTextLS setAttributedText:nil];
-    
-        NSTimeInterval interval = [[self.karaoke.time objectAtIndex:self.karaoke.step] doubleValue];
-        karaokeTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(karaokeStep) userInfo:nil repeats:YES];
-        
-        [self performSelector:@selector(doHighlight:) withObject:self.karaokeButton afterDelay:0];
-        [self performSelector:@selector(doHighlight:) withObject:self.karaokeButtonLS afterDelay:0];
-    }
-    else
-    {
-        [self.karaokeButton setHighlighted:NO];
-        [self.karaokeButtonLS setHighlighted:NO];
-        
-        [karaokeTimer invalidate];
-        karaokeTimer = nil;
-    }
-}
-
-
 - (void)doHighlight:(UIButton*)btn
 {
     [btn setHighlighted:YES];
 }
 
 
-- (void)karaokeStep
+- (IBAction) pause:(UISwitch*)sender
+{
+    [djMixer pause:sender.on];
+    
+    if(karaokeActivated)
+    {
+        if(sender.on)
+        {
+            [self karaokePause];
+        }
+        else
+        {
+            [self karaokeResume];
+        }
+    }
+}
+
+
+- (IBAction) doKaraoke:(UIButton*)sender
+{
+    if(karaokeActivated)
+    {
+        [self karaokeStop];
+    }
+    else
+    {
+        [self karaokeStart];
+    }
+}
+
+
+- (void) karaokeStep
 {
     if(self.karaoke.step == 0)
     {
@@ -701,6 +699,57 @@
         [karaokeTimer invalidate];
         karaokeTimer = nil;
     }
+}
+
+
+- (void) karaokeStart
+{
+    [self.karaoke resetRedRow];
+    
+    [karaokeText setAttributedText:nil];
+    [karaokeTextLS setAttributedText:nil];
+    
+    NSTimeInterval interval = [[self.karaoke.time objectAtIndex:self.karaoke.step] doubleValue];
+    karaokeTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(karaokeStep) userInfo:nil repeats:YES];
+    
+    [self performSelector:@selector(doHighlight:) withObject:self.karaokeButton afterDelay:0];
+    [self performSelector:@selector(doHighlight:) withObject:self.karaokeButtonLS afterDelay:0];
+    
+    karaokeActivated = YES;
+}
+
+
+- (void) karaokeStop
+{
+    [self.karaokeButton setHighlighted:NO];
+    [self.karaokeButtonLS setHighlighted:NO];
+    
+    [karaokeTimer invalidate];
+    karaokeTimer = nil;
+    
+    karaokeActivated = NO;
+}
+
+
+- (void) karaokePause
+{
+    karaokePauseStart = [[NSDate dateWithTimeIntervalSinceNow:0] retain];
+    
+    karaokePrevFireDate = [[karaokeTimer fireDate] retain];
+    
+    [karaokeTimer setFireDate:[NSDate distantFuture]];
+}
+
+
+- (void) karaokeResume
+{
+    float pauseTime = -[karaokePauseStart timeIntervalSinceNow];
+    
+    [karaokeTimer setFireDate:[karaokePrevFireDate initWithTimeInterval:pauseTime sinceDate:karaokePrevFireDate]];
+    
+    [karaokePauseStart release];
+    
+    [karaokePrevFireDate release];
 }
 
 

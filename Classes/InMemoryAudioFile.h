@@ -42,8 +42,6 @@
     SInt64                          jumpedpackets;
 	UInt64							totalPacketIndex;
     UInt64                          lostPackets;
-    NSThread                        *workerThread;
-    BOOL                            quitWorkerThread;
 
     AURecorder                      *recorder;
     LoadAudioOperation              *operation;
@@ -70,6 +68,7 @@
 
 // Read data from a NSOperation
 - (void) setLoadOperation:(LoadAudioOperation*)loadOperation;
+- (void) removeLoadOperation;
 
 // Gets the info about a wav file
 - (OSStatus) getFileInfo;
@@ -84,17 +83,12 @@
 
 - (void) start;
 - (void) stop;
-- (BOOL) isPlaying;
 
 - (void) pause:(BOOL)flag;
-- (BOOL) isPaused;
 
-- (void) freeBuffers;
+- (void) freeStuff;     // Free the buffers just in case they contain some data
 
 - (NSMutableData*) ReadAudioData:(NSURL*)audioFileURL;
-
-- (void) workerMain;
-- (void) checkExit;
 
 @end
 

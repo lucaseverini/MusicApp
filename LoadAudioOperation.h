@@ -40,5 +40,6 @@
 - (BOOL) openAudioFile:(NSURL*)fileUrl;
 - (NSUInteger) fillAudioBuffer:(void*)audioBuffer;
 - (UInt32*) getNextAudioBuffer:(NSUInteger*)packetsInBuffer;
+- (void) reset;
 
 @end

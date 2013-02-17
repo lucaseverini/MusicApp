@@ -59,27 +59,45 @@ static OSStatus crossFaderMixerCallback (void *inRefCon,
 	
     if(inBusNumber == 8)
     {
-        for(int j = 0; j < inNumberFrames; j++)
+        if(djMixer.paused)
         {
-            if(djMixer.packetIndex == djMixer.packetsInBuffer)
+            for(int frameNum = 0; frameNum < inNumberFrames; frameNum++)
             {
-                djMixer.packetIndex = 0;
+                frameBuffer[frameNum] = 0;
             }
-            
-            UInt16 value = djMixer.inputAudioData[djMixer.packetIndex++];
-            frameBuffer[j] = value + (value << 16);
+        }
+        else
+        {
+            for(int frameNum = 0; frameNum < inNumberFrames; frameNum++)
+            {
+                if(djMixer.packetIndex == djMixer.packetsInBuffer)
+                {
+                    djMixer.packetIndex = 0;
+                }
+                
+                UInt16 value = djMixer.inputAudioData[djMixer.packetIndex++];
+                frameBuffer[frameNum] = value + (value << 16);
+            }
         }
     }
     else
     {
         InMemoryAudioFile *loop = djMixer.loop[inBusNumber];
-        assert(loop != nil);
-    
-        for(int j = 0; j < inNumberFrames; j++)
+        if(loop.playing)
         {
-            // get NextPacket returns a 32 bit value, one frame.
-            frameBuffer[j] = [loop getNextPacket];
+            for(int frameNum = 0; frameNum < inNumberFrames; frameNum++)
+            {
+                // get NextPacket returns a 32 bit value, one frame.
+                frameBuffer[frameNum] = [loop getNextPacket];
+            }
         }
+        else
+        {
+            for(int frameNum = 0; frameNum < inNumberFrames; frameNum++)
+            {
+                frameBuffer[frameNum] = 0;
+            }
+       }
     }
     
 	return 0;
@@ -153,6 +171,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 @synthesize inputAudioData;
 @synthesize recordingStarted;
 @synthesize loadAudioQueue;
+@synthesize paused;
 
 - (id) init
 {	
@@ -254,16 +273,29 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 
 - (void) pause:(BOOL)pause
 {
+
+    if(pause)
+    {
+        for(int idx = 0; idx < kNumChannels; idx++)
+        {
+            if(loop[idx].playing)
+            {
+                [loop[idx] pause:YES];
+            }
+        }
+    }
+    else
+    {
+        for(int idx = 0; idx < kNumChannels; idx++)
+        {
+            if(loop[idx].paused)
+            {
+                [loop[idx] pause:NO];
+            }
+        }
+    }
+
     paused = pause;
-
-    for(int idx = 0; idx < kNumChannels; idx++)
-        [loop[idx] pause:paused];
-}
-
-
-- (BOOL) isPaused
-{
-    return paused;
 }
 
 
@@ -287,7 +319,12 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
         [loop[kNumChannels - 1] start];
 
         for(int idx = 0; idx < kNumChannels - 1; idx++)
-            [loop[idx] start];
+        {
+            if(loop[idx].loaded)
+            {
+                [loop[idx] start];
+            }
+        }
         
         packetIndex = 0;
 
@@ -329,7 +366,12 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
         [loop[kNumChannels - 1] stop];
 
         for(int idx = 0; idx < kNumChannels - 1; idx++)
-            [loop[idx] stop];
+        {
+            if(loop[idx].playing || loop[idx].paused)
+            {
+                [loop[idx] stop];
+            }
+        }
     }
 }
 

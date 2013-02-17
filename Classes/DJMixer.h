@@ -18,8 +18,6 @@
 
 	// the graph of audio connections
 	AUGraph graph;
-    
-    BOOL paused;
 }
 
 @property (nonatomic) AudioUnit crossFaderMixer;
@@ -32,13 +30,13 @@
 @property (nonatomic, assign) UInt16 *inputAudioData;
 @property (nonatomic, assign) BOOL recordingStarted;
 @property (nonatomic, retain) NSOperationQueue *loadAudioQueue;
+@property (atomic, assign) BOOL paused;
 
 - (void) initAudio;
 - (void) changeCrossFaderAmount:(float)volume forChannel:(NSInteger)channel;
 - (void) play;
 - (void) stop;
 - (void) pause:(BOOL)pause;
-- (BOOL) isPaused;
 - (BOOL) isPlaying;
 - (void) pause:(BOOL)flag forChannel:(NSInteger)channel;
 - (void) setUpData;

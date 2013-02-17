@@ -82,14 +82,6 @@
 		81B315BD158E4E9A009F6D8D /* SelectionViewController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SelectionViewController.mm; sourceTree = "<group>"; };
 		81B315BF158E4EC7009F6D8D /* SelectionView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = SelectionView.xib; sourceTree = "<group>"; };
 		81CB6DDC1582AF9500983659 /* MusicApp_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MusicApp_Prefix.pch; sourceTree = "<group>"; };
-		81CDD8B1157AEAA900A7E9FF /* Basso.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = Basso.wav; path = ../Tracce/Basso.wav; sourceTree = "<group>"; };
-		81CDD8B2157AEAA900A7E9FF /* Drums.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = Drums.wav; path = ../Tracce/Drums.wav; sourceTree = "<group>"; };
-		81CDD8B5157AEAA900A7E9FF /* GTR 2LR.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = "GTR 2LR.wav"; path = "../Tracce/GTR 2LR.wav"; sourceTree = "<group>"; };
-		81CDD8B6157AEAA900A7E9FF /* GTR TeleCaster.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = "GTR TeleCaster.wav"; path = "../Tracce/GTR TeleCaster.wav"; sourceTree = "<group>"; };
-		81CDD8B7157AEAA900A7E9FF /* HH.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = HH.wav; path = ../Tracce/HH.wav; sourceTree = "<group>"; };
-		81CDD8B8157AEAA900A7E9FF /* RytmhSynth.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = RytmhSynth.wav; path = ../Tracce/RytmhSynth.wav; sourceTree = "<group>"; };
-		81CDD8B9157AEAA900A7E9FF /* Shakers.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = Shakers.wav; path = ../Tracce/Shakers.wav; sourceTree = "<group>"; };
-		81CDD8BA157AEAA900A7E9FF /* Tamburine.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = Tamburine.wav; path = ../Tracce/Tamburine.wav; sourceTree = "<group>"; };
 		81D8E10015A8CACA00E2DCB4 /* checkbox_empty.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = checkbox_empty.png; sourceTree = "<group>"; };
 		81D8E10115A8CACA00E2DCB4 /* checkbox_full.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = checkbox_full.png; sourceTree = "<group>"; };
 		81D8E10415A8FD7D00E2DCB4 /* UICheckBox.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UICheckBox.h; sourceTree = "<group>"; };
@@ -179,7 +171,6 @@
 			isa = PBXGroup;
 			children = (
 				8187031316BDC5DE00615D2C /* Images */,
-				81E8CBDB157AE2A500CC5F42 /* Sound */,
 				28AD733E0D9D9553002E5188 /* MainWindow.xib */,
 				ADF06FAB100069A800632942 /* DJMixerView.xib */,
 				81AA156316CD8EDB0068669D /* SettingsView.xib */,
@@ -226,21 +217,6 @@
 				81D8E10115A8CACA00E2DCB4 /* checkbox_full.png */,
 			);
 			name = Images;
-			sourceTree = "<group>";
-		};
-		81E8CBDB157AE2A500CC5F42 /* Sound */ = {
-			isa = PBXGroup;
-			children = (
-				81CDD8B1157AEAA900A7E9FF /* Basso.wav */,
-				81CDD8B2157AEAA900A7E9FF /* Drums.wav */,
-				81CDD8B5157AEAA900A7E9FF /* GTR 2LR.wav */,
-				81CDD8B6157AEAA900A7E9FF /* GTR TeleCaster.wav */,
-				81CDD8B7157AEAA900A7E9FF /* HH.wav */,
-				81CDD8B8157AEAA900A7E9FF /* RytmhSynth.wav */,
-				81CDD8B9157AEAA900A7E9FF /* Shakers.wav */,
-				81CDD8BA157AEAA900A7E9FF /* Tamburine.wav */,
-			);
-			name = Sound;
 			sourceTree = "<group>";
 		};
 		ADD46D4A1001966E00ADB7CE /* Audio playback */ = {

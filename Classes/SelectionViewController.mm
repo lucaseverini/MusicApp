@@ -34,7 +34,7 @@
 
 - (void) viewWillDisappear:(BOOL)animated
 {
-    NSLog(@"viewWillDisappear");
+    [super viewWillDisappear:animated];
 }
 
 

@@ -9,6 +9,7 @@
 #import <AudioToolbox/AudioFile.h>
 #import "LoadAudioOperation.h"
 
+// #define USE_NSCONDITION
 
 @implementation LoadAudioOperation
 
@@ -33,8 +34,8 @@
 @synthesize currentAudioBuffer;
 
 const size_t kSampleBufferSize = 32768;
-// 44,100 x 2 x 16 = 1,411,200 bits per second (bps) = 1,411 kbps = ~142 KBytes
-const size_t kAudioDataBufferSize = (1024 * 512) + kSampleBufferSize; // 1 MB
+// 44,100 x 2 x 16 = 1,411,200 bits per second (bps) = 1,411 kbps = ~142 KBytes/sec
+const size_t kAudioDataBufferSize = (1024 * 512) + kSampleBufferSize;
 
 - (id) initWithAudioFile:(NSString*)filePath
 {
@@ -56,6 +57,7 @@ const size_t kAudioDataBufferSize = (1024 * 512) + kSampleBufferSize; // 1 MB
         if(trackCount < 1)
         {
             [asset release];
+            asset = nil;
             
             return NULL;
         }
@@ -80,7 +82,10 @@ const size_t kAudioDataBufferSize = (1024 * 512) + kSampleBufferSize; // 1 MB
         if(audioData1 == NULL || audioData2 == NULL)
         {
             free(audioData1);
+            audioData1 = NULL;
+            
             free(audioData2);
+            audioData2 = NULL;
             
             return NULL;
         }
@@ -97,9 +102,13 @@ const size_t kAudioDataBufferSize = (1024 * 512) + kSampleBufferSize; // 1 MB
     NSLog(@"NSOperation %@ : Dealloc for %@", self, [fileURL absoluteString]);
 
     free(audioData1);
+    audioData1 = NULL;
+    
     free(audioData2);
+    audioData2 = NULL;
     
     [asset release];
+    asset = nil;
     
     [super dealloc];
 }
@@ -113,15 +122,15 @@ const size_t kAudioDataBufferSize = (1024 * 512) + kSampleBufferSize; // 1 MB
             
     openFile = YES;
     fillAudioData1 = YES;
-    
-    waitForAction = [[NSCondition alloc] init];
 
+#ifdef USE_NSCONDITION
+    waitForAction = [[NSCondition alloc] init];
+#endif
+    
     while(!self.isCancelled)
     {
         if(openFile)
         {
-            NSLog(@"Open file %@", [fileURL absoluteString]);
-            
             if([self openAudioFile:fileURL])
             {
                 openFile = NO;
@@ -134,36 +143,31 @@ const size_t kAudioDataBufferSize = (1024 * 512) + kSampleBufferSize; // 1 MB
 
         if(fillAudioData1)
         {
-            NSLog(@"Fill audioDataBuffer1");
+            // NSLog(@"Fill audioDataBuffer1");
             
             sizeAudioData1 = [self fillAudioBuffer:audioData1];
             if(sizeAudioData1 > 0)
             {
                 fillAudioData1 = NO;
             }
-            else
-            {
-                NSLog(@"Error filling audioDataBuffer1");
-            }
         }
         else if(fillAudioData2)
         {
-            NSLog(@"Fill audioDataBuffer2");
+            // NSLog(@"Fill audioDataBuffer2");
 
             sizeAudioData2 = [self fillAudioBuffer:audioData2];
             if(sizeAudioData2 > 0)
             {
                 fillAudioData2 = NO;
             }
-            else
-            {
-                NSLog(@"Error filling audioDataBuffer2");
-            }
         }
-        
+#ifdef USE_NSCONDITION
         [waitForAction lock];
         [waitForAction wait];
         [waitForAction unlock];
+#else
+        [NSThread sleepForTimeInterval:0.2];
+#endif
     }
     
 END:
@@ -172,8 +176,10 @@ END:
         [reader cancelReading];
         [reader release];
     }
-    
+
+#ifdef USE_NSCONDITION
     [waitForAction release];
+#endif
     
     NSLog(@"NSOperation: %@ ends", self);
 }
@@ -189,10 +195,11 @@ END:
         
         *packetsInBuffer = (sizeAudioData2 / sizeof(UInt32));
         
-        [waitForAction lock];
+#ifdef USE_NSCONDITION
+        //[waitForAction lock];
         [waitForAction signal];
-        [waitForAction unlock];
-        
+        //[waitForAction unlock];
+#endif
         return audioData2;
     }
     else
@@ -203,10 +210,11 @@ END:
         
         *packetsInBuffer = (sizeAudioData1 / sizeof(UInt32));
         
-        [waitForAction lock];
+#ifdef USE_NSCONDITION        
+        //[waitForAction lock];
         [waitForAction signal];
-        [waitForAction unlock];
-
+        //[waitForAction unlock];
+#endif
         return audioData1;
     }
 }
@@ -242,7 +250,7 @@ END:
 
                     if(err != kCMBlockBufferNoErr)
                     {
-                        NSLog(@"CMBlockBufferCopyDataBytes returned %lu", err);
+                        NSLog(@"CMBlockBufferCopyDataBytes returned error %lu", err);
                         
                         return 0;
                     }
@@ -251,7 +259,7 @@ END:
                 dataIdx += dataLen;
                 if(dataIdx >= audioBuffersSize - kSampleBufferSize)
                 {
-                    NSLog(@"AudioBuffer %p filled with %d bytes", audioBuffer, dataIdx);
+                    // NSLog(@"AudioBuffer %p filled with %d bytes", audioBuffer, dataIdx);
                     
                     break;
                 }
@@ -270,7 +278,7 @@ END:
                 return 0;
             }
             
-            NSLog(@"AudioBuffer %p filled with %d bytes", audioBuffer, dataIdx);
+            // NSLog(@"AudioBuffer %p filled with %d bytes", audioBuffer, dataIdx);
             
             break;
         }
@@ -282,7 +290,7 @@ END:
         [reader release];
         reader = nil;
          
-        openFile = YES;
+        openFile = YES; // File must be reopen again to read from the beginning. Why?
     }
 
     return dataIdx;
@@ -291,6 +299,8 @@ END:
 
 - (BOOL) openAudioFile:(NSURL*)fileUrl
 {    
+    // NSLog(@"Open file %@", [fileUrl absoluteString]);
+
     reader = [[AVAssetReader alloc] initWithAsset:asset error:nil];
     assert(reader != nil);
     output = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:track outputSettings:settings];
@@ -298,6 +308,27 @@ END:
     [reader addOutput:output];
     
     return [reader startReading];
+}
+
+- (void) reset
+{
+    if(reader != nil)
+    {
+        [reader cancelReading];
+        [reader release];
+        reader = nil;
+    }
+    
+    openFile = YES;
+    fillAudioData1 = YES;
+    fillAudioData2 = NO;
+    currentAudioBuffer = 0;
+
+#ifdef USE_NSCONDITION
+    [waitForAction lock];
+    [waitForAction signal];
+    [waitForAction unlock];
+#endif
 }
 
 @end

@@ -23,7 +23,6 @@
 @synthesize paused;
 @synthesize loaded;
 
-
 // Override init method
 - (id) initForChannel:(NSInteger)numChannel
 { 
@@ -33,7 +32,6 @@
         channel = numChannel;
         leftPacketIndex = 0;
         rightPacketIndex = 0;
-        packetIndex = 0;
         playing = NO;
         paused = NO;
         audioData = NULL;
@@ -45,16 +43,23 @@
         playFromAudioInput = NO;
         inputAudioData = NULL;
         lastInputAudioValue = 0;
-        workerThread = NULL;
-        quitWorkerThread = NO;
+        trackCount = 0;
+        packetCount = 0;
+        packetIndex = 0;
+        lostPackets = 0;
     }
     
 	return self;
 }
 
 
-- (void) freeBuffers
+- (void) freeStuff
 {
+    if(operation != nil)
+    {
+        [self removeLoadOperation];
+    }
+
     if(audioData != NULL)
     {
         free(audioData);    // Free the AudioBuffer
@@ -85,8 +90,11 @@
         rightAudioData = NULL;
     }
     
+    trackCount = 0;
+    
     packetCount = 0;
     packetIndex = 0;
+    lostPackets = 0;
     
     fileName = @"";
     url = @"";
@@ -105,10 +113,8 @@
 
 - (void) dealloc 
 {
-    [self freeBuffers];
-    
-    [workerThread cancel];
-    
+    [self freeStuff];
+     
     [super dealloc];
 }
 
@@ -125,10 +131,9 @@
             [recorder startRecord];
             packetsInBuffer = recorder.packetsInBuffer;
         }
-
-		[self reset];
         
 		playing = YES;
+		paused = NO;
 	}
 }
 
@@ -142,40 +147,37 @@
         [recorder stopRecord];
     }
 
-	if(playing)
+	if(playing || paused)
 	{
 		playing = NO;
+		paused = NO;
     }
     
-    printf("playFromAudioInput: %s\n", playFromAudioInput ? "yes" : "no");
-    printf("totalPacketIndex: %llu\n", totalPacketIndex);
-    printf("lostPackets: %llu\n", lostPackets);    
-}
-
-
-- (BOOL) isPlaying
-{
-	return playing;
-}
-
-
-- (BOOL) isPaused
-{
-	return paused;
+    [self reset];
+        
+    NSLog(@"lostPackets: %llu\n", lostPackets);
 }
 
 
 - (void) pause:(BOOL)flag
 {
-    paused = flag;
+    if(flag)
+    {
+        paused = YES;
+        playing = NO;
+    }
+    else
+    {
+        paused = NO;
+        playing = YES;
+    }
 }
 
 
 // Open and read a wav file
 - (OSStatus) file:(NSString*)filePath
 {	
-    // Free the buffers just in case they contain some data
-    [self freeBuffers];
+    [self freeStuff];
 
 	NSLog(@"File: %@", [filePath lastPathComponent]);
 	
@@ -287,8 +289,6 @@
 // Gets the next packet from the buffer, if we have reached the end of the buffer return 0
 - (UInt32) getNextPacket
 {
-    totalPacketIndex++;
-    
     if(playFromAudioInput)
     {
         if(inputAudioData == NULL || packetIndex == packetsInBuffer)
@@ -303,7 +303,8 @@
         {
             if(lostPackets != 0)
             {
-                printf("lostPackets: %llu\n", lostPackets);
+                NSLog(@"lostPackets: %llu\n", lostPackets);
+                
                 lostPackets = 0;
             }
             
@@ -342,14 +343,7 @@
                 packetCount = (SInt64)numOfPackets;
             }
 
-            if(!playing || paused)
-            {
-                return 0;
-            }
-            else
-            {
-                return audioData[packetIndex++];
-            }
+            return audioData[packetIndex++];
         }
         else
         {
@@ -363,14 +357,7 @@
                 packetIndex = 0;
             }
             
-            if(!playing || paused)
-            {
-                return 0;
-            }
-            else
-            {
-                return audioData[packetIndex++];
-            }
+            return audioData[packetIndex++];
         }
     }
 }
@@ -385,15 +372,17 @@
 
 - (void) reset
 {
-    totalPacketIndex = 0;
 	packetIndex = 0;
+    packetCount = 0;
     lostPackets = 0;
+    
+    [operation reset];
 }
 
 
 - (OSStatus) mediaItem:(MPMediaItem*)mediaItem
 {
-    [self freeBuffers];
+    [self freeStuff];
     
     fileName = @"";
     
@@ -436,7 +425,7 @@
     if(fileUrl == nil || (url != nil && [url compare:fileUrl] == 0))
         return noErr;
 
-    [self freeBuffers];
+    [self freeStuff];
             
     url = fileUrl;
     packetCount = -1;
@@ -467,17 +456,39 @@
 }
 
 
-- (void) setLoadOperation:(LoadAudioOperation*)loadOperation
+- (void) removeLoadOperation
 {
     if(operation != nil)
     {
-        [operation cancel];
+        if(!operation.isFinished)
+        {
+            [operation cancel];
+            [operation waitUntilFinished];
+        }
+        
         [operation release];
+        operation = nil;
+        
+        trackCount = 0;
+        
+        packetCount = 0;
+        packetIndex = 0;
+        lostPackets = 0;
+        
+        loaded = NO;
     }
-    
+}
+
+
+- (void) setLoadOperation:(LoadAudioOperation*)loadOperation
+{
     operation = loadOperation;
+    
     trackCount = loadOperation.trackCount;
+    
     packetCount = 0;
+    packetIndex = 0;
+    lostPackets = 0;
     
     loaded = YES;
 }
@@ -589,60 +600,6 @@
     loaded = YES;
 
     return status;
-/*
-    if(workerThread != NULL)
-    {
-        quitWorkerThread = YES;
-        
-        while(![workerThread isFinished]);
-
-        [workerThread release];
-        workerThread = nil;
-    }
-    
-    workerThread = [[NSThread alloc] initWithTarget:self selector:@selector(workerMain) object:nil];
-    [workerThread start];
-    
-    playFromAudioInput = YES;
-    loaded = YES;
- 
-    return noErr;
-*/    
-}
-
-
-- (void) workerMain
-{
-/*
-    NSThread *curThread = [NSThread currentThread];
-    [curThread setName:@"AudioQueueThread"];
-     
-    CFRunLoopRef currentRunLoop = CFRunLoopGetCurrent();
-    
-    recorder = new AQRecorder(currentRunLoop);
-    
-    NSLog(@"%@", curThread);
-
-    // [[NSRunLoop currentRunLoop] addTimer:[NSTimer timerWithTimeInterval:1.0 target:self selector:@selector(checkExit) userInfo:nil repeats:YES] forMode:NSDefaultRunLoopMode];
-    // [[NSRunLoop currentRunLoop] run];
-
-    quitWorkerThread = NO;
-    while(!quitWorkerThread)
-    {
-        [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:1.0]];
-    }
-
-    NSLog(@"Thread %@ quits now", [NSThread currentThread]);
-*/
-}
-
-- (void) checkExit
-{
-    if([[NSThread currentThread] isCancelled])
-    {
-        NSLog(@"Thread %@ exits", [NSThread currentThread]);
-        [NSThread exit];
-    }
 }
 
 @end
