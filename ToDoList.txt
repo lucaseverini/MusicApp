@@ -1,0 +1,4 @@
+1) Read karaoke data from lyrics
+2) fix karaoke editor and add list of files
+3) Fix problem with headphone. Put playback channel to minimum when headphone is removed or let the user disable it.
+4) Audio effects (reverber and, if possible, some more). ObjectAL library.

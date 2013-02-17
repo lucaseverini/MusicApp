@@ -57,7 +57,7 @@ static OSStatus crossFaderMixerCallback (void *inRefCon,
 	
 	UInt32 *frameBuffer = (UInt32*)ioData->mBuffers[0].mData;
 	
-    if(inBusNumber == 8)
+    if(inBusNumber == 8)  // This is live playback channel (8)
     {
         if(djMixer.paused)
         {
@@ -80,7 +80,7 @@ static OSStatus crossFaderMixerCallback (void *inRefCon,
             }
         }
     }
-    else
+    else // These are all the other channels (0-7)
     {
         InMemoryAudioFile *loop = djMixer.loop[inBusNumber];
         if(loop.playing)

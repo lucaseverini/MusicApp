@@ -97,6 +97,14 @@
 
 - (void) doSelectFile:(NSIndexPath*)row
 {
+#if TARGET_IPHONE_SIMULATOR
+    
+    selectedRow = row;
+    channel = [selectedRow row] + 1;
+
+    [self simulatedMediaPicker];
+    
+#else
     MPMediaPickerController *picker = [[MPMediaPickerController alloc] initWithMediaTypes:MPMediaTypeMusic];
     picker.delegate					  = self;
     picker.allowsPickingMultipleItems = NO;
@@ -111,11 +119,54 @@
     [self presentViewController:picker animated:YES completion:nil];
     
     [picker release];
+#endif
+}
+
+
+// Simulated the MediaPicker dialog which is not implemented in the simulator
+- (void) simulatedMediaPicker
+{
+    static NSArray *tracks = [[NSArray alloc] initWithObjects:@"/Users/Luca/Desktop/Music App/Tracce/Basso.wav",
+                                                              @"/Users/Luca/Desktop/Music App/Tracce/Drums.wav",
+                                                              @"/Users/Luca/Desktop/Music App/Tracce/GTR 2LR.wav",
+                                                              @"/Users/Luca/Desktop/Music App/Tracce/GTR TeleCaster.wav",
+                                                              @"/Users/Luca/Desktop/Music App/Tracce/HH.wav",
+                                                              @"/Users/Luca/Desktop/Music App/Tracce/RytmhSynth.wav",
+                                                              @"/Users/Luca/Desktop/Music App/Tracce/Shakers.wav",
+                                                              @"/Users/Luca/Desktop/Music App/Tracce/Tamburine.wav",
+                                                              @"/Users/Luca/Desktop/Music App/Tracce/Take On Me (Lyrics Tag).mp3",
+                                                              nil];
+    
+    NSURL *url = [[NSURL alloc] initFileURLWithPath:[tracks objectAtIndex:[selectedRow row]]];
+    NSLog(@"Track url: %@", url);
+    AVURLAsset *songAsset = [[[AVURLAsset alloc] initWithURL:url options:nil] autorelease];
+    assert(songAsset != nil);
+
+    NSString *title = [url lastPathComponent];
+    for(AVMetadataItem* item in [songAsset commonMetadata])
+    {
+        if([[item commonKey] isEqualToString:MPMediaItemPropertyTitle])
+        {
+            title = [NSString stringWithString:[item stringValue]];
+            break;
+        }
+    }
+
+    NSNumber *duration = [NSNumber numberWithFloat:0.0];
+    NSNumber *volume = [NSNumber numberWithFloat:1.0];
+
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSDictionary *channelDict = [NSDictionary dictionaryWithObjectsAndKeys:[url absoluteString], @"AudioUrl", title, @"AudioTitle", duration, @"AudioDuration", volume, @"AudioVolume", nil];
+    [defaults setObject:channelDict forKey:[NSString stringWithFormat:@"Channel-%d", channel]];
+    [defaults synchronize];
+    
+    NSArray *indexes = [NSArray arrayWithObject:selectedRow];
+    [fileTable reloadRowsAtIndexPaths:indexes withRowAnimation:UITableViewRowAnimationAutomatic];
 }
 
 
 // Invoked when the user taps the Done button in the media item picker after having chosen one or more media items to play.
-- (void) mediaPicker:(MPMediaPickerController*)mediaPicker didPickMediaItems:(MPMediaItemCollection*)mediaItemCollection 
+- (void) mediaPicker:(MPMediaPickerController*)mediaPicker didPickMediaItems:(MPMediaItemCollection*)mediaItemCollection
 {    
 	// Dismiss the media item picker.
 	[self dismissViewControllerAnimated:YES completion:nil];
@@ -131,12 +182,12 @@
     
     if(type == MPMediaTypeMusic)
     {
-        NSString *Url = [[audioFile valueForProperty:MPMediaItemPropertyAssetURL] absoluteString];
+        NSString *url = [[audioFile valueForProperty:MPMediaItemPropertyAssetURL] absoluteString];
         NSString *title = [audioFile valueForProperty:MPMediaItemPropertyTitle];
         NSNumber *duration = [audioFile valueForProperty:MPMediaItemPropertyPlaybackDuration];
         NSNumber *volume = [NSNumber numberWithFloat:1.0];
 
-        AVURLAsset *songAsset = [[[AVURLAsset alloc] initWithURL:[NSURL URLWithString:Url] options:nil] autorelease];
+        AVURLAsset *songAsset = [[[AVURLAsset alloc] initWithURL:[NSURL URLWithString:url] options:nil] autorelease];
         assert(songAsset != nil);        
         BOOL isReadable = [songAsset isReadable];
         BOOL isPlayable = [songAsset isPlayable];
@@ -161,13 +212,13 @@
         }
 */        
         // Retain objs going to be added to dictionary to avoid later problems
-        // [Url retain];
+        // [url retain];
         // [title retain];
         // [duration retain];
         // [volume retain];
         
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];        
-        NSDictionary *channelDict = [NSDictionary dictionaryWithObjectsAndKeys:Url, @"AudioUrl", title, @"AudioTitle", duration, @"AudioDuration", volume, @"AudioVolume", nil];         
+        NSDictionary *channelDict = [NSDictionary dictionaryWithObjectsAndKeys:url, @"AudioUrl", title, @"AudioTitle", duration, @"AudioDuration", volume, @"AudioVolume", nil];
         [defaults setObject:channelDict forKey:[NSString stringWithFormat:@"Channel-%d", channel]];
         [defaults synchronize];
 

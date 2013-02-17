@@ -17,6 +17,7 @@
 @synthesize goKaraokeButton;
 @synthesize goSelectionButton;
 @synthesize versionLabel;
+@synthesize simulatorLabel;
 
 - (void) viewDidLoad
 {        
@@ -35,6 +36,12 @@
 
 - (void) viewWillAppear:(BOOL)animated
 {
+#if TARGET_IPHONE_SIMULATOR
+    
+    simulatorLabel.hidden = NO;
+    
+#endif
+    
     [super viewWillAppear:animated];
 }
 
