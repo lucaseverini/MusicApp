@@ -45,6 +45,8 @@
 
 - (void) applicationDidEnterBackground:(UIApplication*)application
 {
+	NSLog(@"applicationDidEnterBackground");
+/*
     if([djMixer isPlaying])
     {
         [djMixer stop];
@@ -54,7 +56,18 @@
         [viewController.pauseSwitch setEnabled:NO];
      }
     
-    [viewController saveControlsValue];
+	if(djMixer.fileRecording)
+	{
+		[viewController recordStop];
+	}
+*/
+	if(djMixer.isPlaying && !djMixer.paused)
+	{
+		viewController.pauseSwitch.on = YES;
+		viewController.pauseSwitchLS.on = YES;
+		
+		// [viewController pause:YES];
+	}
 }
 
 
@@ -62,7 +75,7 @@
 {
     if([djMixer isPlaying])
     {
-        [djMixer stop];
+        [djMixer stopPlay];
     }
 
     // Release the audio

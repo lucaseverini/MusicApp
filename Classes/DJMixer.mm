@@ -7,6 +7,7 @@
 
 #import "DJMixer.h"
 
+DJMixer* _this;
 
 #pragma mark Listeners
 
@@ -35,11 +36,18 @@ void rioInterruptionListener (void *inClientData, UInt32 inInterruption)
     {
 		// make sure we are again the active session
 		AudioSessionSetActive(true);
-		//AudioOutputUnitStart(THIS->audioUnit);
+		
+		AudioOutputUnitStart(_this.output);
+		AudioOutputUnitStart(_this.crossFaderMixer);
+		AudioOutputUnitStart(_this.masterFaderMixer);
 	}
-	if (inInterruption == kAudioSessionBeginInterruption) 
+	else if (inInterruption == kAudioSessionBeginInterruption)
     {
-		//AudioOutputUnitStop(THIS->audioUnit);
+		AudioOutputUnitStop(_this.masterFaderMixer);
+		AudioOutputUnitStop(_this.crossFaderMixer);
+		AudioOutputUnitStop(_this.output);
+		
+		AudioSessionSetActive(false);
     }
 }
 
@@ -51,7 +59,9 @@ static OSStatus crossFaderMixerCallback (void *inRefCon,
                                          UInt32                     inBusNumber, 
                                          UInt32                     inNumberFrames, 
                                          AudioBufferList            *ioData) 
-{  
+{
+	// NSLog(@"crossFaderMixerCallback...");
+	
 	// Get a reference to the djMixer class, we need this as we are outside the class in just a straight C method.
 	DJMixer *djMixer = (DJMixer *)inRefCon;
 	
@@ -110,20 +120,33 @@ static OSStatus masterFaderCallback (void                       *inRefCon,
                                     UInt32                      inNumberFrames, 
                                     AudioBufferList             *ioData) 
 {  	
-	// Get self
+	// NSLog(@"masterFaderCallback...");
+
 	DJMixer *djMixer = (DJMixer*)inRefCon;
     
     // Get the audio from the crossfader, we could directly connect them but this gives us a chance to get at the audio to apply an effect
     OSStatus err = AudioUnitRender(djMixer.crossFaderMixer, ioActionFlags, inTimeStamp, inBusNumber, inNumberFrames, ioData);
-    // Apply master effect (if any)		
-     
+    // Apply master effect (if any)
+	if(err == noErr)
+	{
+		if(djMixer.fileRecording && djMixer.recordingFile != NULL)
+		{
+			OSStatus status = ExtAudioFileWriteAsync(djMixer.recordingFile, inNumberFrames, ioData);
+			if(status != noErr)
+			{
+				NSLog(@"Error %d in ExtAudioFileWriteAsync", (int)status);
+			}
+		}
+	}
+    
     return err;
 }
 
 // Called when there is a new buffer of input samples available
 static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* ioActionFlags, const AudioTimeStamp* inTimeStamp, UInt32 inBusNumber, UInt32 inNumberFrames, AudioBufferList* ioData)
 {
-	// Get self
+	//NSLog(@"recordingCallback...");
+
 	DJMixer *djMixer = (DJMixer*)inRefCon;
     
 	if(djMixer.recordingStarted)
@@ -172,6 +195,8 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 @synthesize recordingStarted;
 @synthesize loadAudioQueue;
 @synthesize paused;
+@synthesize fileRecording;
+@synthesize recordingFile;
 
 - (id) init
 {	
@@ -188,10 +213,12 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
         loop[5] = [[InMemoryAudioFile alloc]initForChannel:6];
         loop[6] = [[InMemoryAudioFile alloc]initForChannel:7];
         loop[7] = [[InMemoryAudioFile alloc]initForChannel:8];
-        // loop[8] = [[InMemoryAudioFile alloc]initForChannel:9];
+		//  loop[8] = [[InMemoryAudioFile alloc]initForChannel:9];
         
         loadAudioQueue = [[NSOperationQueue alloc] init];
         [loadAudioQueue setMaxConcurrentOperationCount:10];
+		
+		_this = self;
 
         [self initAudio];
 	}
@@ -273,9 +300,24 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 
 - (void) pause:(BOOL)pause
 {
-
+	OSStatus status = noErr;
+	
     if(pause)
     {
+		NSLog(@"Going in Pause");
+		
+		status = AudioOutputUnitStop(output);
+		if(status == noErr)
+		{
+			AudioSessionSetActive(false);
+			
+			paused = YES;
+		}
+		else
+		{
+			NSLog(@"Failure at AudioOutputUnitStop:%ld", status);
+		}
+/*
         for(int idx = 0; idx < kNumChannels; idx++)
         {
             if(loop[idx].playing)
@@ -283,9 +325,12 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
                 [loop[idx] pause:YES];
             }
         }
+*/
     }
     else
     {
+		NSLog(@"Exiting from Pause");
+/*
         for(int idx = 0; idx < kNumChannels; idx++)
         {
             if(loop[idx].paused)
@@ -293,9 +338,19 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
                 [loop[idx] pause:NO];
             }
         }
-    }
-
-    paused = pause;
+*/
+		status = AudioOutputUnitStart(output);
+		if(status == noErr)
+		{
+			AudioSessionSetActive(true);
+			
+			paused = NO;
+		}
+		else
+		{
+			NSLog(@"Failure at AudioOutputUnitStart:%ld", status);
+		}
+	}
 }
 
 
@@ -308,9 +363,9 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 }
 
 
-- (void) play
+- (void) startPlay
 {
-    OSStatus status;
+    OSStatus status = noErr;
     
 	Boolean graphRunning;
 	AUGraphIsRunning(graph, &graphRunning);
@@ -332,9 +387,16 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 		NSAssert(status == noErr, @"Error starting graph.");
 	}
 
-	status = AudioOutputUnitStart(output);
+	//status = AudioOutputUnitStart(output);
+	//if(status == noErr)
+	//status = AudioOutputUnitStart(crossFaderMixer);
+	//if(status == noErr)
+	//status = AudioOutputUnitStart(masterFaderMixer);
+	status = noErr;
 	if(status == noErr)
     {
+		//AudioSessionSetActive(true);
+
         recordingStarted = YES;
     }
     else
@@ -344,11 +406,23 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 }
 
 
-- (void) stop
+- (void) stopPlay
 {
-	OSStatus status = AudioOutputUnitStop(output);
+	OSStatus status = noErr;
+	
+	self.isStopping = YES;
+
+	//status = AudioOutputUnitStop(masterFaderMixer);
+	//if(status == noErr)
+	//status = AudioOutputUnitStop(crossFaderMixer);
+	//if(status == noErr)
+	status = AudioOutputUnitStop(output);
+	// OSStatus status = AudioOutputUnitStop(output);
+	status = noErr;
 	if(status == noErr)
     {
+		AudioSessionSetActive(false);
+		
         recordingStarted = NO;
     }
     else
@@ -363,8 +437,10 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
         status = AUGraphStop(graph);
         NSAssert(status == noErr, @"Error stopping graph.");
         
-        [loop[kNumChannels - 1] stop];
-
+		// Stop audio input (mic)
+		[loop[kNumChannels - 1] stop];
+		
+		// Stop audio output (tracks)
         for(int idx = 0; idx < kNumChannels - 1; idx++)
         {
             if(loop[idx].playing || loop[idx].paused)
@@ -372,7 +448,9 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
                 [loop[idx] stop];
             }
         }
-    }
+	}
+
+	self.isStopping = NO;
 }
 
 
@@ -391,7 +469,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
     AudioSessionInitialize(NULL, NULL, rioInterruptionListener, self);
 				
     // set the audio session active
-	AudioSessionSetActive(YES);
+	AudioSessionSetActive(true);
 
     // we do not want to allow recording if input is not available
     UInt32 inputAvailable = 0;
@@ -514,7 +592,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 
 	// Will be used by code below for defining bufferList, critical that this is set-up second
 	// Describe input format; not stereo for audio input!
-	audioFormat.mSampleRate			= 44100.00;
+	audioFormat.mSampleRate			= 44100.0;
 	audioFormat.mFormatID			= kAudioFormatLinearPCM;
 	audioFormat.mFormatFlags		= kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
 	audioFormat.mFramesPerPacket	= 1;
@@ -594,7 +672,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	NSAssert(status == noErr, @"Error setting effects callback.");
 			
 	// Describe output format
-	audioFormat.mSampleRate			= 44100.00;
+	audioFormat.mSampleRate			= 44100.0;
 	audioFormat.mFormatID			= kAudioFormatLinearPCM;
 	audioFormat.mFormatFlags		= kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
 	audioFormat.mFramesPerPacket	= 1;

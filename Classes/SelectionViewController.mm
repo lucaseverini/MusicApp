@@ -73,14 +73,6 @@
 }
 
 
-// Override to allow orientations other than the default portrait orientation.
-- (BOOL) shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation 
-{
-    // Return YES for supported orientations
-    return (interfaceOrientation == UIDeviceOrientationPortrait);
-}
-
-
 - (void) didReceiveMemoryWarning 
 {
     [super didReceiveMemoryWarning]; // Releases the view if it doesn't have a superview
@@ -299,6 +291,29 @@
     //  NSLog(@"total buffs %d", totalBuff);
     //  fclose(f);
     [fileHandle closeFile];
+}
+
+
+// Override to allow orientations other than the default portrait orientation.
+- (BOOL) shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
+{
+    // Return YES for supported orientations
+    return (interfaceOrientation == UIDeviceOrientationPortrait);
+}
+
+
+// Override to allow orientations other than the default portrait orientation.
+// Called if iOS >= 6
+- (NSUInteger) supportedInterfaceOrientations
+{
+    return UIInterfaceOrientationMaskPortrait;
+}
+
+
+// Called if iOS >= 6
+- (UIInterfaceOrientation) preferredInterfaceOrientationForPresentation
+{
+    return UIInterfaceOrientationPortrait;
 }
 
 @end

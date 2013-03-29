@@ -26,6 +26,8 @@ AudioBufferList* bufferList;
 // Called when there is a new buffer of input samples available
 static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* ioActionFlags, const AudioTimeStamp* inTimeStamp, UInt32 inBusNumber, UInt32 inNumberFrames, AudioBufferList* ioData)
 {
+	NSLog(@"recordingCallback...");
+	
     AURecorder *recorder = (AURecorder*)inRefCon;
     
 	if(recorder->startedCallback)
@@ -169,7 +171,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 				
 	// Will be used by code below for defining bufferList, critical that this is set-up second
 	// Describe format; not stereo for audio input! 
-	audioFormat.mSampleRate			= 44100.00;
+	audioFormat.mSampleRate			= 44100.0;
 	audioFormat.mFormatID			= kAudioFormatLinearPCM;
 	audioFormat.mFormatFlags		= kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
 	audioFormat.mFramesPerPacket	= 1;

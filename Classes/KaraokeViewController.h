@@ -32,7 +32,6 @@ static NSString *kTypeKey = @"typeKey";
 @property (nonatomic, retain) IBOutlet UIButton *backButton;
 @property (nonatomic, retain) IBOutlet UIToolbar *keyboardToolbar;
 @property (nonatomic, retain) IBOutlet KeyboardToolbarController *keyboardController;
-@property (nonatomic, retain) IBOutlet UISwitch *autoActivate;
 
 @property (nonatomic, retain) NSMutableArray *dataSourceArray;
 @property (nonatomic, retain) NSIndexPath *tableSelection;
@@ -49,7 +48,5 @@ static NSString *kTypeKey = @"typeKey";
 - (IBAction) doPrevTextPosition:(id)sender;
 
 - (IBAction) EditTable:(id)sender;
-
-- (IBAction) doAutoActivate:(id)sender;
 
 @end

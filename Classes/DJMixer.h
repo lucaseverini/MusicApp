@@ -12,11 +12,15 @@
 
 #define kNumChannels 9
 
+@class DJMixer;
+
+extern DJMixer* _this;
+
 @interface DJMixer : NSObject 
 {
 	AudioStreamBasicDescription audioFormat;
 
-	// the graph of audio connections
+	// The graph of audio connections
 	AUGraph graph;
 }
 
@@ -31,11 +35,14 @@
 @property (nonatomic, assign) BOOL recordingStarted;
 @property (nonatomic, retain) NSOperationQueue *loadAudioQueue;
 @property (atomic, assign) BOOL paused;
+@property (atomic, assign) ExtAudioFileRef recordingFile;
+@property (atomic, assign) BOOL fileRecording;
+@property (atomic, assign) BOOL isStopping;
 
 - (void) initAudio;
 - (void) changeCrossFaderAmount:(float)volume forChannel:(NSInteger)channel;
-- (void) play;
-- (void) stop;
+- (void) startPlay;
+- (void) stopPlay;
 - (void) pause:(BOOL)pause;
 - (BOOL) isPlaying;
 - (void) pause:(BOOL)flag forChannel:(NSInteger)channel;

@@ -19,7 +19,6 @@
 @synthesize tableBarDoneButton;
 @synthesize karaokeTable;
 @synthesize backButton;
-@synthesize autoActivate;
 @synthesize keyboardToolbar;
 @synthesize keyboardController;
 
@@ -117,9 +116,6 @@
     [self.tableBarItem setLeftBarButtonItem:self.tableBarEditButton];
     
     self.keyboardController.hideDoneButton = YES;
-    
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [self.autoActivate setOn:[defaults boolForKey:@"KaraokeAutoOn"]];
 }
 
 
@@ -301,14 +297,6 @@
             [editingTextField setSelectedTextRange:newRange];
         }
     }
-}
-
-
-- (IBAction) doAutoActivate:(id)sender
-{
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setBool:[self.autoActivate isOn] forKey:@"KaraokeAutoOn"];
-    [defaults synchronize];
 }
 
 
@@ -635,6 +623,20 @@
 
         self.backButton.enabled = YES;
     }
+}
+
+// Override to allow orientations other than the default portrait orientation.
+// Called if iOS >= 6
+- (NSUInteger) supportedInterfaceOrientations
+{
+    return UIInterfaceOrientationMaskPortrait;
+}
+
+
+// Called if iOS >= 6
+- (UIInterfaceOrientation) preferredInterfaceOrientationForPresentation
+{
+    return UIInterfaceOrientationPortrait;
 }
 
 @end

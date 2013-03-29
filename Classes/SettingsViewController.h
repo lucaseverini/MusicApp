@@ -6,19 +6,33 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <AVFoundation/AVFoundation.h>
 
 @class KaraokeViewController;
+@class AVAudioPlayer;
 
-@interface SettingsViewController : UIViewController
+@interface SettingsViewController : UIViewController <AVAudioPlayerDelegate, UIAlertViewDelegate>
+{
+	AVAudioPlayer *audioPlayer;
+	UIAlertView *alert;
+}
 
 @property (nonatomic, retain) IBOutlet UIButton *backButton;
 @property (nonatomic, retain) IBOutlet UIButton *goKaraokeButton;
 @property (nonatomic, retain) IBOutlet UIButton *goSelectionButton;
 @property (nonatomic, retain) IBOutlet UILabel *versionLabel;
 @property (nonatomic, retain) IBOutlet UILabel *simulatorLabel;
+@property (nonatomic, retain) IBOutlet UIButton *playRecordedAudioButton;
+@property (nonatomic, retain) IBOutlet UIButton *deleteRecordedAudioButton;
+@property (nonatomic, retain) IBOutlet UISwitch *autoStartKaraokeSwitch;
+@property (nonatomic, retain) IBOutlet UISwitch *autoStartRecordingSwitch;
 
 - (IBAction) goBack:(UIButton*)sender;
 - (IBAction) goKaraoke:(UIButton*)sender;
 - (IBAction) goSelection:(UIButton*)sender;
+- (IBAction) doPlayRecordedAudio:(UIButton*)sender;
+- (IBAction) doDeleteRecordedAudio:(UIButton*)sender;
+- (IBAction) doAutoStartKaraoke:(UISwitch*)sender;
+- (IBAction) doAutoStartRecording:(UISwitch*)sender;
 
 @end

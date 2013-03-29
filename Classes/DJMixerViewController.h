@@ -7,31 +7,33 @@
 
 #import <UIKit/UIKit.h>
 
+@class UITextScroll;
 @class DJMixer;
 @class SelectionViewController;
-@class UITextScroll;
 @class Karaoke;
 
 @interface DJMixerViewController : UIViewController
 {
 	DJMixer *djMixer;	
-    UISlider* sliders[9];
     NSDate *karaokePauseStart;
     NSDate *karaokePrevFireDate;
+	UIAlertView *alert;
+	NSMutableDictionary *channelLabels;
+	NSMutableDictionary *channelSliders;
 }
 
 @property (nonatomic, retain) IBOutlet UIView *portraitView;
 @property (nonatomic, retain) IBOutlet UIView *landscapeView;
 
-@property (nonatomic, retain) IBOutlet UISlider *channel1VolumeSlider;
-@property (nonatomic, retain) IBOutlet UISlider *channel2VolumeSlider;
-@property (nonatomic, retain) IBOutlet UISlider *channel3VolumeSlider;
-@property (nonatomic, retain) IBOutlet UISlider *channel4VolumeSlider;
-@property (nonatomic, retain) IBOutlet UISlider *channel5VolumeSlider;
-@property (nonatomic, retain) IBOutlet UISlider *channel6VolumeSlider;
-@property (nonatomic, retain) IBOutlet UISlider *channel7VolumeSlider;
-@property (nonatomic, retain) IBOutlet UISlider *channel8VolumeSlider;
-@property (nonatomic, retain) IBOutlet UISlider *audioInputVolumeSlider;
+@property (nonatomic, retain) IBOutlet UISlider *channel1Slider;
+@property (nonatomic, retain) IBOutlet UISlider *channel2Slider;
+@property (nonatomic, retain) IBOutlet UISlider *channel3Slider;
+@property (nonatomic, retain) IBOutlet UISlider *channel4Slider;
+@property (nonatomic, retain) IBOutlet UISlider *channel5Slider;
+@property (nonatomic, retain) IBOutlet UISlider *channel6Slider;
+@property (nonatomic, retain) IBOutlet UISlider *channel7Slider;
+@property (nonatomic, retain) IBOutlet UISlider *channel8Slider;
+@property (nonatomic, retain) IBOutlet UISlider *audioInputSlider;
 @property (nonatomic, retain) IBOutlet UILabel *channel1Label;
 @property (nonatomic, retain) IBOutlet UILabel *channel2Label;
 @property (nonatomic, retain) IBOutlet UILabel *channel3Label;
@@ -46,26 +48,35 @@
 @property (nonatomic, retain) IBOutlet UISwitch *pauseSwitch;
 @property (nonatomic, retain) IBOutlet UIButton *karaokeButton;
 @property (nonatomic, retain) IBOutlet UITextScroll *karaokeText;
+@property (nonatomic, retain) IBOutlet UIButton *recordButton;
 @property (atomic, assign) BOOL karaokeActivated;
 
 @property (nonatomic, retain) IBOutlet UIButton *playButtonLS;
 @property (nonatomic, retain) IBOutlet UIButton *selectButtonLS;
 @property (nonatomic, retain) IBOutlet UISwitch *pauseSwitchLS;
 @property (nonatomic, retain) IBOutlet UIButton *karaokeButtonLS;
+@property (nonatomic, retain) IBOutlet UIButton *recordButtonLS;
 @property (nonatomic, retain) IBOutlet UITextScroll *karaokeTextLS;
 
 @property (nonatomic, retain) DJMixer *djMixer;
+@property (nonatomic, retain) NSString *recordingFilePath;
 @property (nonatomic, retain) Karaoke *karaoke;
 @property (nonatomic, retain) NSTimer *karaokeTimer;
+@property (nonatomic, retain) NSTimer *checkDiskSizeTimer;
 @property (nonatomic, assign) BOOL isPortrait;
 
 - (IBAction) changeVolume:(UISlider*)sender;
 - (IBAction) playOrStop;
-- (IBAction) pause:(UISwitch*)sender;
+- (IBAction) doPause:(UISwitch*)sender;
 - (IBAction) goSettings:(UIButton*)sender;
 - (IBAction) doKaraoke:(UIButton*)sender;
+- (IBAction) doRecord:(UIButton*)sender;
 
-- (void)saveControlsValue;
-- (void)karaokeStep;
+- (void) pause:(BOOL)flag;
+- (void) saveControlsValue;
+- (void) karaokeStep;
+- (void) recordStart;
+- (void) recordStop;
+- (NSUInteger) checkDiskSize:(BOOL)showAlert;
 
 @end

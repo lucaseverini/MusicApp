@@ -14,21 +14,21 @@
 #import "UITextScroll.h"
 #import "Karaoke.h"
 #import "LoadAudioOperation.h"
-
+#import "AudioToolbox/AudioToolbox.h"
 
 @implementation DJMixerViewController
 
 @synthesize portraitView;
 @synthesize landscapeView;
-@synthesize channel1VolumeSlider;
-@synthesize channel2VolumeSlider;
-@synthesize channel3VolumeSlider;
-@synthesize channel4VolumeSlider;
-@synthesize channel5VolumeSlider;
-@synthesize channel6VolumeSlider;
-@synthesize channel7VolumeSlider;
-@synthesize channel8VolumeSlider;
-@synthesize audioInputVolumeSlider;
+@synthesize channel1Slider;
+@synthesize channel2Slider;
+@synthesize channel3Slider;
+@synthesize channel4Slider;
+@synthesize channel5Slider;
+@synthesize channel6Slider;
+@synthesize channel7Slider;
+@synthesize channel8Slider;
+@synthesize audioInputSlider;
 @synthesize channel1Label;
 @synthesize channel2Label;
 @synthesize channel3Label;
@@ -52,9 +52,11 @@
 @synthesize karaokeTextLS;
 
 @synthesize djMixer;
+@synthesize recordingFilePath;
 @synthesize karaoke;
 @synthesize karaokeTimer;
 @synthesize isPortrait;
+@synthesize checkDiskSizeTimer;
 
 
 - (id) initWithNibName:(NSString*)nibNameOrNil bundle:(NSBundle*)nibBundleOrNil
@@ -62,7 +64,7 @@
     self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
     if(self != nil)
     {
-    }
+	}
     
     return self;
 }
@@ -80,24 +82,39 @@
 - (void) dealloc
 {
     [super dealloc];
+	
+	[channelLabels release];
+	[channelSliders release];
 }
 
 
 - (void) viewDidLoad
 {
-    sliders[0] = channel1VolumeSlider;
-    sliders[1] = channel2VolumeSlider;
-    sliders[2] = channel3VolumeSlider;
-    sliders[3] = channel4VolumeSlider;
-    sliders[4] = channel5VolumeSlider;
-    sliders[5] = channel6VolumeSlider;
-    sliders[6] = channel7VolumeSlider;
-    sliders[7] = channel8VolumeSlider;
-    sliders[8] = audioInputVolumeSlider;
+	channelLabels = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
+						channel1Label, @"Channel-1",
+						channel2Label, @"Channel-2",
+						channel3Label, @"Channel-3",
+						channel4Label, @"Channel-4",
+						channel5Label, @"Channel-5",
+						channel6Label, @"Channel-6",
+						channel7Label, @"Channel-7",
+						channel8Label, @"Channel-8",
+						audioInputLabel, @"Channel-9", nil];
+	
+	channelSliders = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
+						channel1Slider, @"Channel-1",
+						channel2Slider, @"Channel-2",
+						channel3Slider, @"Channel-3",
+						channel4Slider, @"Channel-4",
+						channel5Slider, @"Channel-5",
+						channel6Slider, @"Channel-6",
+						channel7Slider, @"Channel-7",
+						channel8Slider, @"Channel-8",
+						audioInputSlider, @"Channel-9", nil];
 }
 
 - (void) viewWillDisappear:(BOOL)animated
-{    
+{
     [super viewWillDisappear:animated];
  
     [self saveControlsValue];
@@ -116,6 +133,8 @@
         [self.karaoke release];
         self.karaoke = nil;
     }
+	
+	// [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillResignActiveNotification object:nil];
 }
 
 
@@ -126,300 +145,67 @@
     int totLoadedChannels = 0;
     
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    
-    NSDictionary *channelDict = [defaults objectForKey:@"Channel-1"];
-    if(channelDict != nil) 
-    {
-        NSString *url = [channelDict objectForKey:@"AudioUrl"];
-        if(url == nil)
-        {
-            [djMixer.loop[0] freeStuff];
-        }
-        else
-        {
-            LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
-            [djMixer.loadAudioQueue addOperation:loadOperation];
-            [djMixer.loop[0] setLoadOperation:loadOperation];
-        }
-    }
-    if(djMixer.loop[0].loaded)
-    {
-        totLoadedChannels++;
-        float sliderValue = [[channelDict objectForKey:@"AudioVolume"] floatValue];
+	
+	// Init all output channels
+	for(NSInteger idx = 0; idx < 8; idx++)
+	{
+		NSString *channelStr = [NSString stringWithFormat:@"Channel-%d", idx + 1];
+		
+		NSDictionary *channelDict = [defaults objectForKey:channelStr];
+		if(channelDict != nil)
+		{
+			NSString *url = [channelDict objectForKey:@"AudioUrl"];
+			if(url == nil)
+			{
+				[djMixer.loop[idx] freeStuff];
+			}
+			else
+			{
+				if(![url isEqual:djMixer.loop[idx].url])
+				{
+					[djMixer.loop[idx] removeLoadOperation]; // Remove the previous operation if present
+					
+					LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url mixer:djMixer];
+					[djMixer.loadAudioQueue addOperation:loadOperation];
+					[djMixer.loop[idx] setLoadOperation:loadOperation];
+				}
+			}
+		}
+		
+		UILabel *label = [channelLabels objectForKey:channelStr];
+		UISlider *slider = [channelSliders objectForKey:channelStr];
+		
+		if(djMixer.loop[idx].loaded)
+		{
+			totLoadedChannels++;
+			float sliderValue = [[channelDict objectForKey:@"AudioVolume"] floatValue];
+			
+			[label setText:[NSString stringWithFormat:@"%@ (%d)", [channelDict objectForKey:@"AudioTitle"], djMixer.loop[idx].trackCount]];
+			[slider setEnabled:YES];
+			[slider setValue:sliderValue];
+			
+			[djMixer changeCrossFaderAmount:sliderValue forChannel:idx + 1];
+		}
+		else
+		{
+			[label setText:@""];
+			[slider setEnabled:NO];
+			[slider setValue:0.0];
+		}
+	}
 
-        [channel1Label setText:[NSString stringWithFormat:@"%@ (%d)", [channelDict objectForKey:@"AudioTitle"], djMixer.loop[0].trackCount]];
-        [channel1VolumeSlider setEnabled:YES];
-        [channel1VolumeSlider setValue:sliderValue];
-        
-        [djMixer changeCrossFaderAmount:sliderValue forChannel:1];
-    }
-    else 
-    {
-        [channel1Label setText:@""];
-        [channel1VolumeSlider setEnabled:NO];
-        [channel1VolumeSlider setValue:0.0];
-    }
-
-    channelDict = [defaults objectForKey:@"Channel-2"];
-    if(channelDict != nil) 
-    {
-        NSString *url = [channelDict objectForKey:@"AudioUrl"];
-        if(url == nil)
-        {
-            [djMixer.loop[1] freeStuff];
-        }
-        else
-        {
-            [djMixer.loop[1] removeLoadOperation]; // Remove the previous operation if present
-
-            LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
-            [djMixer.loadAudioQueue addOperation:loadOperation];
-            [djMixer.loop[1] setLoadOperation:loadOperation];
-        }
-    }
-    if(djMixer.loop[1].loaded)
-    {
-        totLoadedChannels++;
-        float sliderValue = [[channelDict objectForKey:@"AudioVolume"] floatValue];
-
-        [channel2Label setText:[NSString stringWithFormat:@"%@ (%d)", [channelDict objectForKey:@"AudioTitle"], djMixer.loop[1].trackCount]];
-        [channel2VolumeSlider setEnabled:YES];
-        [channel2VolumeSlider setValue:sliderValue];
-        
-        [djMixer changeCrossFaderAmount:sliderValue forChannel:2];
-    }
-    else 
-    {
-        [channel2Label setText:@""];
-        [channel2VolumeSlider setEnabled:NO];
-        [channel2VolumeSlider setValue:0.0];
-    }
-    
-    channelDict = [defaults objectForKey:@"Channel-3"];
-    if(channelDict != nil) 
-    {
-        NSString *url = [channelDict objectForKey:@"AudioUrl"];
-        if(url == nil)
-        {
-            [djMixer.loop[2] freeStuff];
-        }
-        else
-        {
-            [djMixer.loop[2] removeLoadOperation]; // Remove the previous operation if present
-
-            LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
-            [djMixer.loadAudioQueue addOperation:loadOperation];
-            [djMixer.loop[2] setLoadOperation:loadOperation];
-        }
-    }
-    if(djMixer.loop[2].loaded)
-    {
-        totLoadedChannels++;
-        float sliderValue = [[channelDict objectForKey:@"AudioVolume"] floatValue];
-
-        [channel3Label setText:[NSString stringWithFormat:@"%@ (%d)", [channelDict objectForKey:@"AudioTitle"], djMixer.loop[2].trackCount]];
-        [channel3VolumeSlider setEnabled:YES];
-        [channel3VolumeSlider setValue:sliderValue];
-        
-        [djMixer changeCrossFaderAmount:sliderValue forChannel:3];
-    }
-    else 
-    {
-        [channel3Label setText:@""];
-        [channel3VolumeSlider setEnabled:NO];
-        [channel3VolumeSlider setValue:0.0];
-    }
-  
-    channelDict = [defaults objectForKey:@"Channel-4"];
-    if(channelDict != nil) 
-    {
-        NSString *url = [channelDict objectForKey:@"AudioUrl"];
-        if(url == nil)
-        {
-            [djMixer.loop[3] freeStuff];
-        }
-        else
-        {
-            [djMixer.loop[3] removeLoadOperation]; // Remove the previous operation if present
-
-            LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
-            [djMixer.loadAudioQueue addOperation:loadOperation];
-            [djMixer.loop[3] setLoadOperation:loadOperation];
-
-        }
-    }
-    if(djMixer.loop[3].loaded)
-    {
-        totLoadedChannels++;
-        float sliderValue = [[channelDict objectForKey:@"AudioVolume"] floatValue];
-
-        [channel4Label setText:[NSString stringWithFormat:@"%@ (%d)", [channelDict objectForKey:@"AudioTitle"], djMixer.loop[3].trackCount]];
-        [channel4VolumeSlider setEnabled:YES];
-        [channel4VolumeSlider setValue:[[channelDict objectForKey:@"AudioVolume"] floatValue]];
-        
-        [djMixer changeCrossFaderAmount:sliderValue forChannel:4];
-    }
-    else 
-    {
-        [channel4Label setText:@""];
-        [channel4VolumeSlider setEnabled:NO];
-        [channel4VolumeSlider setValue:0.0];
-    }
-
-    channelDict = [defaults objectForKey:@"Channel-5"];
-    if(channelDict != nil) 
-    {
-        NSString *url = [channelDict objectForKey:@"AudioUrl"];
-        if(url == nil)
-        {
-            [djMixer.loop[4] freeStuff];
-        }
-        else
-        {
-            [djMixer.loop[4] removeLoadOperation]; // Remove the previous operation if present
-
-            LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
-            [djMixer.loadAudioQueue addOperation:loadOperation];
-            [djMixer.loop[4] setLoadOperation:loadOperation];
-        }
-    }
-    if(djMixer.loop[4].loaded)
-    {
-        totLoadedChannels++;
-        float sliderValue = [[channelDict objectForKey:@"AudioVolume"] floatValue];
-
-        [channel5Label setText:[NSString stringWithFormat:@"%@ (%d)", [channelDict objectForKey:@"AudioTitle"], djMixer.loop[4].trackCount]];
-        [channel5VolumeSlider setEnabled:YES];
-        [channel5VolumeSlider setValue:sliderValue];
-        
-        [djMixer changeCrossFaderAmount:sliderValue forChannel:5];
-    }
-    else 
-    {
-        [channel5Label setText:@""];
-        [channel5VolumeSlider setEnabled:NO];
-        [channel5VolumeSlider setValue:0.0];
-    }
-
-    channelDict = [defaults objectForKey:@"Channel-6"];
-    if(channelDict != nil) 
-    {
-        NSString *url = [channelDict objectForKey:@"AudioUrl"];
-        if(url == nil)
-        {
-            [djMixer.loop[5] freeStuff];
-        }
-        else
-        {
-            [djMixer.loop[5] removeLoadOperation]; // Remove the previous operation if present
-
-            LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
-            [djMixer.loadAudioQueue addOperation:loadOperation];
-            [djMixer.loop[5] setLoadOperation:loadOperation];
-        }
-    }
-    if(djMixer.loop[5].loaded)
-    {
-        totLoadedChannels++;
-        float sliderValue = [[channelDict objectForKey:@"AudioVolume"] floatValue];
-
-        [channel6Label setText:[NSString stringWithFormat:@"%@ (%d)", [channelDict objectForKey:@"AudioTitle"], djMixer.loop[5].trackCount]];
-        [channel6VolumeSlider setEnabled:YES];
-        [channel6VolumeSlider setValue:sliderValue];
-        
-        [djMixer changeCrossFaderAmount:sliderValue forChannel:6];
-    }
-    else 
-    {
-        [channel6Label setText:@""];
-        [channel6VolumeSlider setEnabled:NO];
-        [channel6VolumeSlider setValue:0.0];
-    }
-
-    channelDict = [defaults objectForKey:@"Channel-7"];
-    if(channelDict != nil) 
-    {
-        NSString *url = [channelDict objectForKey:@"AudioUrl"];
-        if(url == nil)
-        {
-            [djMixer.loop[6] freeStuff];
-        }
-        else
-        {
-            [djMixer.loop[6] removeLoadOperation]; // Remove the previous operation if present
-
-            LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
-            [djMixer.loadAudioQueue addOperation:loadOperation];
-            [djMixer.loop[6] setLoadOperation:loadOperation];
-        }
-    }
-    if(djMixer.loop[6].loaded)
-    {
-        totLoadedChannels++;
-        float sliderValue = [[channelDict objectForKey:@"AudioVolume"] floatValue];
-
-        [channel7Label setText:[NSString stringWithFormat:@"%@ (%d)", [channelDict objectForKey:@"AudioTitle"], djMixer.loop[6].trackCount]];
-        [channel7VolumeSlider setEnabled:YES];
-        [channel7VolumeSlider setValue:sliderValue];
-        
-        [djMixer changeCrossFaderAmount:sliderValue forChannel:7];
-    }
-    else 
-    {
-        [channel7Label setText:@""];
-        [channel7VolumeSlider setEnabled:NO];
-        [channel7VolumeSlider setValue:0.0];
-    }
-
-    channelDict = [defaults objectForKey:@"Channel-8"];
-    if(channelDict != nil) 
-    {
-        NSString *url = [channelDict objectForKey:@"AudioUrl"];
-        if(url == nil)
-        {
-            [djMixer.loop[7] freeStuff];
-        }
-        else
-        {
-            [djMixer.loop[7] removeLoadOperation]; // Remove the previous operation if present
-            
-            LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
-            [djMixer.loadAudioQueue addOperation:loadOperation];
-            [djMixer.loop[7] setLoadOperation:loadOperation];
-        }
-    }
-    if(djMixer.loop[7].loaded)
-    {
-        totLoadedChannels++;
-        float sliderValue = [[channelDict objectForKey:@"AudioVolume"] floatValue];
-
-        [channel8Label setText:[NSString stringWithFormat:@"%@ (%d)", [channelDict objectForKey:@"AudioTitle"], djMixer.loop[7].trackCount]];
-        [channel8VolumeSlider setEnabled:YES];
-        [channel8VolumeSlider setValue:sliderValue];
-        
-        [djMixer changeCrossFaderAmount:sliderValue forChannel:8];
-    }
-    else 
-    {
-        [channel8Label setText:@""];
-        [channel8VolumeSlider setEnabled:NO];
-        [channel8VolumeSlider setValue:0.0];
-    }
-    
-    channelDict = [defaults objectForKey:@"Channel-9"];
+	// Init the input channel which is referenced as Channel-9 even if is very different...
+	NSString *channelStr = @"Channel-9";
+    NSDictionary *channelDict = [defaults objectForKey:channelStr];
     if(channelDict != nil)
     {
-        [djMixer.loop[8] audioInput];
-        if(djMixer.loop[8].loaded)
-        {
-            totLoadedChannels++;
-            float sliderValue = [[channelDict objectForKey:@"AudioVolume"] floatValue];
+		float sliderValue = [[channelDict objectForKey:@"AudioVolume"] floatValue];
             
-            [audioInputVolumeSlider setEnabled:YES];
-            [audioInputVolumeSlider setValue:sliderValue];
+		UISlider *slider = [channelSliders objectForKey:channelStr];
+		[slider setEnabled:YES];
+		[slider setValue:sliderValue];
             
-            [djMixer changeCrossFaderAmount:sliderValue forChannel:9];
-        }
+		[djMixer changeCrossFaderAmount:sliderValue forChannel:9];
     }
 /*
     [playButton setEnabled:(totLoadedChannels != 0)];
@@ -444,6 +230,9 @@
     {
         NSLog(@"Karaoke file %@ is missing", filePath);
     }
+	
+	// Seems better to use applicationDidEnterBackground in app delegate
+    // [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationWillResignActive:) name:UIApplicationWillResignActiveNotification object:nil];
 
     [self.karaokeButton setEnabled: (self.karaoke != nil)];
     [self.karaokeButtonLS setEnabled: (self.karaoke != nil)];
@@ -456,19 +245,20 @@
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     
-    int totChannels = sizeof(sliders) / sizeof(UISlider*);
-    for(int idx = 1; idx <= totChannels; idx++)
+    for(int idx = 1; idx <= 9; idx++)
     {
-        NSDictionary *channelDict = [defaults objectForKey:[NSString stringWithFormat:@"Channel-%d", idx]];
+		NSString *channelStr = [NSString stringWithFormat:@"Channel-%d", idx];
+
+        NSDictionary *channelDict = [defaults objectForKey:channelStr];
         if(channelDict != nil)
         {
             NSMutableDictionary *newDict = [NSMutableDictionary dictionaryWithDictionary:channelDict];
             
-            [newDict setObject:[NSNumber numberWithFloat:[sliders[idx - 1] value]] forKey:@"AudioVolume"];
+            [newDict setObject:[NSNumber numberWithFloat:[(UISlider*)[channelSliders objectForKey:channelStr] value]] forKey:@"AudioVolume"];
             
             // NSLog(@"%@", [NSNumber numberWithFloat:[sliders[idx - 1] value]]);
             
-            [defaults setObject:newDict forKey:[NSString stringWithFormat:@"Channel-%d", idx]];
+            [defaults setObject:newDict forKey:channelStr];
         }
         else
         {
@@ -476,7 +266,7 @@
             
             [newDict setObject:[NSNumber numberWithFloat:0.0] forKey:@"AudioVolume"];
             
-            [defaults setObject:newDict forKey:[NSString stringWithFormat:@"Channel-%d", idx]];
+            [defaults setObject:newDict forKey:channelStr];
         }
     }
     
@@ -486,21 +276,16 @@
 
 - (void) updateDefaults:(UISlider*)slider
 {
-    // Faster this way...
-    static NSUserDefaults *defaults;
-    if(defaults == nil)
-        defaults = [NSUserDefaults standardUserDefaults];
-    
-    int idx = slider.tag;
-    NSDictionary *channelDict = [defaults objectForKey:[NSString stringWithFormat:@"Channel-%d", idx]];
+    static NSUserDefaults *defaults = [[NSUserDefaults standardUserDefaults] retain];
+   
+	NSString *channelStr = [[channelSliders allKeysForObject:slider] objectAtIndex:0];
+    NSDictionary *channelDict = [defaults objectForKey:channelStr];
     if(channelDict != nil)
     {
-        NSMutableDictionary *newDict = [NSMutableDictionary dictionaryWithDictionary:channelDict];
+        NSMutableDictionary *newDict = [NSMutableDictionary dictionaryWithDictionary:channelDict];            
+        [newDict setObject:[NSNumber numberWithFloat:[(UISlider*)[channelSliders objectForKey:channelStr] value]] forKey:@"AudioVolume"];
             
-        [newDict setObject:[NSNumber numberWithFloat:[sliders[idx - 1] value]] forKey:@"AudioVolume"];
-            
-        [defaults setObject:newDict forKey:[NSString stringWithFormat:@"Channel-%d", idx]];
-        
+        [defaults setObject:newDict forKey:channelStr];        
         [defaults synchronize];
     }
 }
@@ -508,6 +293,7 @@
 
 - (IBAction) changeVolume:(UISlider*)sender
 {
+	static NSCharacterSet *numbers = [[NSCharacterSet characterSetWithCharactersInString:@"0123456789"] retain];
 /*
     if(sender.tag == 9)
     {
@@ -520,10 +306,15 @@
             NSLog(@"AUDIO INPUT ON");
        }
     }
-*/    
-    [djMixer changeCrossFaderAmount:sender.value forChannel:sender.tag];
+*/
+	NSString *channelStr = [[channelSliders allKeysForObject:sender] objectAtIndex:0];
+	NSScanner *scanner = [NSScanner scannerWithString:channelStr];
+	[scanner scanUpToCharactersFromSet:numbers intoString:NULL];
+	int channel;
+	[scanner scanInt:&channel];
+	
+    [djMixer changeCrossFaderAmount:sender.value forChannel:channel];
     
-    // Delay execution of my block for 2 seconds.
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), 
     ^{
         [self updateDefaults:sender];
@@ -533,17 +324,23 @@
 
 - (IBAction) playOrStop
 {
+	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
 	if([djMixer isPlaying])
     {
-        [djMixer stop];
+        [djMixer stopPlay];
         
-        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
         if([defaults boolForKey:@"KaraokeAutoOn"] && karaokeActivated)
         {
             [self doKaraoke:nil];
         }
 
-        [playButton setTitle:@"Play" forState:UIControlStateNormal];
+       if([defaults boolForKey:@"RecordingAutoOn"] && djMixer.fileRecording)
+        {
+            [self doRecord:nil];
+        }
+
+		[playButton setTitle:@"Play" forState:UIControlStateNormal];
         [playButtonLS setTitle:@"Play" forState:UIControlStateNormal];
         
         [selectButton setEnabled:YES];
@@ -554,14 +351,16 @@
         
         [pauseSwitch setOn:NO];
         [pauseSwitchLS setOn:NO];
-        
-        [self pause:pauseSwitch];        
     }
     else
     {
-        [djMixer play];
+        [djMixer startPlay];
         
-        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+		if([defaults boolForKey:@"RecordingAutoOn"] && !djMixer.fileRecording)
+        {
+            [self doRecord:nil];
+        }
+
         if([defaults boolForKey:@"KaraokeAutoOn"] && !karaokeActivated)
         {
             [self doKaraoke:nil];
@@ -609,21 +408,189 @@
 }
 
 
-- (IBAction) pause:(UISwitch*)sender
+- (IBAction) doRecord:(UIButton*)sender
+{
+	if(djMixer.fileRecording)
+	{
+		[self recordStop];
+	}
+	else
+	{
+		[self recordStart];
+	}
+}
+
+
+- (void) recordStart
+{
+	AudioFileTypeID fileType = kAudioFileCAFType;
+	OSStatus status = noErr;
+	NSString *fileName = nil;
+	
+	if([self checkDiskSize:NO] < 10)
+	{
+		NSString *msg = @"Is not possible to start recording with less than 10 Mib of free space.";
+		alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
+		[alert show];
+		return;
+	}
+	
+	NSLog(@"Starting recording...");
+		
+	AudioStreamBasicDescription stereoStreamFormat;
+	memset(&stereoStreamFormat, 0, sizeof(stereoStreamFormat));
+    stereoStreamFormat.mSampleRate        = 44100.0;
+    stereoStreamFormat.mFormatID          = kAudioFormatLinearPCM;
+    stereoStreamFormat.mFormatFlags       = kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
+    stereoStreamFormat.mFramesPerPacket   = 1;
+	stereoStreamFormat.mChannelsPerFrame  = 2;                    // 2 indicates stereo
+    stereoStreamFormat.mBitsPerChannel    = 16;
+    stereoStreamFormat.mBytesPerPacket    = 4;
+	stereoStreamFormat.mBytesPerFrame     = 4;
+
+    AudioStreamBasicDescription dstFormat;
+	memset(&dstFormat, 0, sizeof(dstFormat));
+	
+	if(fileType == kAudioFileCAFType || fileType == kAudioFileWAVEType)
+	{
+		dstFormat.mSampleRate =       44100.0;
+		dstFormat.mFormatID =         kAudioFormatLinearPCM;
+		dstFormat.mFormatFlags =      kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
+		dstFormat.mFramesPerPacket =  1;
+		dstFormat.mChannelsPerFrame = 2;
+		dstFormat.mBitsPerChannel =	  16;
+		dstFormat.mBytesPerPacket =   4;
+		dstFormat.mBytesPerFrame =    4;
+		
+		fileName = (fileType == kAudioFileCAFType ? @"record.caf" : @"record.wav");
+	}
+	else if(fileType == kAudioFileM4AType)
+	{
+		dstFormat.mChannelsPerFrame = 2;
+		dstFormat.mFormatID = kAudioFormatMPEG4AAC;
+		UInt32 size = sizeof(dstFormat);
+		status = AudioFormatGetProperty(kAudioFormatProperty_FormatInfo, 0, NULL, &size, &dstFormat);
+		if(status != noErr)
+		{
+			NSLog(@"Error %ld in AudioFormatGetProperty()", status);
+			return;
+		}
+		
+		fileName = @"record.m4a";
+	}
+
+	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory , NSUserDomainMask, YES);
+    recordingFilePath = [[[paths objectAtIndex:0] stringByAppendingPathComponent:fileName] copy];
+	NSURL *fileURL = [NSURL fileURLWithPath:recordingFilePath isDirectory:NO];
+
+	ExtAudioFileRef audioFileRef;
+	status = ExtAudioFileCreateWithURL((CFURLRef)fileURL, fileType, &dstFormat, NULL, kAudioFileFlags_EraseFile, &audioFileRef);
+	if(status != noErr)
+	{
+		NSLog(@"Error %ld in ExtAudioFileCreateWithURL()", status);
+		return;
+	}
+
+	status = ExtAudioFileSetProperty(audioFileRef, kExtAudioFileProperty_ClientDataFormat, sizeof(stereoStreamFormat), &stereoStreamFormat);
+	if(status != noErr)
+	{
+		NSLog(@"Error %ld in ExtAudioFileSetProperty()", status);
+		return;
+	}
+	
+	status =  ExtAudioFileWriteAsync(audioFileRef, 0, NULL);
+	if(status != noErr)
+	{
+		NSLog(@"Error %ld in ExtAudioFileWriteAsync()", status);
+		return;
+	}
+
+    checkDiskSizeTimer = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(checkDiskSize:) userInfo:(id)kCFBooleanTrue  repeats:YES];
+
+	djMixer.recordingFile = audioFileRef;
+	djMixer.fileRecording = YES;
+
+    [self performSelector:@selector(doHighlight:) withObject:self.recordButton afterDelay:0];
+    [self performSelector:@selector(doHighlight:) withObject:self.recordButtonLS afterDelay:0];
+	
+	NSLog(@"Recording started");
+}
+
+
+- (void) recordStop
+{    
+	NSLog(@"Stopping recording...");
+	
+	[checkDiskSizeTimer invalidate];
+	checkDiskSizeTimer = nil;
+
+	djMixer.fileRecording = NO;
+	
+	ExtAudioFileRef audioFileRef = djMixer.recordingFile;
+	djMixer.recordingFile = NULL;
+
+	OSStatus status = ExtAudioFileDispose(audioFileRef);	
+	if(status != noErr)
+	{
+		NSLog(@"Error %d in ExtAudioFileDispose()", (int)status);
+	}
+	
+	NSUInteger fileSize = [[[NSFileManager defaultManager] attributesOfItemAtPath:recordingFilePath error:nil] fileSize];
+	NSLog(@"File: %@", recordingFilePath);
+	NSLog(@"File size: %u", fileSize);
+	
+	[recordingFilePath release];
+	
+    [self.recordButton setHighlighted:NO];
+    [self.recordButtonLS setHighlighted:NO];
+    
+	NSLog(@"Recording stopped");
+}
+
+
+- (NSUInteger) checkDiskSize:(BOOL)showAlert
+{
+	NSDictionary *atDict = [[NSFileManager defaultManager] attributesOfFileSystemForPath:@"/" error:nil];
+	NSUInteger freeSpace = [[atDict objectForKey:NSFileSystemFreeSize] unsignedIntValue] / (1024 * 1024);
+	NSLog(@"Free Diskspace: %u MiB", freeSpace);
+
+	if(freeSpace < 10 && showAlert)
+	{
+		if(djMixer.fileRecording)
+		{
+			[self recordStop];
+		}
+		
+		NSString *msg = @"Is not possible to start recording with less than 10 Mib of free space.";
+		alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
+		[alert show];
+	}
+	
+	return freeSpace;
+}
+
+
+- (IBAction) doPause:(UISwitch*)sender
 {
     [djMixer pause:sender.on];
-    
-    if(karaokeActivated)
-    {
-        if(sender.on)
-        {
-            [self karaokePause];
-        }
-        else
-        {
-            [self karaokeResume];
-        }
-    }
+}
+
+	
+- (void) pause:(BOOL)flag
+{
+	[djMixer pause:flag];
+	
+	if(karaokeActivated)
+	{
+		if(flag)
+		{
+			[self karaokePause];
+		}
+		else
+		{
+			[self karaokeResume];
+		}
+	}
 }
 
 
@@ -753,6 +720,22 @@
 }
 
 
+- (void) applicationWillResignActive:(NSNotification *)notification
+{
+    NSLog(@"applicationWillResignActive");
+	
+	if([djMixer isPlaying])
+    {
+        [djMixer stopPlay];
+	}
+	
+	if(djMixer.fileRecording)
+	{
+		[self recordStop];
+	}
+}
+
+
 // Override to allow orientations other than the default portrait orientation.
 // Called if iOS < 6
 - (BOOL) shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
@@ -790,7 +773,7 @@
 // Called if iOS >= 6
 - (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)orientation duration:(NSTimeInterval)duration
 {
-    NSLog(@"to %d", orientation);
+    // NSLog(@"to %d", orientation);
     
     if(orientation == UIInterfaceOrientationLandscapeLeft || orientation == UIInterfaceOrientationLandscapeRight)
     {
@@ -808,7 +791,7 @@
 // Called if iOS >= 6
 - (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation
 {
-    NSLog(@"from %d to %d", fromInterfaceOrientation, self.interfaceOrientation);
+    // NSLog(@"from %d to %d", fromInterfaceOrientation, self.interfaceOrientation);
 }
 
 @end

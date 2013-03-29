@@ -58,11 +58,13 @@
     if(operation != nil)
     {
         [self removeLoadOperation];
-    }
-
-    if(audioData != NULL)
+		
+		audioData = NULL;	// Nullify the pointer to avoid the memore to be freed here (it was allocated in LoadAudioOperation) 
+	}
+    
+	if(audioData != NULL)	 // Free the memory if allocated here
     {
-        free(audioData);    // Free the AudioBuffer
+        free(audioData); 
         audioData = NULL;
     }
      
@@ -142,10 +144,10 @@
 {
     if(playFromAudioInput)
     {
-        // recorder->StopRecord();
-        
         [recorder stopRecord];
     }
+	
+	// [operation cancel];
 
 	if(playing || paused)
 	{
@@ -154,8 +156,11 @@
     }
     
     [self reset];
-        
-    NSLog(@"lostPackets: %llu\n", lostPackets);
+    
+	if(lostPackets > 0)
+	{
+		NSLog(@"LostPackets: %llu\n", lostPackets);
+	}
 }
 
 
@@ -457,16 +462,22 @@
 
 
 - (void) removeLoadOperation
-{
+{	
     if(operation != nil)
     {
+		// NSLog(@"RemoveLoadOperation for file %@ ++", self.url);
+
         if(!operation.isFinished)
         {
-            [operation cancel];
             [operation waitUntilFinished];
         }
         
-        [operation release];
+        if(!operation.isCancelled)
+        {
+            [operation cancel];
+		}
+			
+		[operation release];
         operation = nil;
         
         trackCount = 0;
@@ -476,15 +487,18 @@
         lostPackets = 0;
         
         loaded = NO;
-    }
+
+		// NSLog(@"RemoveLoadOperation for file %@ --", self.url);
+	}
 }
 
 
 - (void) setLoadOperation:(LoadAudioOperation*)loadOperation
 {
     operation = loadOperation;
-    
+	
     trackCount = loadOperation.trackCount;
+	url = [loadOperation.fileURL absoluteString];
     
     packetCount = 0;
     packetIndex = 0;
@@ -592,7 +606,7 @@
 	OSStatus status = [recorder setUpAudioDevice];
 	if(status != noErr)
     {
-		NSLog(@"PROBLEM with recorder setup!");
+		NSLog(@"Problem with recorder setup!");
         return status;
     }
 
