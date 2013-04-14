@@ -1,10 +1,19 @@
 
 Important:
-When going to background all tracks opened with AVAssetReader must be reopened. Because any subsequent reading fails.
-Find a way to realign to the sample which should be read (otherwise it starts from beginning of track) using
-sampleIdx x sample duration to set the timeRange of the reader.
+When speaker is not connected bring input level to zero and set it back to previous level when is connected back. (Prefs in settings).
 
-1) Read karaoke data from lyrics
-2) fix karaoke editor and add list of files
-3) Fix problem with headphone. Put playback channel to minimum when headphone is removed or let the user disable it.
-4) Audio effects (reverber and, if possible, some more). ObjectAL library.
+One or more segments of registered output is kept except when deleted (with undo the last one or with delete all) or overwritten. 
+
+Always play the registered segments at their time
+
+Check for noise when app is back from background (possible conflict with other apps?) or the speaker is plugged/unplugged/re-plugged.
+
+Implement real UI.
+
+Read karaoke data from lyrics
+fix karaoke editor and add list of files
+Fix problem with headphone. Put playback channel to minimum when headphone is removed or let the user disable it.
+Audio effects (reverber and, if possible, some more). ObjectAL library.
+
+Maintain a list of all registered segments ?
+Use flag kAudioUnitRenderAction_OutputIsSilence when a channel is silenced ?

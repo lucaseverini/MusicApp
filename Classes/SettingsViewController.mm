@@ -49,6 +49,8 @@
 @synthesize deleteRecordedAudioButton;
 @synthesize autoStartKaraokeSwitch;
 @synthesize autoStartRecordingSwitch;
+@synthesize playContinuousSwitch;
+@synthesize autoSetAudioInputSwitch;
 
 - (void) viewDidLoad
 {        
@@ -102,6 +104,8 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [autoStartKaraokeSwitch setOn:[defaults boolForKey:@"KaraokeAutoOn"]];
     [autoStartRecordingSwitch setOn:[defaults boolForKey:@"RecordingAutoOn"]];
+	[playContinuousSwitch setOn:[defaults boolForKey:@"PlayContinuousOn"]];
+	[autoSetAudioInputSwitch setOn:[defaults boolForKey:@"autoSetAudioInputOn"]];
 }
 
 
@@ -130,6 +134,22 @@
 {
 	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 	[defaults setBool:[autoStartRecordingSwitch isOn] forKey:@"RecordingAutoOn"];
+	[defaults synchronize];
+}
+
+
+- (IBAction) doPlayContinuous:(UISwitch*)sender
+{
+	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+	[defaults setBool:[playContinuousSwitch isOn] forKey:@"PlayContinuousOn"];
+	[defaults synchronize];
+}
+
+
+- (IBAction) doAutoSetAudioInput:(UISwitch*)sender
+{
+	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+	[defaults setBool:[autoSetAudioInputSwitch isOn] forKey:@"autoSetAudioInputOn"];
 	[defaults synchronize];
 }
 

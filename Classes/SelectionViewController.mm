@@ -125,7 +125,7 @@
                                                               @"/Users/Luca/Desktop/Music App/Tracce/HH.wav",
                                                               @"/Users/Luca/Desktop/Music App/Tracce/RytmhSynth.wav",
                                                               @"/Users/Luca/Desktop/Music App/Tracce/Shakers.wav",
-                                                              @"/Users/Luca/Desktop/Music App/Tracce/Tamburine.wav",
+							  //@"/Users/Luca/Desktop/Music App/Tracce/Tamburine.wav",
                                                               @"/Users/Luca/Desktop/Music App/Tracce/Take On Me (Lyrics Tag).mp3",
                                                               nil];
     
@@ -144,8 +144,8 @@
         }
     }
 
-    NSNumber *duration = [NSNumber numberWithFloat:0.0];
-    NSNumber *volume = [NSNumber numberWithFloat:1.0];
+    NSNumber *duration = [NSNumber numberWithDouble:(double)songAsset.duration.value / (double)songAsset.duration.timescale];
+    NSNumber *volume = [NSNumber numberWithDouble:1.0];
 
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     NSDictionary *channelDict = [NSDictionary dictionaryWithObjectsAndKeys:[url absoluteString], @"AudioUrl", title, @"AudioTitle", duration, @"AudioDuration", volume, @"AudioVolume", nil];
@@ -177,7 +177,7 @@
         NSString *url = [[audioFile valueForProperty:MPMediaItemPropertyAssetURL] absoluteString];
         NSString *title = [audioFile valueForProperty:MPMediaItemPropertyTitle];
         NSNumber *duration = [audioFile valueForProperty:MPMediaItemPropertyPlaybackDuration];
-        NSNumber *volume = [NSNumber numberWithFloat:1.0];
+        NSNumber *volume = [NSNumber numberWithDouble:1.0];
 
         AVURLAsset *songAsset = [[[AVURLAsset alloc] initWithURL:[NSURL URLWithString:url] options:nil] autorelease];
         assert(songAsset != nil);        

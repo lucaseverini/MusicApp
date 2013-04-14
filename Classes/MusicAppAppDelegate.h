@@ -18,8 +18,10 @@
 }
 
 @property (nonatomic, retain) IBOutlet UIWindow *window;
-@property (nonatomic, retain) DJMixerViewController *viewController;
+@property (nonatomic, retain) DJMixerViewController *djMixerViewController;
 @property (nonatomic, retain) NSMutableArray *karaokeData;
+
++ (MusicAppDelegate*) shared;
 
 @end
 

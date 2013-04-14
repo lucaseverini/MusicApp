@@ -6,6 +6,8 @@
 //
 
 #import "DJMixer.h"
+#import "MusicAppAppDelegate.h"
+#import "DJMixerViewController.h"
 
 DJMixer* _this;
 
@@ -17,14 +19,40 @@ void propListener (void                     *inClientData,
 				  const void                *inData)
 {
 	// RemoteIOPlayer *THIS = (RemoteIOPlayer*)inClientData;
-	if (inID == kAudioSessionProperty_AudioRouteChange)
+	if(inID == kAudioSessionProperty_AudioRouteChange)
     {
         NSLog(@"Property Listener: kAudioSessionProperty_AudioRouteChange");
+		
+		NSDictionary *routeChangeDictionary = (NSDictionary*)inData;
+		NSDictionary *newRouteDict = [routeChangeDictionary objectForKey:(id)kAudioSession_AudioRouteChangeKey_CurrentRouteDescription];
+		NSDictionary *newRouteOutputs = [newRouteDict objectForKey:(id)kAudioSession_AudioRouteKey_Outputs];
+		for(id output in newRouteOutputs)
+		{
+			NSString *outputsName = [output objectForKey:@"RouteDetailedDescription_Name"];
+			if([outputsName isEqualToString:@"Headphones"])
+			{
+				NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+				if([defaults boolForKey:@"autoSetAudioInputOn"])
+				{
+					MusicAppDelegate *appDelegate = [MusicAppDelegate shared];
+					[appDelegate.djMixerViewController enableAudioInput];
+				}
+			}
+			else if([outputsName isEqualToString:@"Receiver"])
+			{
+				NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+				if([defaults boolForKey:@"autoSetAudioInputOn"])
+				{
+					MusicAppDelegate *appDelegate = [MusicAppDelegate shared];
+					[appDelegate.djMixerViewController disableAudioInput];
+				}
+			}
+		}
 	}
-	else if (inID == kAudioSessionProperty_AudioInputAvailable)
+	else if(inID == kAudioSessionProperty_AudioInputAvailable)
 	{
         NSLog(@"Property Listener: kAudioSessionProperty_AudioInputAvailable");
-    }
+	}
 }
 
 
@@ -32,7 +60,7 @@ void rioInterruptionListener (void *inClientData, UInt32 inInterruption)
 {
 	NSLog(@"Session interrupted! --- %s ---", inInterruption == kAudioSessionBeginInterruption ? "Begin Interruption" : "End Interruption");
 	
-	if (inInterruption == kAudioSessionEndInterruption) 
+	if(inInterruption == kAudioSessionEndInterruption) 
     {
 		// make sure we are again the active session
 		AudioSessionSetActive(true);
@@ -41,7 +69,7 @@ void rioInterruptionListener (void *inClientData, UInt32 inInterruption)
 		AudioOutputUnitStart(_this.crossFaderMixer);
 		AudioOutputUnitStart(_this.masterFaderMixer);
 	}
-	else if (inInterruption == kAudioSessionBeginInterruption)
+	else if(inInterruption == kAudioSessionBeginInterruption)
     {
 		AudioOutputUnitStop(_this.masterFaderMixer);
 		AudioOutputUnitStop(_this.crossFaderMixer);
@@ -80,34 +108,33 @@ static OSStatus crossFaderMixerCallback (void *inRefCon,
         {
             for(int frameNum = 0; frameNum < inNumberFrames; frameNum++)
             {
-                if(djMixer.packetIndex == djMixer.packetsInBuffer)
+                if(djMixer->packetIndex == djMixer->packetsInBuffer)
                 {
-                    djMixer.packetIndex = 0;
+                    djMixer->packetIndex = 0;
                 }
                 
-                UInt16 value = djMixer.inputAudioData[djMixer.packetIndex++];
+                UInt16 value = djMixer.inputAudioData[djMixer->packetIndex++];
                 frameBuffer[frameNum] = value + (value << 16);
             }
         }
     }
     else // These are all the other channels (0-7)
     {
-        InMemoryAudioFile *loop = djMixer.loop[inBusNumber];
-        if(loop.playing)
+        InMemoryAudioFile *channel = djMixer.channels[inBusNumber];
+        if(channel.playing && !channel.noData)
         {
+			*ioActionFlags &= ~kAudioUnitRenderAction_OutputIsSilence;
+
             for(int frameNum = 0; frameNum < inNumberFrames; frameNum++)
             {
-                // get NextPacket returns a 32 bit value, one frame.
-                frameBuffer[frameNum] = [loop getNextPacket];
+                // getNextPacket returns a 32 bit value, one frame whichi is one packet.
+				frameBuffer[frameNum] = [channel getNextPacket];
             }
         }
         else
-        {
-            for(int frameNum = 0; frameNum < inNumberFrames; frameNum++)
-            {
-                frameBuffer[frameNum] = 0;
-            }
-       }
+        {			
+			*ioActionFlags |= kAudioUnitRenderAction_OutputIsSilence;
+		}
     }
     
 	return 0;
@@ -123,12 +150,19 @@ static OSStatus masterFaderCallback (void                       *inRefCon,
 	// NSLog(@"masterFaderCallback...");
 
 	DJMixer *djMixer = (DJMixer*)inRefCon;
+	
+	if(djMixer->durationPacketsIndex >= djMixer.durationPackets)
+	{
+		djMixer->durationPacketsIndex = 0;
+	}
     
     // Get the audio from the crossfader, we could directly connect them but this gives us a chance to get at the audio to apply an effect
     OSStatus err = AudioUnitRender(djMixer.crossFaderMixer, ioActionFlags, inTimeStamp, inBusNumber, inNumberFrames, ioData);
     // Apply master effect (if any)
 	if(err == noErr)
 	{
+		djMixer->durationPacketsIndex += inNumberFrames;
+
 		if(djMixer.fileRecording && djMixer.recordingFile != NULL)
 		{
 			OSStatus status = ExtAudioFileWriteAsync(djMixer.recordingFile, inNumberFrames, ioData);
@@ -148,7 +182,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	//NSLog(@"recordingCallback...");
 
 	DJMixer *djMixer = (DJMixer*)inRefCon;
-    
+
 	if(djMixer.recordingStarted)
     {
         // Fills bufferList->mBuffers[0].mData with audio data from microphone
@@ -168,7 +202,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
                 break;
                 
 			case -50:
-                NSLog(@"AudioUnitRender Failed: Invalid Parameter(s)");
+                // NSLog(@"AudioUnitRender Failed: Invalid Parameter(s)");
                 break;
                 
 			default:
@@ -187,33 +221,35 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 @synthesize crossFaderMixer;
 @synthesize masterFaderMixer;
 @synthesize output;
-@synthesize loop;
+@synthesize missingAudioInput;
+@synthesize channels;
 @synthesize bufferList;
-@synthesize packetsInBuffer;
-@synthesize packetIndex;
 @synthesize inputAudioData;
 @synthesize recordingStarted;
 @synthesize loadAudioQueue;
 @synthesize paused;
 @synthesize fileRecording;
 @synthesize recordingFile;
+@synthesize duration;
+@synthesize durationPackets;
+@synthesize playPosition;
 
 - (id) init
 {	
 	self = [super init];
     if(self != nil)
     {    
-        loop = (InMemoryAudioFile**)calloc(kNumChannels, sizeof(InMemoryAudioFile*));
+        channels = (InMemoryAudioFile**)calloc(kNumChannels, sizeof(InMemoryAudioFile*));
         
-        loop[0] = [[InMemoryAudioFile alloc]initForChannel:1];
-        loop[1] = [[InMemoryAudioFile alloc]initForChannel:2];
-        loop[2] = [[InMemoryAudioFile alloc]initForChannel:3];
-        loop[3] = [[InMemoryAudioFile alloc]initForChannel:4];
-        loop[4] = [[InMemoryAudioFile alloc]initForChannel:5];
-        loop[5] = [[InMemoryAudioFile alloc]initForChannel:6];
-        loop[6] = [[InMemoryAudioFile alloc]initForChannel:7];
-        loop[7] = [[InMemoryAudioFile alloc]initForChannel:8];
-		//  loop[8] = [[InMemoryAudioFile alloc]initForChannel:9];
+        channels[0] = [[InMemoryAudioFile alloc]initForChannel:1];
+        channels[1] = [[InMemoryAudioFile alloc]initForChannel:2];
+        channels[2] = [[InMemoryAudioFile alloc]initForChannel:3];
+        channels[3] = [[InMemoryAudioFile alloc]initForChannel:4];
+        channels[4] = [[InMemoryAudioFile alloc]initForChannel:5];
+        channels[5] = [[InMemoryAudioFile alloc]initForChannel:6];
+        channels[6] = [[InMemoryAudioFile alloc]initForChannel:7];
+        channels[7] = [[InMemoryAudioFile alloc]initForChannel:8];
+		// channels[8] = [[InMemoryAudioFile alloc]initForChannel:9];
         
         loadAudioQueue = [[NSOperationQueue alloc] init];
         [loadAudioQueue setMaxConcurrentOperationCount:10];
@@ -260,11 +296,11 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 {
     for(int idx = 0; idx < kNumChannels; idx++)
     {
-        [loop[idx] release];
-        loop[idx] = nil;
+        [channels[idx] release];
+        channels[idx] = nil;
     }
     
-    free(loop);
+    free(channels);
     
     [self freeData];
     
@@ -281,16 +317,16 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
     
     if(flag)
     {
-        [loop[index] pause:flag];
+        [channels[index] pause:flag];
     }
     else
     {
-        [loop[index] pause:flag];
+        [channels[index] pause:flag];
     }
 }
 
 
-- (void) changeCrossFaderAmount:(float)volume forChannel:(NSInteger)channel
+- (void) changeCrossFaderAmount:(double)volume forChannel:(NSInteger)channel
 {	    		
 	// set the volume levels on the two input channels to the crossfader
 	OSStatus err = AudioUnitSetParameter(crossFaderMixer, kMultiChannelMixerParam_Volume, kAudioUnitScope_Input, channel - 1, volume, 0);
@@ -320,9 +356,9 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 /*
         for(int idx = 0; idx < kNumChannels; idx++)
         {
-            if(loop[idx].playing)
+            if(channels[idx].playing)
             {
-                [loop[idx] pause:YES];
+                [channels[idx] pause:YES];
             }
         }
 */
@@ -333,9 +369,9 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 /*
         for(int idx = 0; idx < kNumChannels; idx++)
         {
-            if(loop[idx].paused)
+            if(channels[idx].paused)
             {
-                [loop[idx] pause:NO];
+                [channels[idx] pause:NO];
             }
         }
 */
@@ -363,6 +399,20 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 }
 
 
+- (BOOL) hasData
+{
+	for(int idx = 0; idx < kNumChannels - 1; idx++)
+	{
+		if(channels[idx].loaded && !channels[idx].noData)
+		{
+			return YES; // Some channel has data...
+		}
+	}
+	
+	return NO;	// None of the output channels has data...
+}
+
+
 - (void) startPlay
 {
     OSStatus status = noErr;
@@ -371,17 +421,18 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	AUGraphIsRunning(graph, &graphRunning);
 	if(!graphRunning)
 	{
-        [loop[kNumChannels - 1] start];
+        [channels[kNumChannels - 1] start];
 
         for(int idx = 0; idx < kNumChannels - 1; idx++)
         {
-            if(loop[idx].loaded)
+            if(channels[idx].loaded)
             {
-                [loop[idx] start];
+                [channels[idx] start];
             }
         }
         
         packetIndex = 0;
+		durationPacketsIndex = playPosition * 44100.0;
 
 		status = AUGraphStart(graph);
 		NSAssert(status == noErr, @"Error starting graph.");
@@ -438,16 +489,22 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
         NSAssert(status == noErr, @"Error stopping graph.");
         
 		// Stop audio input (mic)
-		[loop[kNumChannels - 1] stop];
+		[channels[kNumChannels - 1] stop];
 		
 		// Stop audio output (tracks)
         for(int idx = 0; idx < kNumChannels - 1; idx++)
         {
-            if(loop[idx].playing || loop[idx].paused)
+            if(channels[idx].playing || channels[idx].paused)
             {
-                [loop[idx] stop];
+                [channels[idx] stop];
             }
         }
+		
+		// Set next start position to stop position
+        for(int idx = 0; idx < kNumChannels - 1; idx++)
+        {
+			[channels[idx].operation setStartPosition:playPosition];
+		}
 	}
 
 	self.isStopping = NO;
@@ -475,22 +532,33 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
     UInt32 inputAvailable = 0;
     UInt32 size = sizeof(inputAvailable);
     OSStatus status = AudioSessionGetProperty(kAudioSessionProperty_AudioInputAvailable, &size, &inputAvailable);
-	NSAssert(status == noErr, @"Error getting input availability.");
+	NSAssert(status == noErr, @"Error getting property kAudioSessionProperty_AudioInputAvailable.");
 	if(inputAvailable == 0)
     {
+		missingAudioInput = YES;
+		
         NSLog(@"Audio Input Available? %s", inputAvailable != 0 ? "yes" : "no");
         // Warn No input capability
 		UIAlertView *alert = [[[UIAlertView alloc] initWithTitle:@"Warning" message:@"No Audio Input Available!!" delegate:self
                                                                         cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
 		[alert show];
 	}
+	
+	UInt32 otherAudioIsPlaying = 0;
+    size = sizeof(otherAudioIsPlaying);
+    status = AudioSessionGetProperty(kAudioSessionProperty_OtherAudioIsPlaying, &size, &otherAudioIsPlaying);
+	NSAssert(status == noErr, @"Error getting property kAudioSessionProperty_OtherAudioIsPlaying.");
+	if(otherAudioIsPlaying != 0)
+    {
+        NSLog(@"Other Audio Software is Playing");
+ 	}
  
     status = AudioSessionAddPropertyListener(kAudioSessionProperty_AudioRouteChange, propListener, self);
-	NSAssert(status == noErr, @"Error adding audio session prop listener.");
+	NSAssert(status == noErr, @"Error adding kAudioSessionProperty_AudioRouteChange property listener.");
 
     // we also need to listen to see if input availability changes
     status = AudioSessionAddPropertyListener(kAudioSessionProperty_AudioInputAvailable, propListener, self);
-	NSAssert(status == noErr, @"Error adding audio session prop listener.");
+	NSAssert(status == noErr, @"Error adding kAudioSessionProperty_AudioInputAvailable property listener.");
  
 	Float64 sampleRate;
 	sampleRate = 44100.0; // Supports and changes to 22050.0 or 48000.0 too!
@@ -501,7 +569,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	NSLog(@"Device sample rate %f", sampleRate);
 
 	// Set preferred hardward buffer size of 1024; part of assumptions in callbacks
-	Float32 preferredBufferSize = (float)packetsInBuffer / 44100.0;
+	Float32 preferredBufferSize = (double)packetsInBuffer / 44100.0;
 	status = AudioSessionSetProperty(kAudioSessionProperty_PreferredHardwareIOBufferDuration, sizeof(preferredBufferSize), &preferredBufferSize);
 	NSAssert(status == noErr, @"Error setting io buffer duration.");
 
@@ -511,7 +579,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	NSLog(@"Hardware buffer size %f", ioBufferSize);
 	
 	// set the audio category
-	UInt32 audioCategory = kAudioSessionCategory_PlayAndRecord; // kAudioSessionCategory_AmbientSound;
+	UInt32 audioCategory = kAudioSessionCategory_PlayAndRecord;
 	AudioSessionSetProperty(kAudioSessionProperty_AudioCategory, sizeof(audioCategory), &audioCategory);
 	
 	UInt32 getAudioCategory = sizeof(audioCategory);
@@ -774,7 +842,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 							   sizeof(audioFormat));
 	NSAssert(status == noErr, @"Error setting input property format 6.");	
 
-	status = AudioUnitSetProperty(crossFaderMixer, 
+	status = AudioUnitSetProperty(crossFaderMixer,
 							   kAudioUnitProperty_StreamFormat, 
 							   kAudioUnitScope_Input, 
 							   7, 
@@ -794,6 +862,53 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	NSAssert(status == noErr, @"Error initializing graph.");
 	
 	// CAShow(graph); 
+}
+
+
+- (UInt32) getTotalPackets
+{
+	return durationPacketsIndex;
+}
+
+
+- (void) setStartPosition:(NSTimeInterval)time
+{
+	for(int idx = 0; idx < kNumChannels - 1; idx++)
+	{
+		if(channels[idx].loaded)
+		{
+			[channels[idx].operation setStartPosition:time];
+		}
+	}
+	
+	playPosition = time;
+}
+
+
+- (void) setCurrentPlayPosition:(NSTimeInterval)time
+{
+	for(int idx = 0; idx < kNumChannels - 1; idx++)
+	{
+		if(channels[idx].loaded)
+		{
+			[channels[idx] stop];
+			[channels[idx] reset];
+			
+			[channels[idx].operation setCurrentPlayPosition:time];
+		}
+	}
+
+	playPosition = time;
+	packetIndex = 0;
+	durationPacketsIndex = playPosition * 44100.0;
+
+	for(int idx = 0; idx < kNumChannels - 1; idx++)
+	{
+		if(channels[idx].loaded)
+		{
+			[channels[idx] start];
+		}
+	}
 }
 
 @end

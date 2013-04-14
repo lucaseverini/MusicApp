@@ -10,25 +10,53 @@
 #import "DJMixer.h"
 #import "MyNavigationController.h"
 
+
+static MusicAppDelegate *sharedInstance = nil;
+
 @implementation MusicAppDelegate
 
 @synthesize window;
-@synthesize viewController;
+@synthesize djMixerViewController;
 @synthesize karaokeData;
+
++ (MusicAppDelegate*) shared
+{
+	return sharedInstance;
+}
+
+
+- (id) init
+{
+	self = [super init];
+    if(self != nil)
+    {
+		sharedInstance = self;
+	}
+	
+	return self;
+}
+
+
+- (void) dealloc
+{
+	[super dealloc];
+	
+	sharedInstance = nil;
+}
 
 
 - (BOOL) application:(UIApplication*)application didFinishLaunchingWithOptions:(NSDictionary*)launchOptions 
 {    	
     // NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
-	viewController = [[DJMixerViewController alloc] initWithNibName:@"DJMixerView" bundle:[NSBundle mainBundle]];
+	djMixerViewController = [[DJMixerViewController alloc] initWithNibName:@"DJMixerView" bundle:[NSBundle mainBundle]];
 	
     // Init the audio
 	djMixer = [[DJMixer alloc] init];
-    viewController.djMixer = djMixer;
+    djMixerViewController.djMixer = djMixer;
 
     // setRootViewController is necessary for correct multiple orientation support on iOS6
-    MyNavigationController *navControl = [[MyNavigationController alloc]initWithRootViewController:viewController];
+    MyNavigationController *navControl = [[MyNavigationController alloc]initWithRootViewController:djMixerViewController];
     navControl.navigationBarHidden = YES;
     [window setRootViewController:navControl];
    
@@ -63,8 +91,8 @@
 */
 	if(djMixer.isPlaying && !djMixer.paused)
 	{
-		viewController.pauseSwitch.on = YES;
-		viewController.pauseSwitchLS.on = YES;
+		djMixerViewController.pauseSwitch.on = YES;
+		djMixerViewController.pauseSwitchLS.on = YES;
 		
 		// [viewController pause:YES];
 	}
@@ -80,7 +108,7 @@
 
     // Release the audio
     [djMixer release];
-    viewController.djMixer = nil;
+    djMixerViewController.djMixer = nil;
 
     [window release];
 
@@ -88,12 +116,5 @@
     [defaults setBool:NO forKey:@"Crashed"];
     [defaults synchronize];
 }
-
-
-- (void) dealloc 
-{
-    [super dealloc];
-}
-
 
 @end

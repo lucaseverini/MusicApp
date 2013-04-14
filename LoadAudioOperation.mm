@@ -28,15 +28,18 @@
 @synthesize fillAudioData1;
 @synthesize fillAudioData2;
 @synthesize endReading;
-@synthesize noDataAvailable;
 @synthesize currentAudioBuffer;
 @synthesize busy;
+@synthesize loop;
+@synthesize duration;
+@synthesize packets;
+@synthesize setStartPosition;
 
 const size_t kSampleBufferSize = 32768;
 // 44,100 x 16 x 2 = 1,411,200 bits per second (bps) = 1,411 kbps = ~142 KBytes/sec
 const size_t kAudioDataBufferSize = (1024 * 512) + kSampleBufferSize;
 
-- (id) initWithAudioFile:(NSString*)filePath mixer:(DJMixer*)theMixer;
+- (id) initWithAudioFile:(NSString*)filePath mixer:(DJMixer*)theMixer loop:(BOOL)loopFlag;
 {
 	self = [super init];
     if(self != nil)
@@ -47,6 +50,7 @@ const size_t kAudioDataBufferSize = (1024 * 512) + kSampleBufferSize;
 
         [self setQueuePriority:NSOperationQueuePriorityLow];
         
+		loop = loopFlag;
 		mixer = theMixer;
 		busy = NO;
 		        
@@ -55,7 +59,10 @@ const size_t kAudioDataBufferSize = (1024 * 512) + kSampleBufferSize;
         {
             return NULL;
         }
-        
+		
+		duration = asset.duration;
+		packets = ((double)duration.value / (double)duration.timescale) * 44100.0;
+		        
         NSArray *tracks = [asset tracks];
         trackCount = [tracks count];
         if(trackCount < 1)
@@ -136,40 +143,53 @@ const size_t kAudioDataBufferSize = (1024 * 512) + kSampleBufferSize;
 		
         if(openFile)
         {
-			busy = YES;
-			
-            if([self openAudioFile:fileURL])
-            {
-                openFile = NO;
-            }
-            else
-            {
-                NSLog(@"Error opening file %@", [fileURL absoluteString]);
-            }
-			
-			busy = NO;
+			@synchronized(self)
+			{
+				busy = YES;
+				
+				if([self openAudioFile:fileURL])
+				{
+					openFile = NO;
+				}
+				else
+				{
+					NSLog(@"Error opening file %@", [fileURL absoluteString]);
+				}
+				
+				busy = NO;
+			}
         }
 
-        if(fillAudioData1)
-        {
-            // NSLog(@"Fill audioDataBuffer1");
-            
-            sizeAudioData1 = [self fillAudioBuffer:audioData1];
-            if(sizeAudioData1 > 0)
-            {
-                fillAudioData1 = NO;
-            }
-        }
-        else if(fillAudioData2)
-        {
-            // NSLog(@"Fill audioDataBuffer2");
+		if(!noDataAvailable)
+		{
+			if(fillAudioData1)
+			{
+				// NSLog(@"Fill audioDataBuffer1");
+				
+				@synchronized(self)
+				{
+					sizeAudioData1 = [self fillAudioBuffer:audioData1];
+					if(sizeAudioData1 > 0)
+					{
+						fillAudioData1 = NO;
+					}
+				}
+			}
+			else if(fillAudioData2)
+			{
+				// NSLog(@"Fill audioDataBuffer2");
 
-            sizeAudioData2 = [self fillAudioBuffer:audioData2];
-            if(sizeAudioData2 > 0)
-            {
-                fillAudioData2 = NO;
-            }
-        }
+				@synchronized(self)
+				{
+					sizeAudioData2 = [self fillAudioBuffer:audioData2];
+					if(sizeAudioData2 > 0)
+					{
+						fillAudioData2 = NO;
+					}
+				}
+			}
+		}
+		
 #ifdef USE_NSCONDITION
         [waitForAction lock];
         [waitForAction wait];
@@ -203,6 +223,13 @@ END:
 
 - (UInt32*) getNextAudioBuffer:(NSUInteger*)packetsInBuffer;
 {
+	*packetsInBuffer = 0;
+	
+	if(noDataAvailable)
+	{
+		return NULL;
+	}
+	
     if(currentAudioBuffer == 1)
     {
         fillAudioData1 = YES;
@@ -305,25 +332,28 @@ END:
         }
         else
         {
-            if(dataIdx == 0)
-            {
-                return 0;
-            }
-            
-            // NSLog(@"AudioBuffer %p filled with %d bytes", audioBuffer, dataIdx);
-            
-            break;
+             break;
         }
     }
     
 	if(reader.status == AVAssetReaderStatusCompleted || reader.status == AVAssetReaderStatusFailed)
-    {
-        [reader cancelReading];        
+    {        
+		if(reader.status == AVAssetReaderStatusCompleted && loop)
+		{
+			openFile = YES; // File must be reopen again to read from the beginning. Bug?
+		}
+
+		[reader cancelReading];
         [reader release];
         reader = nil;
-         
-        openFile = YES; // File must be reopen again to read from the beginning. Why?
-    }
+	}
+	
+	if(dataIdx == 0)
+	{
+		noDataAvailable = YES;
+
+		NSLog(@"noDataAvailable");		
+	}
 
     return dataIdx;
 }
@@ -331,57 +361,108 @@ END:
 
 - (BOOL) openAudioFile:(NSURL*)fileUrl
 {    
-    // NSLog(@"Open file %@", [fileUrl absoluteString]);
+	// NSLog(@"Open file %@", [fileUrl absoluteString]);
 	
 	NSError *error = nil;
-    reader = [[AVAssetReader alloc] initWithAsset:asset error:&error];
+	reader = [[AVAssetReader alloc] initWithAsset:asset error:&error];
 	if(reader == nil)
 	{
 		NSLog(@"Error %@ opening file %@", [error description], [fileUrl absoluteString]);
 		return NO;
 	}
 		
-    output = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:track outputSettings:settings];
+	output = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:track outputSettings:settings];
 	if(output == nil)
 	{
 		NSLog(@"Error in assetReaderTrackOutputWithTrack()");
 		return NO;
 	}
 	
-    [reader addOutput:output];
+	[reader addOutput:output];
 
 	if(readerStatus == AVAssetReaderStatusFailed && copiedSamplePackets != 0)
 	{
-		NSLog(@"Start reading from sample %d", copiedSamplePackets);
-		
+#if TARGET_IPHONE_SIMULATOR
+		NSLog(@"Start reading %@ from packet %d after OS interruption", [[fileURL path] lastPathComponent], copiedSamplePackets);
+#endif
 		reader.timeRange = CMTimeRangeMake(CMTimeMake(copiedSamplePackets, 44100), kCMTimePositiveInfinity);
-    }
+	}
+	else if(setStartPosition)
+	{
+#if TARGET_IPHONE_SIMULATOR
+		NSLog(@"Start reading %@ from packet %d", [[fileURL path] lastPathComponent] , startPosition);
+#endif
+		reader.timeRange = CMTimeRangeMake(CMTimeMake(startPosition, 44100), kCMTimePositiveInfinity);
+		
+		setStartPosition = NO;
+	}
 
 	copiedSamplePackets = 0;
 	readerStatus = 0;
 
-    return [reader startReading];
+	return [reader startReading];
 }
 
 - (void) reset
 {
-    if(reader != nil)
-    {
-        [reader cancelReading];
-        [reader release];
-        reader = nil;
-    }
-    
-    openFile = YES;
-    fillAudioData1 = YES;
-    fillAudioData2 = NO;
-    currentAudioBuffer = 0;
-
-#ifdef USE_NSCONDITION
-    [waitForAction lock];
-    [waitForAction signal];
-    [waitForAction unlock];
-#endif
+	@synchronized(self)
+	{
+		if(reader != nil)
+		{
+			[reader cancelReading];
+			while(reader.status != AVAssetReaderStatusCancelled)
+			{
+				NSLog(@".");
+			}
+			
+			[reader release];
+			reader = nil;
+		}
+		
+		openFile = YES;
+		noDataAvailable = NO;
+		fillAudioData1 = YES;
+		fillAudioData2 = NO;
+		currentAudioBuffer = 0;
+	}
 }
+
+
+- (void) setStartPosition:(NSTimeInterval)time
+{
+	@synchronized(self)
+	{		
+		NSUInteger newStartPosition = time * 44100.0;
+		if(newStartPosition > packets)
+		{
+			newStartPosition = newStartPosition % packets;
+		}
+		
+		if(YES/*newStartPosition != startPosition*/)
+		{
+			[self reset];
+			
+			startPosition = newStartPosition;
+			setStartPosition = YES;
+		}
+	}
+}
+
+
+- (void) setCurrentPlayPosition:(NSTimeInterval)time
+{
+	@synchronized(self)
+	{
+		NSUInteger newStartPosition = time * 44100.0;
+		if(newStartPosition > packets)
+		{
+			newStartPosition = newStartPosition % packets;
+		}
+		
+		startPosition = newStartPosition;
+		setStartPosition = YES;
+	}
+}
+
 
 @end

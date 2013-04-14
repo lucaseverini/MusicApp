@@ -23,6 +23,8 @@
 	UInt32 *audioData1;
 	UInt32 *audioData2;
 	BOOL openFile;
+	BOOL noDataAvailable;
+	NSUInteger startPosition;
 }
 
 @property (nonatomic, retain) NSCondition *waitForAction;
@@ -39,15 +41,20 @@
 @property (atomic, assign) BOOL fillAudioData1;
 @property (atomic, assign) BOOL fillAudioData2;
 @property (atomic, assign) BOOL endReading;
-@property (atomic, assign) BOOL noDataAvailable;
 @property (atomic, assign) NSUInteger currentAudioBuffer;
 @property (atomic, assign) BOOL busy;
+@property (atomic, assign) BOOL setStartPosition;
+@property (nonatomic, assign) BOOL loop;
+@property (nonatomic, assign) CMTime duration;
+@property (nonatomic, assign) UInt32 packets;
 
-- (id) initWithAudioFile:(NSString*)filePath mixer:(DJMixer*)theMixer;
+- (id) initWithAudioFile:(NSString*)filePath mixer:(DJMixer*)theMixer loop:(BOOL)loopFlag;
 - (BOOL) openAudioFile:(NSURL*)fileUrl;
 - (NSUInteger) fillAudioBuffer:(void*)audioBuffer;
 - (UInt32*) getNextAudioBuffer:(NSUInteger*)packetsInBuffer;
 - (void) reset;
 - (BOOL) isFinished;
+- (void) setStartPosition:(NSTimeInterval)time;
+- (void) setCurrentPlayPosition:(NSTimeInterval)time;
 
 @end

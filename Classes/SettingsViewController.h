@@ -26,6 +26,8 @@
 @property (nonatomic, retain) IBOutlet UIButton *deleteRecordedAudioButton;
 @property (nonatomic, retain) IBOutlet UISwitch *autoStartKaraokeSwitch;
 @property (nonatomic, retain) IBOutlet UISwitch *autoStartRecordingSwitch;
+@property (nonatomic, retain) IBOutlet UISwitch *playContinuousSwitch;
+@property (nonatomic, retain) IBOutlet UISwitch *autoSetAudioInputSwitch;
 
 - (IBAction) goBack:(UIButton*)sender;
 - (IBAction) goKaraoke:(UIButton*)sender;
@@ -34,5 +36,7 @@
 - (IBAction) doDeleteRecordedAudio:(UIButton*)sender;
 - (IBAction) doAutoStartKaraoke:(UISwitch*)sender;
 - (IBAction) doAutoStartRecording:(UISwitch*)sender;
+- (IBAction) doPlayContinuous:(UISwitch*)sender;
+- (IBAction) doAutoSetAudioInput:(UISwitch*)sender;
 
 @end

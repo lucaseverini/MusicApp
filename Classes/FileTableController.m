@@ -61,7 +61,7 @@
     NSDictionary *channelDict = [defaults objectForKey:[NSString stringWithFormat:@"Channel-%d", cellIdx + 1]];
     if(channelDict != nil && [channelDict objectForKey:@"AudioTitle"] != nil) 
     {        
-        NSString *text = [[NSString alloc ] initWithFormat:@"%@ (%.1f secs)", [channelDict objectForKey:@"AudioTitle"], [[channelDict objectForKey:@"AudioDuration"] floatValue]];
+        NSString *text = [[NSString alloc ] initWithFormat:@"%@ (%.1f secs)", [channelDict objectForKey:@"AudioTitle"], [[channelDict objectForKey:@"AudioDuration"] doubleValue]];
  
         cell.tag = 1;
         cell.textLabel.text = text;
@@ -72,7 +72,7 @@
     else 
     {
         cell.tag = 0;
-        cell.textLabel.text = [NSString stringWithFormat:@"Canale %d", cellIdx + 1];
+        cell.textLabel.text = [NSString stringWithFormat:@"Track %d", cellIdx + 1];
         cell.textLabel.textColor = [UIColor lightGrayColor];
         
         // cell.selectionStyle = UITableViewCellSelectionStyleBlue;
@@ -143,6 +143,9 @@
 }
 */
 
+// ***
+// Why the first tap on the list is lost after the delete button is showed? Bug?
+// ***
 - (void) tableView:(UITableView*)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath*)indexPath
 {
     if(editingStyle == UITableViewCellEditingStyleDelete) 
@@ -151,8 +154,8 @@
         NSDictionary *channelDict = [NSDictionary dictionaryWithObjectsAndKeys:nil, @"AudioUrl", nil, @"AudioTitle", nil, @"AudioDuration", nil, @"AudioVolume", nil];     
         [defaults setObject:channelDict forKey:[NSString stringWithFormat:@"Channel-%d", [indexPath row] + 1]];
         [defaults synchronize];
-        
-        NSArray *indexes = [NSArray arrayWithObject:indexPath];
+		 
+		NSArray *indexes = [NSArray arrayWithObject:indexPath];
         [tableView reloadRowsAtIndexPaths:indexes withRowAnimation:UITableViewRowAnimationAutomatic];
     }    
 }

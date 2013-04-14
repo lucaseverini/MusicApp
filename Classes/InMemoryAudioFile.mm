@@ -22,6 +22,9 @@
 @synthesize playing;
 @synthesize paused;
 @synthesize loaded;
+@synthesize noData;
+@synthesize recorder;
+@synthesize operation;
 
 // Override init method
 - (id) initForChannel:(NSInteger)numChannel
@@ -294,12 +297,17 @@
 // Gets the next packet from the buffer, if we have reached the end of the buffer return 0
 - (UInt32) getNextPacket
 {
+	if(noData)
+	{
+		return 0;
+	}
+
     if(playFromAudioInput)
     {
         if(inputAudioData == NULL || packetIndex == packetsInBuffer)
         {
             // inputAudioData = recorder->NextBufferAudioData();
-            
+
             inputAudioData = [recorder nextBufferAudioData];
              
             packetIndex = 0;
@@ -333,12 +341,7 @@
     else
     {
         if(operation != nil)
-        {
-            if(operation.noDataAvailable)
-            {
-                return 0;
-            }
-            
+        {			
             if(packetIndex >= packetCount)
             {
                 packetIndex = 0;
@@ -348,7 +351,16 @@
                 packetCount = (SInt64)numOfPackets;
             }
 
-            return audioData[packetIndex++];
+			if(audioData != NULL)
+			{				
+				return audioData[packetIndex++];
+			}
+			else
+			{
+				noData = YES;
+				
+				return 0;
+			}
         }
         else
         {
@@ -380,6 +392,7 @@
 	packetIndex = 0;
     packetCount = 0;
     lostPackets = 0;
+	noData = NO;
     
     [operation reset];
 }
@@ -414,7 +427,7 @@
     
     packetCount = dataLen / sizeof(UInt32);
  
-    // float duration = [[mediaItem valueForProperty:MPMediaItemPropertyPlaybackDuration] floatValue];
+    // double duration = [[mediaItem valueForProperty:MPMediaItemPropertyPlaybackDuration] doubleValue];
     fileName = [[NSString alloc] initWithString:[mediaItem valueForProperty:MPMediaItemPropertyTitle]];
     
     [data release];

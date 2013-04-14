@@ -42,9 +42,6 @@
     SInt64                          jumpedpackets;
 	UInt64							totalPacketIndex;
     UInt64                          lostPackets;
-
-    AURecorder                      *recorder;
-    LoadAudioOperation              *operation;
 }
 
 @property (nonatomic, retain) NSString *fileName;
@@ -54,6 +51,9 @@
 @property (atomic, assign) BOOL playing;
 @property (atomic, assign) BOOL paused;
 @property (atomic, assign) BOOL loaded;
+@property (nonatomic, assign) BOOL noData;
+@property (nonatomic, assign) AURecorder *recorder;
+@property (nonatomic, assign) LoadAudioOperation *operation;
 
 - (id) initForChannel:(NSInteger)numChannel;
 

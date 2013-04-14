@@ -49,7 +49,6 @@
 @property (nonatomic, retain) IBOutlet UIButton *karaokeButton;
 @property (nonatomic, retain) IBOutlet UITextScroll *karaokeText;
 @property (nonatomic, retain) IBOutlet UIButton *recordButton;
-@property (atomic, assign) BOOL karaokeActivated;
 
 @property (nonatomic, retain) IBOutlet UIButton *playButtonLS;
 @property (nonatomic, retain) IBOutlet UIButton *selectButtonLS;
@@ -57,13 +56,18 @@
 @property (nonatomic, retain) IBOutlet UIButton *karaokeButtonLS;
 @property (nonatomic, retain) IBOutlet UIButton *recordButtonLS;
 @property (nonatomic, retain) IBOutlet UITextScroll *karaokeTextLS;
+@property (nonatomic, retain) IBOutlet UILabel *positionLabelLS;
+@property (nonatomic, retain) IBOutlet UILabel *durationLabelLS;
+@property (nonatomic, retain) IBOutlet UISlider *positionSliderLS;
 
 @property (nonatomic, retain) DJMixer *djMixer;
 @property (nonatomic, retain) NSString *recordingFilePath;
 @property (nonatomic, retain) Karaoke *karaoke;
 @property (nonatomic, retain) NSTimer *karaokeTimer;
 @property (nonatomic, retain) NSTimer *checkDiskSizeTimer;
+@property (nonatomic, retain) NSTimer *checkPositionTimer;
 @property (nonatomic, assign) BOOL isPortrait;
+@property (atomic, assign) BOOL karaokeActivated;
 
 - (IBAction) changeVolume:(UISlider*)sender;
 - (IBAction) playOrStop;
@@ -71,6 +75,7 @@
 - (IBAction) goSettings:(UIButton*)sender;
 - (IBAction) doKaraoke:(UIButton*)sender;
 - (IBAction) doRecord:(UIButton*)sender;
+- (IBAction) setPlayPosition:(UISlider*)sender;
 
 - (void) pause:(BOOL)flag;
 - (void) saveControlsValue;
@@ -78,5 +83,9 @@
 - (void) recordStart;
 - (void) recordStop;
 - (NSUInteger) checkDiskSize:(BOOL)showAlert;
+- (void) updatePlayPosition;
+- (void) setPlayPositionEnded:(NSNotification*)notification;
+- (void) enableAudioInput;
+- (void) disableAudioInput;
 
 @end
