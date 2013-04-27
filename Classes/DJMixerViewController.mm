@@ -14,11 +14,12 @@
 #import "UITextScroll.h"
 #import "Karaoke.h"
 #import "LoadAudioOperation.h"
+#import "SequencerOperation.h"
 #import "AudioToolbox/AudioToolbox.h"
 
 
 #define PLAYPOSITION_LABEL_PRECISION @"%.1f"	// Show 10th of second
-#define PLAYPOSITION_TIMER_FREQUENCY 0.025		// Check every 20th of second
+#define PLAYPOSITION_TIMER_FREQUENCY 0.01		// Check every 100th of second
 
 @implementation DJMixerViewController
 
@@ -57,20 +58,23 @@
 @synthesize positionLabelLS;
 @synthesize durationLabelLS;
 @synthesize positionSliderLS;
+@synthesize sequencerSwitchLS;
 
 @synthesize djMixer;
-@synthesize recordingFilePath;
 @synthesize karaoke;
 @synthesize karaokeTimer;
 @synthesize checkDiskSizeTimer;
 @synthesize checkPositionTimer;
 @synthesize isPortrait;
+@synthesize downArrows;
 
 - (id) initWithNibName:(NSString*)nibNameOrNil bundle:(NSBundle*)nibBundleOrNil
 {
     self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
     if(self != nil)
     {
+		NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory , NSUserDomainMask, YES);
+		userDocDirPath = [[paths objectAtIndex:0] copy];
 	}
     
     return self;
@@ -92,6 +96,8 @@
 	
 	[channelLabels release];
 	[channelSliders release];
+	
+	[userDocDirPath release];
 }
 
 
@@ -106,7 +112,7 @@
 						channel6Label, @"Channel-6",
 						channel7Label, @"Channel-7",
 						channel8Label, @"Channel-8",
-						audioInputLabel, @"Channel-9", nil];
+						audioInputLabel, @"Playback", nil];
 	
 	channelSliders = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
 						channel1Slider, @"Channel-1",
@@ -117,7 +123,7 @@
 						channel6Slider, @"Channel-6",
 						channel7Slider, @"Channel-7",
 						channel8Slider, @"Channel-8",
-						audioInputSlider, @"Channel-9", nil];
+						audioInputSlider, @"Playback", nil];
 }
 
 
@@ -145,6 +151,14 @@
 	[positionSliderLS removeTarget:self action:@selector(setPlayPositionEnded:) forControlEvents:UIControlEventTouchUpInside];
 	
 	// [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillResignActiveNotification object:nil];
+	
+	for(UIImageView *arrowView in downArrows)
+	{
+		[arrowView removeFromSuperview];
+		[arrowView release];
+	}
+	[downArrows release];
+	downArrows = nil;
 }
 
 
@@ -156,12 +170,12 @@
     
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 	
-	BOOL loop = [defaults boolForKey:@"PlayContinuousOn"];
+	djMixer.loop = [defaults boolForKey:@"PlayContinuousOn"];
 	
 	double maxDuration = 0.0;
 	
 	// Init all output channels
-	for(NSInteger idx = 0; idx < 8; idx++)
+	for(NSInteger idx = 0; idx < kNumChannels; idx++)
 	{
 		NSString *channelStr = [NSString stringWithFormat:@"Channel-%d", idx + 1];
 		
@@ -177,9 +191,11 @@
 			{
 				[djMixer.channels[idx] removeLoadOperation]; // Remove the previous operation if present
 				
-				LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url mixer:djMixer loop:loop];
+				LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
+				assert(loadOperation != nil);
+				
 				[djMixer.loadAudioQueue addOperation:loadOperation];
-				[djMixer.channels[idx] setLoadOperation:loadOperation];				
+				[djMixer.channels[idx] setLoadOperation:loadOperation mixer:djMixer];
 			}
 		}
 		
@@ -210,12 +226,26 @@
 			[slider setValue:0.0];
 		}
 	}
-	
+
+	// Init the Sequencer channel
+	[djMixer.sequencer freeStuff];
+
+	[djMixer.sequencer removeLoadOperation]; // Remove the previous operation if present
+		
+	NSString *recordsPList = [userDocDirPath stringByAppendingPathComponent:@"Records.plist"];
+	SequencerOperation *sequencerOperation = [[SequencerOperation alloc] initWithRecordsFile:recordsPList];
+	assert(sequencerOperation != nil);
+		
+	[djMixer.loadAudioQueue addOperation:sequencerOperation];
+	[djMixer.sequencer setSequencerOperation:sequencerOperation  mixer:djMixer];
+
+	NSLog(@"LoadQueue Operations: %d", [djMixer.loadAudioQueue operationCount]);
+
 	// Find a better way to compute duration and durationPackets internally to DJMixer
 	djMixer.duration = maxDuration;
 	djMixer.durationPackets = maxDuration * 44100.0;
 	
-	[djMixer setStartPosition:0.0];
+	[djMixer setStartPosition:0.0 reset:NO];
 	
 	durationLabelLS.text = [NSString stringWithFormat:PLAYPOSITION_LABEL_PRECISION, maxDuration];
 	positionLabelLS.text = @"0";
@@ -223,8 +253,8 @@
 
 	if(!djMixer.missingAudioInput)
 	{
-		// Init the input channel which is referenced as Channel-9 even if is very different...
-		NSString *channelStr = @"Channel-9";
+		// Init the Playback channel 
+		NSString *channelStr = @"Playback";
 		NSDictionary *channelDict = [defaults objectForKey:channelStr];
 		if(channelDict != nil)
 		{
@@ -251,18 +281,17 @@
     [karaokeText setAttributedText:nil];
     [karaokeTextLS setAttributedText:nil];
     
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory , NSUserDomainMask, YES);
-    NSString *filePath = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"KaraokeData.plist"];
-    if([[NSFileManager defaultManager] fileExistsAtPath:filePath])
+    NSString *karaokePList = [userDocDirPath stringByAppendingPathComponent:@"KaraokeData.plist"];
+    if([[NSFileManager defaultManager] fileExistsAtPath:karaokePList])
     {
-        NSLog(@"Karaoke file %@ is available", filePath);
+        NSLog(@"Karaoke file %@ is available", karaokePList);
         
-        NSArray *data = [NSArray arrayWithContentsOfFile:filePath];
+        NSArray *data = [NSArray arrayWithContentsOfFile:karaokePList];
         self.karaoke = [[Karaoke alloc] initKaraoke:data];
     }
     else
     {
-        NSLog(@"Karaoke file %@ is missing", filePath);
+        NSLog(@"Karaoke file %@ is missing", karaokePList);
     }
 	
 	// Seems better to use applicationDidEnterBackground in app delegate
@@ -272,6 +301,32 @@
     [self.karaokeButtonLS setEnabled: (self.karaoke != nil)];
     
 	[positionSliderLS addTarget:self action:@selector(setPlayPositionEnded:) forControlEvents:UIControlEventTouchUpInside];
+	
+	NSMutableArray *arrows = [NSMutableArray array];
+	recordingPtr recordings;
+	int totRecordings = [djMixer.sequencer.operation getRecordings:&recordings];
+	CGFloat startPos = positionSliderLS.frame.origin.x + 6.0;
+	CGFloat width = positionSliderLS.bounds.size.width - 6.0;
+	double durationPackets = djMixer.durationPackets;
+	for(int idx = 0; idx < totRecordings; idx++)
+	{
+		UIImageView *startArrow = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"UIButtonBarArrowDownSmall.png"]];
+		UIImageView *endArrow = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"UIButtonBarArrowDownSmall.png"]];
+		
+		double percent = (durationPackets / recordings[idx].startPacket);
+		CGFloat xPos = startPos + (width / percent) - ((100.0 / percent) * 0.17);
+		startArrow.frame = CGRectMake(xPos, 54, 12, 16);
+
+		percent = (durationPackets / recordings[idx].endPacket);
+		xPos = startPos + (width / percent) - ((100.0 / percent) * 0.17);
+		endArrow.frame = CGRectMake(xPos, 54, 12, 16);
+
+		[[self landscapeView] addSubview:startArrow];
+		[[self landscapeView] addSubview:endArrow];
+		[arrows addObject:startArrow];
+		[arrows addObject:endArrow];
+	}
+	downArrows = [[NSArray alloc] initWithArray:arrows];
     
 	self.isPortrait = (self.interfaceOrientation == UIDeviceOrientationPortrait || self.interfaceOrientation == UIDeviceOrientationPortraitUpsideDown);
 }
@@ -281,9 +336,9 @@
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     
-    for(int idx = 1; idx <= 9; idx++)
+    for(int idx = 1; idx <= 10; idx++)
     {
-		NSString *channelStr = [NSString stringWithFormat:@"Channel-%d", idx];
+		NSString *channelStr = idx != 10 ? [NSString stringWithFormat:@"Channel-%d", idx] : @"Playback";
 
         NSDictionary *channelDict = [defaults objectForKey:channelStr];
         if(channelDict != nil)
@@ -298,7 +353,7 @@
         }
         else
         {
-            NSMutableDictionary *newDict = [NSMutableDictionary dictionaryWithDictionary:channelDict];
+            NSMutableDictionary *newDict = [NSMutableDictionary dictionary];
             
             [newDict setObject:[NSNumber numberWithDouble:0.0] forKey:@"AudioVolume"];
             
@@ -318,12 +373,21 @@
     NSDictionary *channelDict = [defaults objectForKey:channelStr];
     if(channelDict != nil)
     {
-        NSMutableDictionary *newDict = [NSMutableDictionary dictionaryWithDictionary:channelDict];            
+        NSMutableDictionary *newDict = [NSMutableDictionary dictionaryWithDictionary:channelDict];
         [newDict setObject:[NSNumber numberWithDouble:[(UISlider*)[channelSliders objectForKey:channelStr] value]] forKey:@"AudioVolume"];
             
         [defaults setObject:newDict forKey:channelStr];        
-        [defaults synchronize];
     }
+	else
+	{
+		NSMutableDictionary *newDict = [NSMutableDictionary dictionary];
+		
+		[newDict setObject:[NSNumber numberWithDouble:[(UISlider*)[channelSliders objectForKey:channelStr] value]] forKey:@"AudioVolume"];
+
+		[defaults setObject:newDict forKey:channelStr];
+	}
+
+	[defaults synchronize];
 }
 
 
@@ -343,11 +407,18 @@
        }
     }
 */
-	NSString *channelStr = [[channelSliders allKeysForObject:sender] objectAtIndex:0];
-	NSScanner *scanner = [NSScanner scannerWithString:channelStr];
-	[scanner scanUpToCharactersFromSet:numbers intoString:NULL];
 	int channel;
-	[scanner scanInt:&channel];
+	NSString *channelStr = [[channelSliders allKeysForObject:sender] objectAtIndex:0];
+	if([channelStr isEqualToString:@"Playback"])
+	{
+		channel = 9;
+	}
+	else
+	{
+		NSScanner *scanner = [NSScanner scannerWithString:channelStr];
+		[scanner scanUpToCharactersFromSet:numbers intoString:NULL];
+		[scanner scanInt:&channel];
+	}
 	
     [djMixer changeCrossFaderAmount:sender.value forChannel:channel];
     
@@ -371,7 +442,7 @@
             [self doKaraoke:nil];
         }
 
-       if([defaults boolForKey:@"RecordingAutoOn"] && djMixer.fileRecording)
+       if([defaults boolForKey:@"RecordingAutoOff"] && djMixer.savingFile)
         {
             [self doRecord:nil];
         }
@@ -397,7 +468,7 @@
 
         [djMixer startPlay];
         
-		if([defaults boolForKey:@"RecordingAutoOn"] && !djMixer.fileRecording)
+		if([defaults boolForKey:@"RecordingAutoOn"] && !djMixer.savingFile)
         {
             [self doRecord:nil];
         }
@@ -457,7 +528,7 @@
 
 - (IBAction) doRecord:(UIButton*)sender
 {
-	if(djMixer.fileRecording)
+	if(djMixer.savingFile)
 	{
 		[self recordStop];
 	}
@@ -476,20 +547,24 @@
 
 	if([djMixer isPlaying])
 	{
-		if(!djMixer.paused)
+		wasPlaying = YES;
+		
+		[djMixer stopPlay];
+		
+		if(djMixer.savingFile)
 		{
-			[djMixer pause:YES];
+			[self recordStop];
 		}
 		
 		[checkPositionTimer setFireDate:[NSDate distantFuture]];
 		
 		// ADD A TIMER to check Slider value. If it remains the same for a little then play audio from there...
 
-		NSLog(@"Set current play position to %.1f", playPosition);
+		// NSLog(@"Set current play position to %.1f", playPosition);
 	}
 	else
 	{
-		NSLog(@"Set start position to %.1f", playPosition);
+		// NSLog(@"Set start position to %.1f", playPosition);
 	}
 }
 
@@ -505,14 +580,14 @@
 			djMixer.playPosition = djMixer.duration;
 			
 			[positionSliderLS setValue:1.0 animated:YES];
-			positionLabelLS.text = [NSString stringWithFormat:PLAYPOSITION_LABEL_PRECISION, djMixer.playPosition];
+			positionLabelLS.text = [NSString stringWithFormat:PLAYPOSITION_LABEL_PRECISION, (floor(djMixer.playPosition * 10) / 10)];
 		}
 		else	// Set the slider back to beginning
 		{
 			djMixer.playPosition = 0.0;
 			
 			[positionSliderLS setValue:0.0 animated:NO];
-			positionLabelLS.text = [NSString stringWithFormat:PLAYPOSITION_LABEL_PRECISION, djMixer.playPosition];
+			positionLabelLS.text = [NSString stringWithFormat:PLAYPOSITION_LABEL_PRECISION, (floor(djMixer.playPosition * 10) / 10)];
 		}
 	}
 	else
@@ -524,7 +599,7 @@
 		if(fabs(positionSliderLS.value - sliderPosition) > 0.0001) // Don't go inside here if nothing gonna displayed different...
 		{
 			[positionSliderLS setValue:sliderPosition animated:NO];
-			positionLabelLS.text = [NSString stringWithFormat:PLAYPOSITION_LABEL_PRECISION, djMixer.playPosition];
+			positionLabelLS.text = [NSString stringWithFormat:PLAYPOSITION_LABEL_PRECISION, (floor(djMixer.playPosition * 10) / 10)];
 		}
 	}
 }
@@ -533,19 +608,25 @@
 - (void) setPlayPositionEnded:(UISlider*)sender
 {
 	double playPosition = djMixer.duration * sender.value;
+	
+	NSLog(@"Set play position to %.1f", playPosition);
+	
+	[djMixer setStartPosition:playPosition reset:YES];
 
-	if([djMixer isPlaying])
+	if(wasPlaying)
 	{
-		[djMixer pause:NO];
+		wasPlaying = NO;
+		
+		[djMixer startPlay];
 
-		[djMixer setCurrentPlayPosition:playPosition];
+		[checkPositionTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:PLAYPOSITION_TIMER_FREQUENCY]];
+	}
+}
 
-		[checkPositionTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
-	}
-	else
-	{
-		[djMixer setStartPosition:playPosition];
-	}
+
+- (IBAction) doSequencer:(UISwitch*)sender
+{
+    [djMixer.sequencer pause:!sender.on];
 }
 
 
@@ -590,7 +671,7 @@
 		dstFormat.mBytesPerPacket =   4;
 		dstFormat.mBytesPerFrame =    4;
 		
-		fileName = (fileType == kAudioFileCAFType ? @"record.caf" : @"record.wav");
+		fileName = (fileType == kAudioFileCAFType ? @"recording.caf" : @"recording.wav");
 	}
 	else if(fileType == kAudioFileM4AType)
 	{
@@ -604,12 +685,11 @@
 			return;
 		}
 		
-		fileName = @"record.m4a";
+		fileName = @"recording.m4a";
 	}
 	
-	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory , NSUserDomainMask, YES);
-    recordingFilePath = [[[paths objectAtIndex:0] stringByAppendingPathComponent:fileName] copy];
-	NSURL *fileURL = [NSURL fileURLWithPath:recordingFilePath isDirectory:NO];
+    NSString *filePath = [userDocDirPath stringByAppendingPathComponent:fileName];
+	NSURL *fileURL = [NSURL fileURLWithPath:filePath isDirectory:NO];
 	
 	ExtAudioFileRef audioFileRef;
 	status = ExtAudioFileCreateWithURL((CFURLRef)fileURL, fileType, &dstFormat, NULL, kAudioFileFlags_EraseFile, &audioFileRef);
@@ -635,8 +715,11 @@
 	
     checkDiskSizeTimer = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(checkDiskSize:) userInfo:(id)kCFBooleanTrue repeats:YES];
 	
-	djMixer.recordingFile = audioFileRef;
-	djMixer.fileRecording = YES;
+	djMixer.savingFileRef = audioFileRef;
+	djMixer.savingFileUrl = fileURL;
+	djMixer.savingFileStartPacket = -1;
+	djMixer.savingFilePackets = 0;
+	djMixer.savingFile = YES;
 	
     [self performSelector:@selector(doHighlight:) withObject:self.recordButton afterDelay:0];
     [self performSelector:@selector(doHighlight:) withObject:self.recordButtonLS afterDelay:0];
@@ -648,31 +731,76 @@
 - (void) recordStop
 {
 	NSLog(@"Stopping recording...");
+		
+	djMixer.savingFile = NO;
 	
-	[checkDiskSizeTimer invalidate];
-	checkDiskSizeTimer = nil;
+	[NSThread sleepForTimeInterval:0.2];
 	
-	djMixer.fileRecording = NO;
-	
-	ExtAudioFileRef audioFileRef = djMixer.recordingFile;
-	djMixer.recordingFile = NULL;
-	
-	OSStatus status = ExtAudioFileDispose(audioFileRef);
-	if(status != noErr)
-	{
-		NSLog(@"Error %d in ExtAudioFileDispose()", (int)status);
-	}
-	
-	NSUInteger fileSize = [[[NSFileManager defaultManager] attributesOfItemAtPath:recordingFilePath error:nil] fileSize];
-	NSLog(@"File: %@", recordingFilePath);
-	NSLog(@"File size: %u", fileSize);
-	
-	[recordingFilePath release];
-	
-    [self.recordButton setHighlighted:NO];
-    [self.recordButtonLS setHighlighted:NO];
-    
-	NSLog(@"Recording stopped");
+	[self.recordButton setHighlighted:NO];
+	[self.recordButtonLS setHighlighted:NO];
+
+	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0),
+	^{	
+		OSStatus status = ExtAudioFileDispose(djMixer.savingFileRef);
+		if(status != noErr)
+		{
+			NSLog(@"Error %d in ExtAudioFileDispose()", (int)status);
+		}
+		
+		djMixer.savingFileRef = NULL;
+
+		NSFileManager *fileMgr = [NSFileManager defaultManager];
+		NSString *filePath = [djMixer.savingFileUrl path];
+		
+		NSInteger startPacket = djMixer.savingFileStartPacket;
+		NSInteger endPacket = startPacket + djMixer.savingFilePackets;
+		double duration = (double)(endPacket - startPacket) / 44100.0;
+				
+		NSString *fileName = [filePath lastPathComponent];
+		NSString *fileExt = [fileName pathExtension];
+		NSString *newFileName = [NSString stringWithFormat:@"record-%d-%d.%@", startPacket, endPacket, fileExt];
+		NSString *newFilePath = [[filePath stringByDeletingLastPathComponent] stringByAppendingPathComponent:newFileName];
+		[fileMgr moveItemAtPath:filePath toPath:newFilePath error:nil];
+
+		NSUInteger fileSize = [[fileMgr attributesOfItemAtPath:newFilePath error:nil] fileSize];
+		NSLog(@"File: %@", newFilePath);
+		NSLog(@"File size: %u", fileSize);
+				
+		[checkDiskSizeTimer invalidate];
+		checkDiskSizeTimer = nil;
+
+		NSLog(@"Recording stopped");
+		
+		filePath = [userDocDirPath stringByAppendingPathComponent:@"Records.plist"];
+		NSMutableArray *records = [NSMutableArray arrayWithContentsOfFile:filePath];
+		if(records == nil)
+		{
+			records = [NSMutableArray array];
+		}
+		
+		NSDictionary *lastRec = [NSDictionary dictionaryWithObjectsAndKeys:newFileName, @"fileName", [NSNumber numberWithInteger:startPacket], @"startPacket", [NSNumber numberWithInteger:endPacket], @"endPacket", [NSNumber numberWithDouble:[[NSDate date] timeIntervalSince1970]], @"recTime", [NSNumber numberWithDouble:duration], @"duration", nil];
+		[records addObject:lastRec];
+		
+		NSArray *sortedRecords = [records sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2)
+											{
+												int result = [[obj1 objectForKey:@"startPacket"] compare:[obj2 objectForKey:@"startPacket"]];
+												if(result == 0)
+												{
+													result = [[obj1 objectForKey:@"recDate"] compare:[obj2 objectForKey:@"recDate"]];
+												}
+												
+												return result;
+											}];
+		
+		if([sortedRecords writeToFile:filePath atomically:YES])
+		{
+			NSLog(@"%@ saved", [filePath lastPathComponent]);
+		}
+		else
+		{
+			NSLog(@"Error saving %@", [filePath lastPathComponent]);
+		}
+	});
 }
 
 
@@ -684,7 +812,7 @@
 	
 	if(freeSpace < 10 && showAlert)
 	{
-		if(djMixer.fileRecording)
+		if(djMixer.savingFile)
 		{
 			[self recordStop];
 		}
@@ -851,7 +979,7 @@
         [djMixer stopPlay];
 	}
 	
-	if(djMixer.fileRecording)
+	if(djMixer.savingFile)
 	{
 		[self recordStop];
 	}
@@ -864,11 +992,11 @@
 	{
 		NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 		
-		NSDictionary *channelDict = [defaults objectForKey:@"Channel-9"];
+		NSDictionary *channelDict = [defaults objectForKey:@"Playback"];
 		
 		double sliderValue = [[channelDict objectForKey:@"AudioVolume"] doubleValue];
 		
-		UISlider *slider = [channelSliders objectForKey:@"Channel-9"];
+		UISlider *slider = [channelSliders objectForKey:@"Playback"];
 		[slider setEnabled:YES];
 		[slider setValue:sliderValue];
 		
@@ -879,7 +1007,7 @@
 
 - (void) disableAudioInput
 {
-	UISlider *slider = [channelSliders objectForKey:@"Channel-9"];
+	UISlider *slider = [channelSliders objectForKey:@"Playback"];
 	
 	[slider setEnabled:!djMixer.missingAudioInput];
 	[slider setValue:0.0];

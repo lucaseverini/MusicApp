@@ -11,7 +11,9 @@
 		1D60589B0D05DD56006BFB54 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; };
 		28AD733F0D9D9553002E5188 /* MainWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = 28AD733E0D9D9553002E5188 /* MainWindow.xib */; };
 		8100169D15ABE3550098EE87 /* FileTableController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8100169C15ABE3550098EE87 /* FileTableController.m */; };
-		81068BAB161933B5006A803A /* AURecorder.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81068BAA161933AA006A803A /* AURecorder.mm */; };
+		810729CA172B777900192927 /* slider-handle.png in Resources */ = {isa = PBXBuildFile; fileRef = 810729C9172B777900192927 /* slider-handle.png */; };
+		810729D0172B812100192927 /* UIButtonBarArrowUp.png in Resources */ = {isa = PBXBuildFile; fileRef = 810729CF172B812100192927 /* UIButtonBarArrowUp.png */; };
+		810729D2172B818900192927 /* UIButtonBarArrowDownSmall.png in Resources */ = {isa = PBXBuildFile; fileRef = 810729D1172B818900192927 /* UIButtonBarArrowDownSmall.png */; };
 		810C3D5F16ADF076009839BE /* Karaoke.mm in Sources */ = {isa = PBXBuildFile; fileRef = 810C3D5D16ADEF55009839BE /* Karaoke.mm */; };
 		810D2C6716BB4F9F005F4D30 /* KaraokeTableCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 810D2C6616BB4F9F005F4D30 /* KaraokeTableCell.m */; };
 		810E023616CEF45D00D1FCC7 /* LoadAudioOperation.mm in Sources */ = {isa = PBXBuildFile; fileRef = 810E023516CEF45D00D1FCC7 /* LoadAudioOperation.mm */; };
@@ -23,8 +25,6 @@
 		810FBED215AA522000AEFB2F /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 810FBECB15AA522000AEFB2F /* CoreGraphics.framework */; };
 		810FBED315AA522000AEFB2F /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 810FBECC15AA522000AEFB2F /* CoreMedia.framework */; };
 		81520D6416BD2214000F917E /* MyNavigationController.m in Sources */ = {isa = PBXBuildFile; fileRef = 81520D6316BD2214000F917E /* MyNavigationController.m */; };
-		816BD38C15CE004400F61337 /* AQRecorder.mm in Sources */ = {isa = PBXBuildFile; fileRef = 816BD38B15CE004400F61337 /* AQRecorder.mm */; };
-		816BD38F15CE009000F61337 /* iPublicUtility in Resources */ = {isa = PBXBuildFile; fileRef = 816BD38E15CE009000F61337 /* iPublicUtility */; };
 		81AA156416CD8EDB0068669D /* SettingsView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 81AA156316CD8EDB0068669D /* SettingsView.xib */; };
 		81AA156716CD90040068669D /* SettingsViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81AA156616CD90040068669D /* SettingsViewController.mm */; };
 		81B2A20016ACE20D00DB8E11 /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81B2A1FF16ACE20D00DB8E11 /* CoreText.framework */; };
@@ -40,6 +40,7 @@
 		81E9650F16AF8A9500C1A67B /* UIButtonBarArrowRight.png in Resources */ = {isa = PBXBuildFile; fileRef = 81E9650D16AF8A9500C1A67B /* UIButtonBarArrowRight.png */; };
 		81E9651016AF9B3300C1A67B /* KeyboardToolbarView.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81E9650916AF88FC00C1A67B /* KeyboardToolbarView.mm */; };
 		81E9651116AF9B4B00C1A67B /* KeyboardToolbarController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81E9650716AF88FB00C1A67B /* KeyboardToolbarController.mm */; };
+		81F1657D1724907500898F5F /* SequencerOperation.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81F1657C1724907500898F5F /* SequencerOperation.mm */; };
 		ADF06FAC100069A800632942 /* DJMixerView.xib in Resources */ = {isa = PBXBuildFile; fileRef = ADF06FAB100069A800632942 /* DJMixerView.xib */; };
 		ADF06FB110006AF000632942 /* DJMixerViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF06FB010006AF000632942 /* DJMixerViewController.mm */; };
 		ADF0702610007C5900632942 /* DJMixer.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF0702510007C5900632942 /* DJMixer.mm */; };
@@ -54,8 +55,9 @@
 		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		8100169B15ABE3550098EE87 /* FileTableController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileTableController.h; sourceTree = "<group>"; };
 		8100169C15ABE3550098EE87 /* FileTableController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FileTableController.m; sourceTree = "<group>"; };
-		81068BA9161933AA006A803A /* AURecorder.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AURecorder.h; sourceTree = "<group>"; };
-		81068BAA161933AA006A803A /* AURecorder.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AURecorder.mm; sourceTree = "<group>"; };
+		810729C9172B777900192927 /* slider-handle.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "slider-handle.png"; sourceTree = "<group>"; };
+		810729CF172B812100192927 /* UIButtonBarArrowUp.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = UIButtonBarArrowUp.png; sourceTree = "<group>"; };
+		810729D1172B818900192927 /* UIButtonBarArrowDownSmall.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = UIButtonBarArrowDownSmall.png; sourceTree = "<group>"; };
 		810C3D5C16ADEF55009839BE /* Karaoke.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Karaoke.h; sourceTree = "<group>"; };
 		810C3D5D16ADEF55009839BE /* Karaoke.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Karaoke.mm; sourceTree = "<group>"; };
 		810D2C6516BB4F9F005F4D30 /* KaraokeTableCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KaraokeTableCell.h; sourceTree = "<group>"; };
@@ -72,9 +74,6 @@
 		813D56B016D18992001219B3 /* ToDoList.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = ToDoList.txt; sourceTree = "<group>"; };
 		81520D6216BD2214000F917E /* MyNavigationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MyNavigationController.h; sourceTree = "<group>"; };
 		81520D6316BD2214000F917E /* MyNavigationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MyNavigationController.m; sourceTree = "<group>"; };
-		816BD38A15CE004400F61337 /* AQRecorder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AQRecorder.h; sourceTree = "<group>"; };
-		816BD38B15CE004400F61337 /* AQRecorder.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AQRecorder.mm; sourceTree = "<group>"; };
-		816BD38E15CE009000F61337 /* iPublicUtility */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iPublicUtility; sourceTree = "<group>"; };
 		81AA156316CD8EDB0068669D /* SettingsView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = SettingsView.xib; sourceTree = "<group>"; };
 		81AA156516CD90040068669D /* SettingsViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SettingsViewController.h; sourceTree = "<group>"; };
 		81AA156616CD90040068669D /* SettingsViewController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SettingsViewController.mm; sourceTree = "<group>"; };
@@ -98,6 +97,8 @@
 		81E9650916AF88FC00C1A67B /* KeyboardToolbarView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = KeyboardToolbarView.mm; sourceTree = SOURCE_ROOT; };
 		81E9650C16AF8A9500C1A67B /* UIButtonBarArrowLeft.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = UIButtonBarArrowLeft.png; sourceTree = "<group>"; };
 		81E9650D16AF8A9500C1A67B /* UIButtonBarArrowRight.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = UIButtonBarArrowRight.png; sourceTree = "<group>"; };
+		81F1657B1724907500898F5F /* SequencerOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SequencerOperation.h; sourceTree = SOURCE_ROOT; };
+		81F1657C1724907500898F5F /* SequencerOperation.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SequencerOperation.mm; sourceTree = SOURCE_ROOT; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		ADF06FAB100069A800632942 /* DJMixerView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = DJMixerView.xib; sourceTree = "<group>"; };
 		ADF06FAF10006AF000632942 /* DJMixerViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DJMixerViewController.h; sourceTree = "<group>"; };
@@ -130,7 +131,6 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				816BD38D15CE004900F61337 /* Record */,
 				ADD46D4A1001966E00ADB7CE /* Audio playback */,
 				ADF06FAE10006ADB00632942 /* Views */,
 				1D3623240D0F684500981E51 /* MusicAppAppDelegate.h */,
@@ -198,21 +198,12 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		816BD38D15CE004900F61337 /* Record */ = {
-			isa = PBXGroup;
-			children = (
-				81068BA9161933AA006A803A /* AURecorder.h */,
-				81068BAA161933AA006A803A /* AURecorder.mm */,
-				816BD38A15CE004400F61337 /* AQRecorder.h */,
-				816BD38B15CE004400F61337 /* AQRecorder.mm */,
-				816BD38E15CE009000F61337 /* iPublicUtility */,
-			);
-			name = Record;
-			sourceTree = "<group>";
-		};
 		8187031316BDC5DE00615D2C /* Images */ = {
 			isa = PBXGroup;
 			children = (
+				810729D1172B818900192927 /* UIButtonBarArrowDownSmall.png */,
+				810729CF172B812100192927 /* UIButtonBarArrowUp.png */,
+				810729C9172B777900192927 /* slider-handle.png */,
 				81E9650C16AF8A9500C1A67B /* UIButtonBarArrowLeft.png */,
 				81E9650D16AF8A9500C1A67B /* UIButtonBarArrowRight.png */,
 				81D8E10015A8CACA00E2DCB4 /* checkbox_empty.png */,
@@ -230,6 +221,8 @@
 				ADF0702510007C5900632942 /* DJMixer.mm */,
 				810E023416CEF45D00D1FCC7 /* LoadAudioOperation.h */,
 				810E023516CEF45D00D1FCC7 /* LoadAudioOperation.mm */,
+				81F1657B1724907500898F5F /* SequencerOperation.h */,
+				81F1657C1724907500898F5F /* SequencerOperation.mm */,
 				810C3D5C16ADEF55009839BE /* Karaoke.h */,
 				810C3D5D16ADEF55009839BE /* Karaoke.mm */,
 			);
@@ -322,11 +315,13 @@
 				81B315C0158E4EC7009F6D8D /* SelectionView.xib in Resources */,
 				81D8E10215A8CACA00E2DCB4 /* checkbox_empty.png in Resources */,
 				81D8E10315A8CACA00E2DCB4 /* checkbox_full.png in Resources */,
-				816BD38F15CE009000F61337 /* iPublicUtility in Resources */,
 				81E964FF16AF771800C1A67B /* KaraokeView.xib in Resources */,
 				81E9650E16AF8A9500C1A67B /* UIButtonBarArrowLeft.png in Resources */,
 				81E9650F16AF8A9500C1A67B /* UIButtonBarArrowRight.png in Resources */,
 				81AA156416CD8EDB0068669D /* SettingsView.xib in Resources */,
+				810729CA172B777900192927 /* slider-handle.png in Resources */,
+				810729D0172B812100192927 /* UIButtonBarArrowUp.png in Resources */,
+				810729D2172B818900192927 /* UIButtonBarArrowDownSmall.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -345,8 +340,6 @@
 				81B315BE158E4E9A009F6D8D /* SelectionViewController.mm in Sources */,
 				81D8E10615A8FD7D00E2DCB4 /* UICheckBox.m in Sources */,
 				8100169D15ABE3550098EE87 /* FileTableController.m in Sources */,
-				816BD38C15CE004400F61337 /* AQRecorder.mm in Sources */,
-				81068BAB161933B5006A803A /* AURecorder.mm in Sources */,
 				81DACD2816ACB29B00AC4369 /* UITextScroll.m in Sources */,
 				810C3D5F16ADF076009839BE /* Karaoke.mm in Sources */,
 				81E9650216AF77AB00C1A67B /* KaraokeViewController.mm in Sources */,
@@ -356,6 +349,7 @@
 				81520D6416BD2214000F917E /* MyNavigationController.m in Sources */,
 				81AA156716CD90040068669D /* SettingsViewController.mm in Sources */,
 				810E023616CEF45D00D1FCC7 /* LoadAudioOperation.mm in Sources */,
+				81F1657D1724907500898F5F /* SequencerOperation.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -6,6 +6,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <CoreMedia/CoreMedia.h>
 
 @class NSURL;
 @class NSCondition;
@@ -17,16 +18,17 @@
 
 @interface LoadAudioOperation : NSOperation
 {
-	DJMixer *mixer;
-	NSUInteger copiedSamplePackets;
 	NSInteger readerStatus;
 	UInt32 *audioData1;
 	UInt32 *audioData2;
-	BOOL openFile;
 	BOOL noDataAvailable;
-	NSUInteger startPosition;
+	NSUInteger startSamplePacket;
+	NSUInteger currentSamplePacket;
+	NSUInteger restartSamplePacket;
+	BOOL active;
 }
 
+@property (nonatomic, retain) DJMixer *mixer;
 @property (nonatomic, retain) NSCondition *waitForAction;
 @property (nonatomic, retain) NSURL *fileURL;
 @property (nonatomic, retain) AVURLAsset *asset;
@@ -42,19 +44,18 @@
 @property (atomic, assign) BOOL fillAudioData2;
 @property (atomic, assign) BOOL endReading;
 @property (atomic, assign) NSUInteger currentAudioBuffer;
-@property (atomic, assign) BOOL busy;
-@property (atomic, assign) BOOL setStartPosition;
-@property (nonatomic, assign) BOOL loop;
 @property (nonatomic, assign) CMTime duration;
 @property (nonatomic, assign) UInt32 packets;
 
-- (id) initWithAudioFile:(NSString*)filePath mixer:(DJMixer*)theMixer loop:(BOOL)loopFlag;
-- (BOOL) openAudioFile:(NSURL*)fileUrl;
+- (id) initWithAudioFile:(NSString*)audioFileUrl;
+- (BOOL) openAudioFile;
 - (NSUInteger) fillAudioBuffer:(void*)audioBuffer;
 - (UInt32*) getNextAudioBuffer:(NSUInteger*)packetsInBuffer;
 - (void) reset;
-- (BOOL) isFinished;
-- (void) setStartPosition:(NSTimeInterval)time;
 - (void) setCurrentPlayPosition:(NSTimeInterval)time;
+- (void) setStartPlayPosition:(NSTimeInterval)time reset:(BOOL)reset;
+- (void) activate;
+- (void) deactivate;
+- (void) remove;
 
 @end

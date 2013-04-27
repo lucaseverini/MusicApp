@@ -13,7 +13,7 @@
 
 @interface SettingsViewController : UIViewController <AVAudioPlayerDelegate, UIAlertViewDelegate>
 {
-	AVAudioPlayer *audioPlayer;
+	NSMutableArray	*audioPlayers;
 	UIAlertView *alert;
 }
 
@@ -26,6 +26,7 @@
 @property (nonatomic, retain) IBOutlet UIButton *deleteRecordedAudioButton;
 @property (nonatomic, retain) IBOutlet UISwitch *autoStartKaraokeSwitch;
 @property (nonatomic, retain) IBOutlet UISwitch *autoStartRecordingSwitch;
+@property (nonatomic, retain) IBOutlet UISwitch *autoStopRecordingSwitch;
 @property (nonatomic, retain) IBOutlet UISwitch *playContinuousSwitch;
 @property (nonatomic, retain) IBOutlet UISwitch *autoSetAudioInputSwitch;
 
@@ -36,6 +37,7 @@
 - (IBAction) doDeleteRecordedAudio:(UIButton*)sender;
 - (IBAction) doAutoStartKaraoke:(UISwitch*)sender;
 - (IBAction) doAutoStartRecording:(UISwitch*)sender;
+- (IBAction) doAutoStopRecording:(UISwitch*)sender;
 - (IBAction) doPlayContinuous:(UISwitch*)sender;
 - (IBAction) doAutoSetAudioInput:(UISwitch*)sender;
 

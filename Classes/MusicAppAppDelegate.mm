@@ -18,6 +18,7 @@ static MusicAppDelegate *sharedInstance = nil;
 @synthesize window;
 @synthesize djMixerViewController;
 @synthesize karaokeData;
+@synthesize inBackGround;
 
 + (MusicAppDelegate*) shared
 {
@@ -66,13 +67,54 @@ static MusicAppDelegate *sharedInstance = nil;
 }
 
 
+- (void) applicationDidBecomeActive:(UIApplication*)application;
+{
+	NSLog(@"applicationDidBecomeActive");
+
+	if(wasPlaying)
+	{
+		[djMixer pause:NO];
+		// [djMixer startPlay];
+	}
+}
+
+
+- (void) applicationWillResignActive:(UIApplication*)application;
+{
+	NSLog(@"applicationWillResignActive");
+	
+	if(djMixer.isPlaying && !djMixer.paused)
+	{
+		wasPlaying = YES;
+		
+		[djMixer pause:YES];
+		// [djMixer stopPlay];
+	}
+	else
+	{
+		wasPlaying = NO;
+	}
+}
+
+
 - (void) applicationWillEnterForeground:(UIApplication*)application
 {
+	inBackGround = NO;
+
+	NSLog(@"applicationWillEnterForeground");
+/*
+	if(wasPlaying)
+	{
+		[djMixer startPlay];
+	}
+*/
 }
 
 
 - (void) applicationDidEnterBackground:(UIApplication*)application
 {
+	inBackGround = YES;
+	
 	NSLog(@"applicationDidEnterBackground");
 /*
     if([djMixer isPlaying])
@@ -89,13 +131,18 @@ static MusicAppDelegate *sharedInstance = nil;
 		[viewController recordStop];
 	}
 */
+/*
 	if(djMixer.isPlaying && !djMixer.paused)
 	{
-		djMixerViewController.pauseSwitch.on = YES;
-		djMixerViewController.pauseSwitchLS.on = YES;
+		wasPlaying = YES;
 		
-		// [viewController pause:YES];
+		[djMixer stopPlay];
 	}
+	else
+	{
+		wasPlaying = NO;
+	}
+*/
 }
 
 

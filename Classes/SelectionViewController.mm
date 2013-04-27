@@ -103,7 +103,7 @@
 
     selectedRow = row;
     channel = [selectedRow row] + 1;    
-    picker.prompt = [NSString stringWithFormat:@"Select Audio File to Play for Channel %d", channel];
+    picker.prompt = [NSString stringWithFormat:@"Select Audio File to Play for Track %d", channel];
     
     // The media item picker uses the default UI style, so it needs a default-style status bar to match it visually
     [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleDefault animated:YES];

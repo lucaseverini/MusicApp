@@ -13,13 +13,16 @@
 @interface MusicAppDelegate : NSObject <UIApplicationDelegate> 
 {
     UIWindow *window;
-@public
+	BOOL wasPlaying;
+
+	@public
     DJMixer *djMixer;
 }
 
 @property (nonatomic, retain) IBOutlet UIWindow *window;
 @property (nonatomic, retain) DJMixerViewController *djMixerViewController;
 @property (nonatomic, retain) NSMutableArray *karaokeData;
+@property (atomic, assign) BOOL inBackGround;
 
 + (MusicAppDelegate*) shared;
 

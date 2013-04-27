@@ -10,11 +10,13 @@
 #import <MediaPlayer/MediaPlayer.h>
 #import "InMemoryAudioFile.h"
 #import "LoadAudioOperation.h"
-
-#define STAY_SYNCHRONIZED // If defined a paused channel maintains synchronization with other channels
+#import "SequencerOperation.h"
+#import "DJMixer.h"
 
 @implementation InMemoryAudioFile
 
+@synthesize isPlayback;
+@synthesize isSequencer;
 @synthesize fileName;
 @synthesize url;
 @synthesize channel;
@@ -23,15 +25,15 @@
 @synthesize paused;
 @synthesize loaded;
 @synthesize noData;
-@synthesize recorder;
 @synthesize operation;
 
-// Override init method
 - (id) initForChannel:(NSInteger)numChannel
 { 
     [super init];
     if(self != nil)
     {
+		isPlayback = NO;
+		isSequencer = NO;
         channel = numChannel;
         leftPacketIndex = 0;
         rightPacketIndex = 0;
@@ -43,9 +45,62 @@
         monoFloatDataLeft = NULL;
         monoFloatDataRight = NULL;
         mPacketDescs = NULL;
-        playFromAudioInput = NO;
-        inputAudioData = NULL;
-        lastInputAudioValue = 0;
+        trackCount = 0;
+        packetCount = 0;
+        packetIndex = 0;
+        lostPackets = 0;
+    }
+    
+	return self;
+}
+
+
+- (id) initForSequencer
+{
+    [super init];
+    if(self != nil)
+    {
+		isPlayback = NO;
+		isSequencer = YES;
+		channel = 0;
+        leftPacketIndex = 0;
+        rightPacketIndex = 0;
+        playing = NO;
+        paused = NO;
+        audioData = NULL;
+        leftAudioData = NULL;
+        rightAudioData = NULL;
+        monoFloatDataLeft = NULL;
+        monoFloatDataRight = NULL;
+        mPacketDescs = NULL;
+        trackCount = 0;
+        packetCount = 0;
+        packetIndex = 0;
+        lostPackets = 0;
+    }
+    
+	return self;
+}
+
+
+- (id) initForPlayback
+{
+    [super init];
+    if(self != nil)
+    {
+		isPlayback = YES;
+		isSequencer = NO;
+        channel = 0;
+        leftPacketIndex = 0;
+        rightPacketIndex = 0;
+        playing = NO;
+        paused = NO;
+        audioData = NULL;
+        leftAudioData = NULL;
+        rightAudioData = NULL;
+        monoFloatDataLeft = NULL;
+        monoFloatDataRight = NULL;
+        mPacketDescs = NULL;
         trackCount = 0;
         packetCount = 0;
         packetIndex = 0;
@@ -105,14 +160,6 @@
     url = @"";
 
     loaded = NO;
-    playFromAudioInput = NO;
-    
-    if(recorder != NULL)
-    {
-        // delete recorder;
-        
-        [recorder release];
-    }
 }
 
 
@@ -128,28 +175,24 @@
 {    
 	if(!playing)
 	{
-        if(playFromAudioInput)
-        {
-            //recorder->StartRecord();
-            //packetsInBuffer = recorder->PacketsInBuffer();
-            
-            [recorder startRecord];
-            packetsInBuffer = recorder.packetsInBuffer;
-        }
+		if(!isSequencer || ![operation noDataAvailable])
+		{
+			[operation activate];
+		}
         
-		playing = YES;
 		paused = NO;
+		
+		if(!isSequencer)
+		{
+			playing = YES;
+		}
 	}
 }
 
 
 - (void) stop
 {
-    if(playFromAudioInput)
-    {
-        [recorder stopRecord];
-    }
-	
+	[operation deactivate];
 	// [operation cancel];
 
 	if(playing || paused)
@@ -158,11 +201,14 @@
 		paused = NO;
     }
     
-    [self reset];
+	if(noData)
+	{
+		[self reset];
+	}
     
 	if(lostPackets > 0)
 	{
-		NSLog(@"LostPackets: %llu\n", lostPackets);
+		NSLog(@"### LostPackets: %llu ###\n", lostPackets);
 	}
 }
 
@@ -173,11 +219,15 @@
     {
         paused = YES;
         playing = NO;
+		
+		[operation deactivate];
     }
     else
     {
         paused = NO;
         playing = YES;
+		
+		[operation activate];
     }
 }
 
@@ -302,44 +352,63 @@
 		return 0;
 	}
 
-    if(playFromAudioInput)
-    {
-        if(inputAudioData == NULL || packetIndex == packetsInBuffer)
-        {
-            // inputAudioData = recorder->NextBufferAudioData();
+    if(isSequencer)
+	{
+		UInt32 value = 0;
 
-            inputAudioData = [recorder nextBufferAudioData];
-             
-            packetIndex = 0;
-        }
-        if(inputAudioData != NULL)
-        {
-            if(lostPackets != 0)
-            {
-                NSLog(@"lostPackets: %llu\n", lostPackets);
-                
-                lostPackets = 0;
-            }
-            
-            packetIndex++;
-            
-            UInt16 value = inputAudioData[packetIndex];
+        if(operation != nil)
+        {						
+			if([operation sequencerActive])
+			{
+				if(packetIndex >= packetCount)
+				{
+					packetIndex = 0;
+					
+					NSUInteger numOfPackets;
+					audioData = [operation getNextAudioBuffer:&numOfPackets];
+					packetCount = (SInt64)numOfPackets;
+				}
 
-            lastInputAudioValue = value + (value << 16);
-
-            inputAudioData[packetIndex] = 0;
-
-            return lastInputAudioValue;
-        }
+				if(!playing)
+				{
+					NSLog(@"Sequencer starts at packet %ld", [operation mixer]->durationPacketsIndex);
+				}
+				
+				playing = YES;
+				
+				if(audioData != NULL)
+				{
+					value = audioData[packetIndex++];
+				}
+				else
+				{
+					NSLog(@"### NO AUDIO DATA for Sequencer %@ ###", [url lastPathComponent]);
+				}
+			}
+			else
+			{
+				if(playing)
+				{
+					NSLog(@"Sequencer stops at packet %ld", [operation mixer]->durationPacketsIndex);
+					
+					packetCount = 0;
+					packetIndex = 0;
+				}
+				
+				playing = NO;
+			}
+		}
         else
         {
-            lostPackets++;
-            
-            return lastInputAudioValue;
-        }
-    }
-    else
+			assert(false); // Should never come here...
+		}
+		
+		return value;
+	}
+	else
     {
+		UInt32 value = 0;
+		
         if(operation != nil)
         {			
             if(packetIndex >= packetCount)
@@ -352,31 +421,43 @@
             }
 
 			if(audioData != NULL)
-			{				
-				return audioData[packetIndex++];
+			{
+				value = audioData[packetIndex++];
 			}
 			else
 			{
 				noData = YES;
 				
-				return 0;
+				NSLog(@"### NO AUDIO DATA for %@ ###", [url lastPathComponent]);
 			}
         }
         else
         {
+			assert(false); // Should never come here...
+
             if(audioData == NULL)
             {
-                return 0;
+				NSLog(@"### NO AUDIO DATA for %@ ###", [url lastPathComponent]);
             }
-                
-            if(packetIndex >= packetCount)
-            {
-                packetIndex = 0;
-            }
-            
-            return audioData[packetIndex++];
+			else
+			{
+				if(packetIndex >= packetCount)
+				{
+					packetIndex = 0;
+				}
+				
+				value = audioData[packetIndex++];
+			}
         }
+		
+		return value;
     }
+}
+
+
+- (void) incrementPacketCount
+{
+	totalPacketIndex++;
 }
 
 
@@ -394,7 +475,7 @@
     lostPackets = 0;
 	noData = NO;
     
-    [operation reset];
+    // [operation reset];
 }
 
 
@@ -478,16 +559,23 @@
 {	
     if(operation != nil)
     {
-		// NSLog(@"RemoveLoadOperation for file %@ ++", self.url);
+		if(isSequencer)
+		{
+			NSLog(@"RemoveLoadOperation for Sequencer +++");
+		}
+		else
+		{
+			NSLog(@"RemoveLoadOperation for file %@ +++", self.url);
+		}
 
-        if(!operation.isFinished)
+        if(![operation isCancelled])
         {
-            [operation waitUntilFinished];
-        }
-        
-        if(!operation.isCancelled)
-        {
-            [operation cancel];
+            [operation remove];
+		}
+		
+		while(![operation isFinished])
+		{			
+			[NSThread sleepForTimeInterval:0.001];
 		}
 			
 		[operation release];
@@ -501,17 +589,49 @@
         
         loaded = NO;
 
-		// NSLog(@"RemoveLoadOperation for file %@ --", self.url);
+		if(isSequencer)
+		{
+			NSLog(@"RemoveLoadOperation for Sequencer ---");
+		}
+		else
+		{
+			NSLog(@"RemoveLoadOperation for file %@ ---", self.url);
+		}
 	}
 }
 
 
-- (void) setLoadOperation:(LoadAudioOperation*)loadOperation
+- (void) setSequencerOperation:(id)sequencerOperation  mixer:(DJMixer*)mixer
+{
+    operation = sequencerOperation;
+	
+	[operation setMixer:mixer];
+	
+	if(!isPlayback && !isSequencer)
+	{
+		trackCount = [sequencerOperation trackCount];
+		url = [[sequencerOperation fileURL] absoluteString];
+	}
+    
+    packetCount = 0;
+    packetIndex = 0;
+    lostPackets = 0;
+    
+    loaded = YES;
+}
+
+
+- (void) setLoadOperation:(id)loadOperation  mixer:(DJMixer*)mixer
 {
     operation = loadOperation;
 	
-    trackCount = loadOperation.trackCount;
-	url = [loadOperation.fileURL absoluteString];
+	[operation setMixer:mixer];
+	
+	if(!isPlayback && !isSequencer)
+	{
+		trackCount = [loadOperation trackCount];
+		url = [[loadOperation fileURL] absoluteString];
+	}
     
     packetCount = 0;
     packetIndex = 0;
@@ -598,35 +718,6 @@
     [asset release];
     
     return data;
-}
-
-
-- (OSStatus) audioInput
-{
-    if(recorder != nil)
-    {
-        // delete recorder;
-        
-        [recorder release];
-        recorder = nil;
-    }
-
-    recorder = [[AURecorder alloc] init];
-    
-	[recorder setUpData]; // allocate buffers and concat
-    
-	// Initialise the audio player
-	OSStatus status = [recorder setUpAudioDevice];
-	if(status != noErr)
-    {
-		NSLog(@"Problem with recorder setup!");
-        return status;
-    }
-
-    playFromAudioInput = YES;
-    loaded = YES;
-
-    return status;
 }
 
 @end

@@ -49,6 +49,7 @@
 @synthesize deleteRecordedAudioButton;
 @synthesize autoStartKaraokeSwitch;
 @synthesize autoStartRecordingSwitch;
+@synthesize autoStopRecordingSwitch;
 @synthesize playContinuousSwitch;
 @synthesize autoSetAudioInputSwitch;
 
@@ -63,15 +64,21 @@
 
 - (void) viewWillDisappear:(BOOL)animated
 {
-	if([audioPlayer isPlaying])
+	if(audioPlayers != nil)
 	{
-		[audioPlayer stop];
-
-		[audioPlayer release];
-		audioPlayer = nil;
+		for(AVAudioPlayer *player in audioPlayers)
+		{
+			if([player isPlaying])
+			{
+				[player stop];
+			}
+			
+			[player release];
+		}
 		
-		[playRecordedAudioButton setTitle:@"Play Recorded Audio" forState:UIControlStateNormal];
+		[playRecordedAudioButton setTitle:@"Play Audio" forState:UIControlStateNormal];
 		[deleteRecordedAudioButton setEnabled:YES];
+		[backButton setEnabled:YES];
 	}
 
     [super viewWillDisappear:animated];
@@ -83,27 +90,15 @@
 - (void) viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
-
-	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-	NSString *filePath = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"record.caf"];
-	if([[NSFileManager defaultManager] fileExistsAtPath:filePath])
-	{
-		[playRecordedAudioButton setEnabled:YES];
-		[deleteRecordedAudioButton setEnabled:YES];
-	}
-	else
-	{
-		[playRecordedAudioButton setEnabled:NO];
-		[deleteRecordedAudioButton setEnabled:NO];
-	}
     
-	[playRecordedAudioButton setTitle:@"Play Recorded Audio" forState:UIControlStateNormal];
+	[playRecordedAudioButton setTitle:@"Play Audio" forState:UIControlStateNormal];
 
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationWillResignActive:) name:UIApplicationWillResignActiveNotification object:nil];
 
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [autoStartKaraokeSwitch setOn:[defaults boolForKey:@"KaraokeAutoOn"]];
     [autoStartRecordingSwitch setOn:[defaults boolForKey:@"RecordingAutoOn"]];
+    [autoStopRecordingSwitch setOn:[defaults boolForKey:@"RecordingAutoOff"]];
 	[playContinuousSwitch setOn:[defaults boolForKey:@"PlayContinuousOn"]];
 	[autoSetAudioInputSwitch setOn:[defaults boolForKey:@"autoSetAudioInputOn"]];
 }
@@ -134,6 +129,14 @@
 {
 	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 	[defaults setBool:[autoStartRecordingSwitch isOn] forKey:@"RecordingAutoOn"];
+	[defaults synchronize];
+}
+
+
+- (IBAction) doAutoStopRecording:(UISwitch*)sender
+{
+	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+	[defaults setBool:[autoStopRecordingSwitch isOn] forKey:@"RecordingAutoOff"];
 	[defaults synchronize];
 }
 
@@ -201,78 +204,118 @@
 
 - (IBAction) doPlayRecordedAudio:(UIButton*)sender
 {
-	if(audioPlayer == nil)
-	{
+	if(audioPlayers == nil)
+	{		
+		NSFileManager *fileMgr = [NSFileManager defaultManager];
+
 		NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory , NSUserDomainMask, YES);
-		NSString *filePath = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"record.caf"];
-		NSURL *fileURL = [NSURL fileURLWithPath:filePath isDirectory:NO];
-		if(fileURL == nil)
+		NSArray *dirFiles = [fileMgr contentsOfDirectoryAtPath:[paths objectAtIndex:0] error:nil];
+		NSArray *audioFiles = [dirFiles filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"(self ENDSWITH '.caf') OR (self ENDSWITH '.wav') OR (self ENDSWITH '.m4a')"]];
+		if(audioFiles.count == 0)
 		{
-			return;
-		}
-		
-		NSError *error = nil;
-		audioPlayer = [[AVAudioPlayer alloc] initWithContentsOfURL:fileURL error:&error];
-		if(audioPlayer == nil)
-		{
-			NSLog(@"Error %@ in AVAudioPlayer initialization", [error description]);
-
-			NSString *msg = [NSString stringWithFormat:@"The recorded audio can't be played.\rError %@.", [error description]];
+			NSString *msg = @"No Audio Files to play.";
 			alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
 			[alert show];
 			return;
 		}
 		
-		[audioPlayer setDelegate:self];
+		audioPlayers = [[NSMutableArray alloc] init];
 
-		if(![audioPlayer prepareToPlay] || [audioPlayer duration] == 0.0)
+		for(NSString *fileName in audioFiles)
 		{
-			NSString *msg = @"The recorded audio is empty or unusable.";
-			alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
-			[alert show];
-			return;
+			NSURL *fileURL = [NSURL fileURLWithPath:[[paths objectAtIndex:0] stringByAppendingPathComponent:fileName] isDirectory:NO];
+			if(fileURL == nil)
+			{
+				continue;
+			}
+			
+			NSError *error = nil;
+			AVAudioPlayer *player = [[AVAudioPlayer alloc] initWithContentsOfURL:fileURL error:&error];
+			if(player == nil)
+			{
+				NSLog(@"Error %@ in AVAudioPlayer initialization", [error description]);
+
+				NSString *msg = [NSString stringWithFormat:@"The audio file %@ can't be played.\rError %@.", fileName, [error description]];
+				alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
+				[alert show];
+				break;
+			}
+			
+			[player setDelegate:self];
+
+			if(![player prepareToPlay] || [player duration] == 0.0)
+			{
+				NSString *msg = [NSString stringWithFormat:@"The audio file %@ is empty or unusable.", fileName ];
+				alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
+				[alert show];
+			}
+
+			if([player play])
+			{
+				NSLog(@"%d] Play %@", (audioPlayers.count + 1), fileName);
+				
+				[audioPlayers addObject:player];
+			}
+			else
+			{
+				[player release];
+				
+				NSString *msg = [NSString stringWithFormat:@"The audio file %@ can't be played.", fileName ];
+				alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
+				[alert show];
+			}			
 		}
-
-		if([audioPlayer play])
-		{
-			NSLog(@"Playing %@...", [filePath lastPathComponent]);
+		
+		if(audioPlayers.count != 0)
+		{			
+			[playRecordedAudioButton setTitle:@"Stop Playing" forState:UIControlStateNormal];
+			[deleteRecordedAudioButton setEnabled:NO];
+			[backButton setEnabled:NO];
 		}
 		else
 		{
-			NSString *msg = @"The recorded audio can't be played.";
-			alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
-			[alert show];
-			return;
+			[audioPlayers release];
+			audioPlayers = nil;
 		}
-		
-		[playRecordedAudioButton setTitle:@"Stop Playing" forState:UIControlStateNormal];
-		[deleteRecordedAudioButton setEnabled:NO];
 	}
 	else
 	{
-		if([audioPlayer isPlaying])
+		for(AVAudioPlayer *player in audioPlayers)
 		{
-			[audioPlayer stop];
+			if([player isPlaying])
+			{
+				[player stop];
+			}
+			
+			[player release];
 		}
 		
-		[audioPlayer release];
-		audioPlayer = nil;		
-
-		[playRecordedAudioButton setTitle:@"Play Recorded Audio" forState:UIControlStateNormal];
+		[audioPlayers release];
+		audioPlayers = nil;
+		
+		[playRecordedAudioButton setTitle:@"Play Audio" forState:UIControlStateNormal];
 		[deleteRecordedAudioButton setEnabled:YES];
+		[backButton setEnabled:YES];
 	}
 }
 
 
 - (void) audioPlayerDidFinishPlaying:(AVAudioPlayer*)player successfully:(BOOL)flag
 {
-	NSLog(@"Playing completed");
+	[player release];
+	
+	[audioPlayers removeObject:player];
+	if(audioPlayers.count == 0)
+	{
+		NSLog(@"Playing completed");
+	
+		[audioPlayers release];
+		audioPlayers = nil;
 
-	[audioPlayer release];
-	audioPlayer = nil;
-
-	[playRecordedAudioButton setTitle:@"Play Recorded Audio" forState:UIControlStateNormal];
-	[deleteRecordedAudioButton setEnabled:YES];
+		[playRecordedAudioButton setTitle:@"Play Audio" forState:UIControlStateNormal];
+		[deleteRecordedAudioButton setEnabled:YES];
+		[backButton setEnabled:YES];
+	}
 }
 
 
@@ -280,11 +323,20 @@
 {
 	NSLog(@"Error %@ playing", [error description]);
 
-	[audioPlayer release];
-	audioPlayer = nil;
+	[player release];
 	
-	[playRecordedAudioButton setTitle:@"Play Recorded Audio" forState:UIControlStateNormal];
-	[deleteRecordedAudioButton setEnabled:YES];
+	[audioPlayers removeObject:player];
+	if(audioPlayers.count == 0)
+	{
+		NSLog(@"Playing completed");
+		
+		[audioPlayers release];
+		audioPlayers = nil;
+		
+		[playRecordedAudioButton setTitle:@"Play Audio" forState:UIControlStateNormal];
+		[deleteRecordedAudioButton setEnabled:YES];
+		[backButton setEnabled:YES];
+	}
 }
 
 
@@ -302,17 +354,14 @@
 	{
 		NSFileManager *fileMgr = [NSFileManager defaultManager];
 
-		NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory , NSUserDomainMask, YES);
-		NSString *filePath = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"record.caf"];
-		if([fileMgr fileExistsAtPath:filePath])
+		NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory , NSUserDomainMask, YES);		
+		NSArray *dirFiles = [fileMgr contentsOfDirectoryAtPath:[paths objectAtIndex:0] error:nil];
+		for(NSString *fileName in dirFiles)
 		{
+			NSString *filePath = [[paths objectAtIndex:0] stringByAppendingPathComponent:fileName];
+			
 			NSError *error = nil;
-			if([fileMgr removeItemAtPath:filePath error:&error])
-			{
-				[playRecordedAudioButton setEnabled:NO];
-				[deleteRecordedAudioButton setEnabled:NO];
-			}
-			else
+			if(![fileMgr removeItemAtPath:filePath error:&error])
 			{
 				NSLog(@"Error %@ removing audio file %@", [error description], filePath);
 				

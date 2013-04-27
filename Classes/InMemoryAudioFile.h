@@ -7,12 +7,11 @@
 
 #import <Foundation/Foundation.h>
 #import <AudioToolbox/AudioFile.h>
-#import "AQRecorder.h"
-#import "AURecorder.h"
 #import <sys/time.h>
 
 @class MPMediaItem;
 @class LoadAudioOperation;
+@class DJMixer;
 
 @interface InMemoryAudioFile : NSObject 
 {
@@ -34,16 +33,14 @@
 	float							*monoFloatDataLeft;
 	float							*monoFloatDataRight;
     
-    BOOL                            playFromAudioInput;
-    //AQRecorder                    *recorder;
-	UInt16							*inputAudioData;
-    UInt32                          lastInputAudioValue;
     SInt64                          packetsInBuffer;
     SInt64                          jumpedpackets;
 	UInt64							totalPacketIndex;
     UInt64                          lostPackets;
 }
 
+@property (nonatomic, assign) BOOL isPlayback;
+@property (nonatomic, assign) BOOL isSequencer;
 @property (nonatomic, retain) NSString *fileName;
 @property (nonatomic, retain) NSString *url;
 @property (nonatomic, assign) NSInteger channel;
@@ -52,10 +49,11 @@
 @property (atomic, assign) BOOL paused;
 @property (atomic, assign) BOOL loaded;
 @property (nonatomic, assign) BOOL noData;
-@property (nonatomic, assign) AURecorder *recorder;
-@property (nonatomic, assign) LoadAudioOperation *operation;
+@property (nonatomic, assign) id operation;
 
 - (id) initForChannel:(NSInteger)numChannel;
+- (id) initForPlayback;
+- (id) initForSequencer;
 
 // Opens and read data from an audio file
 - (OSStatus) file:(NSString*)filePath;
@@ -63,11 +61,10 @@
 - (OSStatus) mediaItemUrl:(NSString*)fileUrl;
 // Read data from a mediaItem
 - (OSStatus) mediaItem:(MPMediaItem*)mediaItem;
-// Read data from a audio Input
-- (OSStatus) audioInput;
 
 // Read data from a NSOperation
-- (void) setLoadOperation:(LoadAudioOperation*)loadOperation;
+- (void) setLoadOperation:(id)loadOperation mixer:(DJMixer*)mixer;
+- (void) setSequencerOperation:(id)sequencerOperation  mixer:(DJMixer*)mixer;
 - (void) removeLoadOperation;
 
 // Gets the info about a wav file
@@ -77,6 +74,8 @@
 - (UInt32) getNextPacket;
 // Gets the current index (where we are up to in the buffer)
 - (SInt64) getIndex;
+// Increment the total packets count
+- (void) incrementPacketCount;
 
 //reset the index to the start of the file
 - (void) reset;

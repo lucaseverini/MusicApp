@@ -1,6 +1,9 @@
 
 Important:
-When speaker is not connected bring input level to zero and set it back to previous level when is connected back. (Prefs in settings).
+
+BUG!! When application is playing and is moved back to foreground in few seconds the song jumps to the end or track goes out of sync
+Move the open of Audio file from openAudioFile inside FillAudioBuffer to avoid problems and delays.
+Stop the Audio Reader when the app is going to background
 
 One or more segments of registered output is kept except when deleted (with undo the last one or with delete all) or overwritten. 
 
@@ -11,7 +14,7 @@ Check for noise when app is back from background (possible conflict with other a
 Implement real UI.
 
 Read karaoke data from lyrics
-fix karaoke editor and add list of files
+Fix karaoke editor and add list of files
 Fix problem with headphone. Put playback channel to minimum when headphone is removed or let the user disable it.
 Audio effects (reverber and, if possible, some more). ObjectAL library.
 

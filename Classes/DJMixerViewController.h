@@ -20,6 +20,8 @@
 	UIAlertView *alert;
 	NSMutableDictionary *channelLabels;
 	NSMutableDictionary *channelSliders;
+	BOOL wasPlaying;
+	NSString *userDocDirPath;
 }
 
 @property (nonatomic, retain) IBOutlet UIView *portraitView;
@@ -59,15 +61,16 @@
 @property (nonatomic, retain) IBOutlet UILabel *positionLabelLS;
 @property (nonatomic, retain) IBOutlet UILabel *durationLabelLS;
 @property (nonatomic, retain) IBOutlet UISlider *positionSliderLS;
+@property (nonatomic, retain) IBOutlet UISwitch *sequencerSwitchLS;
 
 @property (nonatomic, retain) DJMixer *djMixer;
-@property (nonatomic, retain) NSString *recordingFilePath;
 @property (nonatomic, retain) Karaoke *karaoke;
 @property (nonatomic, retain) NSTimer *karaokeTimer;
 @property (nonatomic, retain) NSTimer *checkDiskSizeTimer;
 @property (nonatomic, retain) NSTimer *checkPositionTimer;
 @property (nonatomic, assign) BOOL isPortrait;
 @property (atomic, assign) BOOL karaokeActivated;
+@property (nonatomic, retain) NSArray *downArrows;
 
 - (IBAction) changeVolume:(UISlider*)sender;
 - (IBAction) playOrStop;
@@ -76,6 +79,7 @@
 - (IBAction) doKaraoke:(UIButton*)sender;
 - (IBAction) doRecord:(UIButton*)sender;
 - (IBAction) setPlayPosition:(UISlider*)sender;
+- (IBAction) doSequencer:(UISwitch*)sender;
 
 - (void) pause:(BOOL)flag;
 - (void) saveControlsValue;
