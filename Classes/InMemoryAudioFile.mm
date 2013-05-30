@@ -172,20 +172,21 @@
 
 
 - (void) start
-{    
-	if(!playing)
+{
+	if(isSequencer)
 	{
-		if(!isSequencer || ![operation noDataAvailable])
+		if(![operation noDataAvailable] && !paused)
 		{
 			[operation activate];
 		}
-        
-		paused = NO;
+	}
+	else if(!playing)
+	{
+		[operation activate];
 		
-		if(!isSequencer)
-		{
-			playing = YES;
-		}
+		paused = NO;
+
+		playing = YES;
 	}
 }
 
@@ -195,11 +196,14 @@
 	[operation deactivate];
 	// [operation cancel];
 
-	if(playing || paused)
+	if(!isSequencer)
 	{
-		playing = NO;
-		paused = NO;
-    }
+		if(playing || paused)
+		{
+			playing = NO;
+			paused = NO;
+		}
+	}
     
 	if(noData)
 	{
@@ -360,29 +364,36 @@
         {						
 			if([operation sequencerActive])
 			{
-				if(packetIndex >= packetCount)
+				if([operation hasData])
 				{
-					packetIndex = 0;
-					
-					NSUInteger numOfPackets;
-					audioData = [operation getNextAudioBuffer:&numOfPackets];
-					packetCount = (SInt64)numOfPackets;
-				}
+					if(packetIndex >= packetCount)
+					{
+						packetIndex = 0;
+						
+						NSUInteger numOfPackets;
+						audioData = [operation getNextAudioBuffer:&numOfPackets];
+						packetCount = (SInt64)numOfPackets;
+					}
 
-				if(!playing)
-				{
-					NSLog(@"Sequencer starts at packet %ld", [operation mixer]->durationPacketsIndex);
-				}
-				
-				playing = YES;
-				
-				if(audioData != NULL)
-				{
-					value = audioData[packetIndex++];
+					if(!playing)
+					{
+						NSLog(@"Sequencer starts at packet %ld", [operation mixer]->durationPacketsIndex);
+					}
+					
+					playing = YES;
+					
+					if(audioData != NULL)
+					{
+						value = audioData[packetIndex++];
+					}
+					else
+					{
+						NSLog(@"### NO AUDIO DATA for Sequencer at packet %ld ###", [operation mixer]->durationPacketsIndex + [operation mixer]->framePacketsIndex);
+					}
 				}
 				else
 				{
-					NSLog(@"### NO AUDIO DATA for Sequencer %@ ###", [url lastPathComponent]);
+					NSLog(@"### NO AUDIO DATA for Sequencer at packet %ld ###", [operation mixer]->durationPacketsIndex + [operation mixer]->framePacketsIndex);
 				}
 			}
 			else
@@ -418,7 +429,7 @@
                 NSUInteger numOfPackets;
                 audioData = [operation getNextAudioBuffer:&numOfPackets];
                 packetCount = (SInt64)numOfPackets;
-            }
+			}
 
 			if(audioData != NULL)
 			{

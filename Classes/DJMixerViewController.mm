@@ -16,6 +16,31 @@
 #import "LoadAudioOperation.h"
 #import "SequencerOperation.h"
 #import "AudioToolbox/AudioToolbox.h"
+#import <objc/runtime.h>
+
+
+@interface UIButton (SequencerExtension)
+
+- (void) setRecordingReference:(id)refObject;
+- (id) recordingReference;
+
+@end
+
+@implementation UIButton (SequencerExtension)
+
+static const char *kAssociationKey = "RecTime";
+
+- (void) setRecordingReference:(id)refObject
+{
+	objc_setAssociatedObject(self, kAssociationKey, refObject, OBJC_ASSOCIATION_COPY);
+}
+
+- (id) recordingReference
+{
+	return objc_getAssociatedObject(self, kAssociationKey);
+}
+
+@end
 
 
 #define PLAYPOSITION_LABEL_PRECISION @"%.1f"	// Show 10th of second
@@ -59,14 +84,23 @@
 @synthesize durationLabelLS;
 @synthesize positionSliderLS;
 @synthesize sequencerSwitchLS;
+@synthesize sequencerUndoLS;
+@synthesize sequencerScrollViewLS;
+@synthesize sequencerRecViewLS;
+@synthesize recordingDeleteLS;
+@synthesize recordingPlayLS;
+@synthesize recordingShiftLS;
+@synthesize recordingEnableLS;
 
 @synthesize djMixer;
 @synthesize karaoke;
 @synthesize karaokeTimer;
 @synthesize checkDiskSizeTimer;
 @synthesize checkPositionTimer;
+@synthesize updateRecViewTimer;
 @synthesize isPortrait;
-@synthesize downArrows;
+@synthesize sequencerButtons;
+
 
 - (id) initWithNibName:(NSString*)nibNameOrNil bundle:(NSBundle*)nibBundleOrNil
 {
@@ -76,6 +110,8 @@
 		NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory , NSUserDomainMask, YES);
 		userDocDirPath = [[paths objectAtIndex:0] copy];
 	}
+	
+	sequencerButtons = [[NSMutableArray alloc] init];
     
     return self;
 }
@@ -98,6 +134,8 @@
 	[channelSliders release];
 	
 	[userDocDirPath release];
+	
+	[sequencerButtons release];
 }
 
 
@@ -152,13 +190,14 @@
 	
 	// [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillResignActiveNotification object:nil];
 	
-	for(UIImageView *arrowView in downArrows)
+	for(id control in sequencerButtons)
 	{
-		[arrowView removeFromSuperview];
-		[arrowView release];
+		[control removeFromSuperview];
+		[control release];
 	}
-	[downArrows release];
-	downArrows = nil;
+	[sequencerButtons removeAllObjects];
+	
+	selectedRecording = nil;
 }
 
 
@@ -233,11 +272,11 @@
 	[djMixer.sequencer removeLoadOperation]; // Remove the previous operation if present
 		
 	NSString *recordsPList = [userDocDirPath stringByAppendingPathComponent:@"Records.plist"];
-	SequencerOperation *sequencerOperation = [[SequencerOperation alloc] initWithRecordsFile:recordsPList];
+	SequencerOperation *sequencerOperation = [[SequencerOperation alloc] initWithRecords:recordsPList];
 	assert(sequencerOperation != nil);
 		
 	[djMixer.loadAudioQueue addOperation:sequencerOperation];
-	[djMixer.sequencer setSequencerOperation:sequencerOperation  mixer:djMixer];
+	[djMixer.sequencer setSequencerOperation:sequencerOperation mixer:djMixer];
 
 	NSLog(@"LoadQueue Operations: %d", [djMixer.loadAudioQueue operationCount]);
 
@@ -302,32 +341,13 @@
     
 	[positionSliderLS addTarget:self action:@selector(setPlayPositionEnded:) forControlEvents:UIControlEventTouchUpInside];
 	
-	NSMutableArray *arrows = [NSMutableArray array];
-	recordingPtr recordings;
-	int totRecordings = [djMixer.sequencer.operation getRecordings:&recordings];
-	CGFloat startPos = positionSliderLS.frame.origin.x + 6.0;
-	CGFloat width = positionSliderLS.bounds.size.width - 6.0;
-	double durationPackets = djMixer.durationPackets;
-	for(int idx = 0; idx < totRecordings; idx++)
-	{
-		UIImageView *startArrow = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"UIButtonBarArrowDownSmall.png"]];
-		UIImageView *endArrow = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"UIButtonBarArrowDownSmall.png"]];
-		
-		double percent = (durationPackets / recordings[idx].startPacket);
-		CGFloat xPos = startPos + (width / percent) - ((100.0 / percent) * 0.17);
-		startArrow.frame = CGRectMake(xPos, 54, 12, 16);
-
-		percent = (durationPackets / recordings[idx].endPacket);
-		xPos = startPos + (width / percent) - ((100.0 / percent) * 0.17);
-		endArrow.frame = CGRectMake(xPos, 54, 12, 16);
-
-		[[self landscapeView] addSubview:startArrow];
-		[[self landscapeView] addSubview:endArrow];
-		[arrows addObject:startArrow];
-		[arrows addObject:endArrow];
-	}
-	downArrows = [[NSArray alloc] initWithArray:arrows];
-    
+	[self updateSequencerButtons];
+	
+	[recordingDeleteLS setEnabled:NO];
+	[recordingPlayLS setEnabled:NO];
+	[recordingShiftLS setEnabled:NO];
+	[recordingEnableLS setEnabled:NO];
+   
 	self.isPortrait = (self.interfaceOrientation == UIDeviceOrientationPortrait || self.interfaceOrientation == UIDeviceOrientationPortraitUpsideDown);
 }
 
@@ -464,6 +484,9 @@
     }
     else
     {
+		NSString *recordsFile = [userDocDirPath stringByAppendingPathComponent:@"Records.plist"];
+		[djMixer.sequencer.operation setRecords:recordsFile];
+
 		checkPositionTimer = [NSTimer scheduledTimerWithTimeInterval:PLAYPOSITION_TIMER_FREQUENCY target:self selector:@selector(updatePlayPosition) userInfo:(id)kCFBooleanTrue repeats:YES];
 
         [djMixer startPlay];
@@ -569,6 +592,17 @@
 }
 
 
+- (void) updateRecView
+{
+	double percent = (double)djMixer.durationPackets / (double)djMixer.savingFilePackets;
+	CGFloat totalWidth = positionSliderLS.bounds.size.width - 20.0;
+	CGFloat barWidth = (totalWidth / percent);
+	CGRect frame = sequencerRecViewLS.frame;
+	frame.size.width = ceil(barWidth);
+	[sequencerRecViewLS setFrame:frame];
+}
+
+
 - (void) updatePlayPosition
 {
 	if(!djMixer.hasData)
@@ -624,9 +658,542 @@
 }
 
 
-- (IBAction) doSequencer:(UISwitch*)sender
+- (IBAction) doPauseSequencer:(UISwitch*)sender
 {
     [djMixer.sequencer pause:!sender.on];
+}
+
+
+- (IBAction) doUndoSequencer:(UIButton*)sender
+{
+	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0),
+			^{
+				NSString *filePath = [userDocDirPath stringByAppendingPathComponent:@"Records.plist"];
+
+				NSArray *records = [NSArray arrayWithContentsOfFile:filePath];
+				if(records == nil || records.count == 0)
+				{
+				   return;
+				}
+
+				NSMutableArray *sortedRecords = [NSMutableArray arrayWithArray:[records sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2)
+																			   {
+																				   return [[obj1 objectForKey:@"recTime"] compare:[obj2 objectForKey:@"recTime"]];
+																			   }]];
+				NSDictionary *lastRecord = [sortedRecords lastObject];
+				NSString *fileName = [lastRecord objectForKey:@"fileName"];					   
+				[[NSFileManager defaultManager] removeItemAtPath:[userDocDirPath stringByAppendingPathComponent:fileName] error:nil];
+
+				[sortedRecords removeLastObject];
+
+				if([sortedRecords writeToFile:filePath atomically:YES])
+				{
+				   NSLog(@"%@ saved", [filePath lastPathComponent]);
+				}
+				else
+				{
+				   NSLog(@"Error saving %@", [filePath lastPathComponent]);
+				   return;
+				}
+
+				BOOL wasActive = NO;
+				if([djMixer.sequencer.operation isActive])
+				{
+				   wasActive = YES;
+				   [djMixer.sequencer.operation deactivate];
+				}
+
+				[djMixer.sequencer.operation setRecords:filePath];
+
+				[djMixer.sequencer.operation reset];
+
+				if(wasActive && sortedRecords.count > 0)
+				{
+				   [djMixer.sequencer.operation activate];
+				}
+
+				dispatch_sync(dispatch_get_main_queue(),
+					^{
+						[self updateSequencerButtons];
+						[sequencerUndoLS setNeedsDisplay];
+					});
+		   });
+}
+
+
+- (void) updateSequencerButtons
+{
+	NSDictionary *selectedRecord = [selectedRecording recordingReference];
+
+	selectedRecording = nil;
+
+	for(id control in sequencerButtons)
+	{
+		[control removeFromSuperview];
+		[control release];
+	}
+	[sequencerButtons removeAllObjects];
+
+	CGFloat startPos = 0.0;
+	CGFloat width = sequencerScrollViewLS.bounds.size.width;
+	double durationPackets = djMixer.durationPackets;
+
+	NSString *filePath = [userDocDirPath stringByAppendingPathComponent:@"Records.plist"];
+	NSMutableArray *records = [NSMutableArray arrayWithContentsOfFile:filePath];
+	if(records != nil)
+	{
+		int totRecords = records.count;
+		
+		NSMutableArray *rows = [NSMutableArray array];
+		for(int idx = 0; idx < totRecords; idx++)
+		{
+			NSMutableArray *row = [NSMutableArray array];
+			[rows addObject:row];
+		}
+		
+		for(NSDictionary *record in records)
+		{
+			NSUInteger startPacket = [[record objectForKey:@"startPacket"] integerValue];
+			NSUInteger endPacket = [[record objectForKey:@"endPacket"] integerValue];
+			BOOL enabled = [[record objectForKey:@"enabled"] boolValue];
+
+			double percent = (durationPackets / startPacket);
+			CGFloat btnX = startPos + (width / percent);
+			
+			percent = durationPackets / (endPacket - startPacket);
+			CGFloat btnWidth = (width / percent);
+			
+			UIButton *button = [[UIButton buttonWithType:UIButtonTypeCustom] retain];
+			[button addTarget:self action:@selector(selectRecording:) forControlEvents:UIControlEventTouchDown];
+			button.frame = CGRectMake(btnX, 0, btnWidth, 16);
+			button.backgroundColor = enabled ? [UIColor greenColor] : [UIColor redColor];
+			button.alpha = 0.4;
+			button.opaque = NO;
+			// button.showsTouchWhenHighlighted = YES;
+
+			NSMutableArray *row = [rows objectAtIndex:0];
+			for(int idx = row.count - 1; idx >= 0; idx--)
+			{
+				UIButton *btn = row[idx];
+				if(CGRectIntersectsRect(btn.frame, button.frame))
+				{
+					[self moveButtonToNextRow:btn fromRow:row rows:rows];
+				}
+			}
+			
+			[row addObject:button];
+			
+			[button setRecordingReference:record];
+		}
+		
+		int filledRows = 0;
+		for(int idx = 0; idx < rows.count; idx++)
+		{
+			if([rows[idx] count] != 0)
+			{
+				filledRows++;
+			}
+		}
+		
+		CGFloat yOffset = 18.0 * (filledRows - 1);
+		for(int idx = 0; idx < rows.count; idx++)
+		{
+			NSArray *row = rows[idx];
+			if(row.count != 0)
+			{
+				for(UIButton *btn in row)
+				{
+					CGRect frame = btn.frame;
+					frame.origin.y += yOffset;
+					[btn setFrame:frame];
+					
+					[sequencerScrollViewLS addSubview:btn];
+					[sequencerButtons addObject:btn];
+				}
+				
+				yOffset -= 18.0;
+			}
+		}
+		
+		CGFloat scrollHeight = filledRows * 18.0;
+		sequencerScrollViewLS.contentSize = CGSizeMake(0, scrollHeight);
+		sequencerScrollViewLS.contentOffset = CGPointMake(0, scrollHeight - 54.0);
+		sequencerScrollViewLS.scrollEnabled = (scrollHeight > 54.0);
+
+		[sequencerUndoLS setEnabled:(totRecords != 0)];
+		
+		if(selectedRecord != nil)
+		{
+			UIButton *recButton = [self findRecordingButton:selectedRecord];
+			[self selectRecording:recButton];
+		}
+	}
+	else
+	{
+		[sequencerUndoLS setEnabled:NO];
+	}
+}
+
+
+- (UIButton*) findRecordingButton:(NSDictionary*)record
+{
+	if(record == nil)
+	{
+		return nil;
+	}
+	
+	id recTime = [record objectForKey:@"recTime"];
+	for(UIButton *btn in sequencerButtons)
+	{
+		if([[[btn recordingReference] objectForKey:@"recTime"] isEqual:recTime])
+		{
+			return btn;
+		}
+	}
+	
+	return nil;
+}
+
+
+- (void) moveButtonToNextRow:(UIButton*)button fromRow:(NSMutableArray*)row rows:(NSArray*)rows
+{
+	int nextRowIdx = [rows indexOfObject:row] + 1;
+	NSMutableArray *nextRow = [rows objectAtIndex:nextRowIdx];
+	
+	for(UIButton *btn in nextRow)
+	{
+		if(CGRectIntersectsRect(btn.frame, button.frame))
+		{
+			[self moveButtonToNextRow:btn fromRow:nextRow rows:rows];
+		}
+	}
+	
+	[row removeObject:button];
+	[nextRow addObject:button];
+}
+
+
+- (void) scrollViewDidScroll:(UIScrollView*)scrollView
+{
+	// NSLog(@"scrollViewDidScroll");
+}
+
+
+- (void) selectRecording:(id)sender
+{
+	if(selectedRecording != nil && selectedRecording != sender)
+	{
+		[selectedRecording setSelected:NO];
+		selectedRecording.alpha = 0.4;
+	}
+	
+	selectedRecording = sender;
+	if(selectedRecording == nil)
+	{
+		return;
+	}
+	
+	if(selectedRecording.selected)
+	{
+		[selectedRecording setSelected:NO];
+		selectedRecording.alpha = 0.4;
+
+		[recordingDeleteLS setEnabled:NO];
+		[recordingPlayLS setEnabled:NO];
+		[recordingShiftLS setEnabled:NO];
+		[recordingEnableLS setEnabled:NO];
+		
+		selectedRecording = nil;
+	}
+	else
+	{
+		[selectedRecording setSelected:YES];
+		selectedRecording.alpha = 0.9;
+		
+		NSLog(@"%@", [selectedRecording recordingReference]);
+		
+		[recordingDeleteLS setEnabled:YES];
+		[recordingPlayLS setEnabled:YES];
+		[recordingShiftLS setEnabled:YES];
+		[recordingEnableLS setEnabled:YES];		
+
+		
+		BOOL enabled = [[[selectedRecording recordingReference] objectForKey:@"enabled"] boolValue];
+		[recordingEnableLS setTitle:enabled ? @"Disable" : @"Enable" forState:UIControlStateNormal];
+	}
+}
+
+
+- (IBAction) doSelectLastRecording:(UIButton*)sender
+{
+	NSString *filePath = [userDocDirPath stringByAppendingPathComponent:@"Records.plist"];
+	
+	NSArray *records = [NSArray arrayWithContentsOfFile:filePath];
+	if(records == nil || records.count == 0)
+	{
+		return;
+	}
+	
+	NSMutableArray *sortedRecords = [NSMutableArray arrayWithArray:[records sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2)
+																	{
+																		return [[obj1 objectForKey:@"recTime"] compare:[obj2 objectForKey:@"recTime"]];
+																	}]];
+	NSDictionary *lastRecord = [sortedRecords lastObject];
+	if(lastRecord != nil)
+	{
+		id recTime = [lastRecord objectForKey:@"recTime"];
+		for(UIButton *btn in sequencerButtons)
+		{
+			if([[[btn recordingReference] objectForKey:@"recTime"] isEqual:recTime])
+			{
+				if(selectedRecording != btn)
+				{
+					[self selectRecording:btn];
+				}
+				
+				break;
+			}
+		}
+	}
+}
+
+
+- (IBAction) doDeleteRecording:(UIButton*)sender
+{
+	NSUInteger foundIdx = [self getRecordingIndex:selectedRecording];
+	if(foundIdx != NSNotFound)
+	{
+		NSString *filePath = [userDocDirPath stringByAppendingPathComponent:@"Records.plist"];
+		NSMutableArray *records = [NSMutableArray arrayWithContentsOfFile:filePath];
+		if(records.count == 0)
+		{
+			return;
+		}
+		
+		NSDictionary *record = [records objectAtIndex:foundIdx];
+		
+		NSString *fileName = [record objectForKey:@"fileName"];
+		NSString *recordingPath = [userDocDirPath stringByAppendingPathComponent:fileName];		
+
+		NSFileManager *fileMgr = [NSFileManager defaultManager];
+		NSError *error = nil;
+		if(![fileMgr removeItemAtPath:recordingPath error:&error])
+		{
+			NSLog(@"Error %@ removing audio file %@", [error description], recordingPath);
+		}
+
+		[records removeObjectAtIndex:foundIdx];
+		
+		if([records writeToFile:filePath atomically:YES])
+		{
+			NSLog(@"%@ saved", [filePath lastPathComponent]);
+		}
+		else
+		{
+			NSLog(@"Error saving %@", [filePath lastPathComponent]);
+		}
+
+		[selectedRecording setSelected:NO];
+		selectedRecording.alpha = 0.4;
+		selectedRecording = nil;
+
+		[recordingDeleteLS setEnabled:NO];
+		[recordingPlayLS setEnabled:NO];
+		[recordingShiftLS setEnabled:NO];
+		[recordingEnableLS setEnabled:NO];
+		
+		[self updateSequencerButtons];
+	}
+}
+
+
+- (IBAction) doPlayRecording:(UIButton*)sender
+{
+	if(audioPlayer != nil)
+	{
+		[audioPlayer stop];
+		
+		[self audioPlayerDidFinishPlaying:audioPlayer successfully:YES];
+
+		return;
+	}
+	
+	if(selectedRecording == nil)
+	{
+		return;
+	}
+	
+	NSDictionary *record = [selectedRecording recordingReference];	
+	NSString *fileName = [record objectForKey:@"fileName"];
+	NSURL *fileURL = [NSURL fileURLWithPath:[userDocDirPath stringByAppendingPathComponent:fileName] isDirectory:NO];
+	if(fileURL == nil)
+	{
+		return;
+	}
+	
+	NSError *error = nil;
+	audioPlayer = [[AVAudioPlayer alloc] initWithContentsOfURL:fileURL error:&error];
+	if(audioPlayer == nil)
+	{
+		NSLog(@"Error %@ in AVAudioPlayer initialization", [error description]);
+		
+		NSString *msg = [NSString stringWithFormat:@"The audio file %@ can't be played.\rError %@.", fileName, [error description]];
+		alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
+		[alert show];
+		
+		return;
+	}
+	
+	[audioPlayer setDelegate:self];
+	
+	if(![audioPlayer prepareToPlay] || [audioPlayer duration] == 0.0)
+	{
+		NSString *msg = [NSString stringWithFormat:@"The audio file %@ is empty or unplayable.", fileName ];
+		alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
+		[alert show];
+		
+		[audioPlayer release];
+		audioPlayer = nil;
+
+		return;
+	}
+	
+	if([audioPlayer play])
+	{
+		NSLog(@"Playing %@...", fileName);
+
+		[recordingPlayLS setTitle:@"Stop" forState:UIControlStateNormal];
+	}
+	else
+	{
+		[audioPlayer release];
+		audioPlayer = nil;
+		
+		NSString *msg = [NSString stringWithFormat:@"The audio file %@ can't be played.", fileName ];
+		alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
+		[alert show];
+	}
+}
+
+
+- (void) audioPlayerDidFinishPlaying:(AVAudioPlayer*)player successfully:(BOOL)flag
+{
+	NSLog(@"Playing completed");
+
+	[audioPlayer release];
+	audioPlayer = nil;
+	
+	[recordingPlayLS setTitle:@"Play" forState:UIControlStateNormal];
+}
+
+
+- (void) audioPlayerDecodeErrorDidOccur:(AVAudioPlayer*)player error:(NSError*)error
+{
+	NSLog(@"Error %@ playing", [error description]);
+	
+	[audioPlayer release];
+	audioPlayer = nil;
+	
+	[recordingPlayLS setTitle:@"Play" forState:UIControlStateNormal];
+}
+
+
+- (IBAction) doShiftRecording:(UIButton*)sender
+{
+	NSUInteger foundIdx = [self getRecordingIndex:selectedRecording];
+	if(foundIdx != NSNotFound)
+	{
+		NSString *filePath = [userDocDirPath stringByAppendingPathComponent:@"Records.plist"];
+		NSArray *records = [NSArray arrayWithContentsOfFile:filePath];
+		if(records.count == 0)
+		{
+			return;
+		}
+
+		NSMutableDictionary *record = [records objectAtIndex:foundIdx];
+		
+		NSNumber *posTime = [NSNumber numberWithDouble:[[NSDate date] timeIntervalSince1970]];
+		[record setObject:posTime forKey:@"posTime"];
+
+		NSArray *sortedRecords = [records sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2)
+								  {
+									  int result = [[obj1 objectForKey:@"posTime"] compare:[obj2 objectForKey:@"posTime"]];
+									  
+									  return result;
+								  }];
+
+		if([sortedRecords writeToFile:filePath atomically:YES])
+		{
+			NSLog(@"%@ saved", [filePath lastPathComponent]);
+		}
+		else
+		{
+			NSLog(@"Error saving %@", [filePath lastPathComponent]);
+		}
+				
+		[self updateSequencerButtons];
+	}
+}
+
+
+- (IBAction) doEnableRecording:(UIButton*)sender
+{
+	NSUInteger foundIdx = [self getRecordingIndex:selectedRecording];
+	if(foundIdx != NSNotFound)
+	{
+		NSString *filePath = [userDocDirPath stringByAppendingPathComponent:@"Records.plist"];
+		NSMutableArray *records = [NSMutableArray arrayWithContentsOfFile:filePath];
+		if(records.count == 0)
+		{
+			return;
+		}
+		
+		NSMutableDictionary *record = [records objectAtIndex:foundIdx];
+
+		BOOL enabled = [[record objectForKey:@"enabled"] boolValue];
+		[record setObject:[NSNumber numberWithBool:!enabled] forKey:@"enabled"];
+		
+		if([records writeToFile:filePath atomically:YES])
+		{
+			NSLog(@"%@ saved", [filePath lastPathComponent]);
+		}
+		else
+		{
+			NSLog(@"Error saving %@", [filePath lastPathComponent]);
+		}
+				
+		[self updateSequencerButtons];
+	}
+}
+
+
+- (NSUInteger) getRecordingIndex:(UIButton*)recordingBtn
+{
+	if(recordingBtn == nil)
+	{
+		return NSNotFound;
+	}
+	
+	NSString *filePath = [userDocDirPath stringByAppendingPathComponent:@"Records.plist"];
+	NSArray *records = [NSArray arrayWithContentsOfFile:filePath];
+	if(records.count == 0)
+	{
+		return NSNotFound;
+	}
+	
+	NSDictionary *record = [recordingBtn recordingReference];
+	if(record == nil)
+	{
+		return NSNotFound;
+	}
+	
+	NSPredicate *filter = [NSPredicate predicateWithFormat:@"(recTime == %@)", [record objectForKey:@"recTime"]];
+	NSUInteger index = [records indexOfObjectPassingTest:
+						   ^(id obj, NSUInteger idx, BOOL *stop)
+						   {
+							   return [filter evaluateWithObject:obj];
+						   }];
+	return index;
 }
 
 
@@ -724,6 +1291,20 @@
     [self performSelector:@selector(doHighlight:) withObject:self.recordButton afterDelay:0];
     [self performSelector:@selector(doHighlight:) withObject:self.recordButtonLS afterDelay:0];
 	
+	double percent = (double)djMixer.durationPackets / (double)djMixer->durationPacketsIndex;
+	CGFloat startPos = positionSliderLS.frame.origin.x + 10.0;
+	CGFloat totalWidth = positionSliderLS.bounds.size.width - 20.0;
+	CGFloat xPos = startPos + (totalWidth / percent);
+	CGRect frame = sequencerRecViewLS.frame;
+	frame.origin.x = xPos;
+	frame.size.width = 0;
+	[sequencerRecViewLS setFrame:frame];
+	sequencerRecViewLS.hidden = NO;
+	
+	[sequencerUndoLS setEnabled:NO];
+	
+	updateRecViewTimer = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(updateRecView) userInfo:nil repeats:YES];
+	
 	NSLog(@"Recording started");
 }
 
@@ -731,13 +1312,18 @@
 - (void) recordStop
 {
 	NSLog(@"Stopping recording...");
+	
+	[updateRecViewTimer invalidate];
+	sequencerRecViewLS.hidden = YES;
 		
 	djMixer.savingFile = NO;
 	
-	[NSThread sleepForTimeInterval:0.2];
+	// [NSThread sleepForTimeInterval:0.2];
 	
 	[self.recordButton setHighlighted:NO];
 	[self.recordButtonLS setHighlighted:NO];
+	
+	[sequencerUndoLS setEnabled:YES];
 
 	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0),
 	^{	
@@ -778,17 +1364,13 @@
 			records = [NSMutableArray array];
 		}
 		
-		NSDictionary *lastRec = [NSDictionary dictionaryWithObjectsAndKeys:newFileName, @"fileName", [NSNumber numberWithInteger:startPacket], @"startPacket", [NSNumber numberWithInteger:endPacket], @"endPacket", [NSNumber numberWithDouble:[[NSDate date] timeIntervalSince1970]], @"recTime", [NSNumber numberWithDouble:duration], @"duration", nil];
+		NSNumber *recTime = [NSNumber numberWithDouble:[[NSDate date] timeIntervalSince1970]];
+		NSDictionary *lastRec = [NSDictionary dictionaryWithObjectsAndKeys:newFileName, @"fileName", [NSNumber numberWithInteger:startPacket], @"startPacket", [NSNumber numberWithInteger:endPacket], @"endPacket", recTime, @"recTime", recTime, @"posTime", [NSNumber numberWithDouble:duration], @"duration", [NSNumber numberWithBool:YES], @"enabled", nil];
 		[records addObject:lastRec];
 		
 		NSArray *sortedRecords = [records sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2)
 											{
-												int result = [[obj1 objectForKey:@"startPacket"] compare:[obj2 objectForKey:@"startPacket"]];
-												if(result == 0)
-												{
-													result = [[obj1 objectForKey:@"recDate"] compare:[obj2 objectForKey:@"recDate"]];
-												}
-												
+												int result = [[obj1 objectForKey:@"posTime"] compare:[obj2 objectForKey:@"posTime"]];
 												return result;
 											}];
 		
@@ -800,6 +1382,29 @@
 		{
 			NSLog(@"Error saving %@", [filePath lastPathComponent]);
 		}
+		
+		BOOL wasActive = NO;
+		if([djMixer.sequencer.operation isActive])
+		{
+			wasActive = YES;
+			[djMixer.sequencer.operation deactivate];
+		}
+		 
+		NSString *recordsPList = [userDocDirPath stringByAppendingPathComponent:@"Records.plist"];
+		[djMixer.sequencer.operation setRecords:recordsPList];
+		
+		[djMixer.sequencer.operation reset];
+
+		if(wasActive && sortedRecords.count > 0)
+		{
+			[djMixer.sequencer.operation activate];
+		}
+
+		dispatch_sync(dispatch_get_main_queue(),
+					   ^{
+							[self updateSequencerButtons];
+							[sequencerUndoLS setNeedsDisplay];
+					   });
 	});
 }
 
@@ -1059,6 +1664,8 @@
     {
         self.view = self.landscapeView;
         self.isPortrait = NO;
+		
+		[self updateSequencerButtons];
     }
     else
     {

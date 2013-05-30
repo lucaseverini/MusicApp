@@ -16,143 +16,48 @@
 
 @synthesize mixer;
 @synthesize waitForAction;
-//@synthesize fileURL;
-//@synthesize asset;
 @synthesize settings;
-//@synthesize track;
-//@synthesize trackCount;
 @synthesize reader;
 @synthesize output;
 @synthesize audioBuffersSize;
-//@synthesize sizeAudioData1;
-//@synthesize sizeAudioData2;
-//@synthesize fillAudioData1;
-//@synthesize fillAudioData2;
-//@synthesize currentAudioBuffer;
 @synthesize noDataAvailable;
 @synthesize endReading;
-//@synthesize duration;
-//@synthesize packets;
-//@synthesize startPacket;
-//@synthesize endPacket;
 @synthesize curStartPacket;
 @synthesize curEndPacket;
+@synthesize playingIdx;
+@synthesize readingIdx;
 
 const size_t kSampleBufferSize = 32768;
 // 44,100 x 16 x 2 = 1,411,200 bits per second (bps) = 1,411 kbps = ~142 KBytes/sec
 const size_t kAudioDataBufferSize = (1024 * 256) + kSampleBufferSize;
 
-- (id) initWithRecordsFile:(NSString*)recordsFile
+- (id) initWithRecords:(NSString*)recordsFile
 {
 	self = [super init];
     if(self != nil)
     {
 		audioBuffersSize = kAudioDataBufferSize;
 
-		NSMutableArray *records = [NSMutableArray arrayWithContentsOfFile:recordsFile];
-		if(records != nil && [records count] > 0)
-		{				
-			NSArray *sortedRecords = [records sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2)
-											  {
-												  int result = [[obj1 objectForKey:@"startPacket"] compare:[obj2 objectForKey:@"startPacket"]];
-												  if(result == 0)
-												  {
-													  result = [[obj1 objectForKey:@"recDate"] compare:[obj2 objectForKey:@"recDate"]];
-												  }
-												  
-												  return result;
-											  }];
-						
-			for(NSDictionary *record in sortedRecords)
-			{
-				NSString *fileName = [record objectForKey:@"fileName"];
+		[self setRecords:recordsFile];
 
-				NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory , NSUserDomainMask, YES);
-				NSURL *fileURL = [NSURL fileURLWithPath:[[paths objectAtIndex:0] stringByAppendingPathComponent:fileName]];
-							  
-				AVURLAsset *theAsset = [[AVURLAsset alloc] initWithURL:fileURL options:nil];
-				if(theAsset != nil)
-				{									
-					NSArray *tracks = [theAsset tracks];
-					if([tracks count] > 0)
-					{										
-						AVAssetTrack *theTrack = [tracks objectAtIndex:0];
-						if(theTrack != nil)
-						{
-							recordings = (recordingPtr)realloc(recordings, sizeof(recording) * (totRecordings + 1));
-							if(recordings == NULL)
-							{
-								[self release];
-								
-								return NULL;
-							}
-
-							recordings[totRecordings].name = [fileName copy];
-							recordings[totRecordings].asset = theAsset;
-							recordings[totRecordings].track = theTrack;
-							recordings[totRecordings].startPacket = [[record objectForKey:@"startPacket"] integerValue];
-							recordings[totRecordings].endPacket = [[record objectForKey:@"endPacket"] integerValue];
-							recordings[totRecordings].duration = theAsset.duration;
-							recordings[totRecordings].packets = ((double)theAsset.duration.value / (double)theAsset.duration.timescale) * 44100.0;
-							recordings[totRecordings].audioData1 = (UInt32*)malloc(audioBuffersSize);
-							recordings[totRecordings].audioData2 = (UInt32*)malloc(audioBuffersSize);
-							recordings[totRecordings].sizeAudioData1 = 0;
-							recordings[totRecordings].sizeAudioData2 = 0;
-							recordings[totRecordings].fillAudioData1 = NO;
-							recordings[totRecordings].fillAudioData2 = NO;
-							recordings[totRecordings].currentAudioBuffer = 0;
-							recordings[totRecordings].loaded = NO;
-							recordings[totRecordings].played = NO;
-							recordings[totRecordings].noDataAvailable = YES;
-							totRecordings++;
-							
-							continue;
-						}
-					}
-				}
-				
-				NSLog(@"Sequencer recording %@ can't be used", fileName);
-			}
-			
-			NSLog(@"Sequencer recordings: %d", totRecordings);
-			for(int idx = 0; idx < totRecordings; idx++)
-			{
-				NSLog(@"%@ %d packets from %d to %d", recordings[idx].name, recordings[idx].packets, recordings[idx].startPacket, recordings[idx].endPacket);
-			}
-			
-			[self setQueuePriority:NSOperationQueuePriorityHigh];
-			
-			settings = [[NSDictionary alloc] initWithObjectsAndKeys:
-									  [NSNumber numberWithInt:kAudioFormatLinearPCM], AVFormatIDKey,
-									  // [NSNumber numberWithInt:44100.0], AVSampleRateKey,            // Not supported
-									  // [NSNumber numberWithInt: 2], AVNumberOfChannelsKey,           // Not Supported
-									  [NSNumber numberWithInt:16], AVLinearPCMBitDepthKey,
-									  [NSNumber numberWithBool:NO], AVLinearPCMIsBigEndianKey,
-									  [NSNumber numberWithBool:NO], AVLinearPCMIsFloatKey,
-									  [NSNumber numberWithBool:NO], AVLinearPCMIsNonInterleaved,
-									  nil];
-/*
-			audioData1 = (UInt32*)malloc(audioBuffersSize);
-			audioData2 = (UInt32*)malloc(audioBuffersSize);
-			if(audioData1 == NULL || audioData2 == NULL)
-			{
-				[self release];
-
-				return NULL;
-			}
-*/			
-			startSamplePacket = -1;
-			restartSamplePacket = -1;
-			currentSamplePacket = -1;
-			
-			//curPlaying = &recordings[playingIdx];
-			curPlaying = NULL;
-			curReading = NULL;
-		}
-		else
-		{
-			noDataAvailable = YES;
-		}
+		[self setQueuePriority:NSOperationQueuePriorityNormal];
+		
+		settings = [[NSDictionary alloc] initWithObjectsAndKeys:
+						[NSNumber numberWithInt:kAudioFormatLinearPCM], AVFormatIDKey,
+						// [NSNumber numberWithInt:44100.0], AVSampleRateKey,            // Not supported
+						// [NSNumber numberWithInt: 2], AVNumberOfChannelsKey,           // Not Supported
+						[NSNumber numberWithInt:16], AVLinearPCMBitDepthKey,
+						[NSNumber numberWithBool:NO], AVLinearPCMIsBigEndianKey,
+						[NSNumber numberWithBool:NO], AVLinearPCMIsFloatKey,
+						[NSNumber numberWithBool:NO], AVLinearPCMIsNonInterleaved,
+						nil];
+		
+		startSamplePacket = -1;
+		restartSamplePacket = -1;
+		currentSamplePacket = -1;
+		
+		curPlaying = NULL;
+		curReading = NULL;
     }
     
     return self;
@@ -168,27 +73,147 @@ const size_t kAudioDataBufferSize = (1024 * 256) + kSampleBufferSize;
 		reader = nil;
 	}
 
-    //free(audioData1);
-    //audioData1 = NULL;
-   
-    //free(audioData2);
-	//audioData2 = NULL;
+	for(int idx = 0; idx < totRecordings; idx++)
+	{
+		for(int idx2 = 0; idx2 < 4; idx2++)
+		{
+			free(recordings[idx].buffers[idx2].data);
+		}
+
+		[recordings[idx].asset release];
+	}
     	
 	free(recordings);
 	recordings = NULL;
- 	
-	// release all assets...
-	//[asset release];
-    //asset = nil;
 
 	[super dealloc];
 }
 
 
-- (void) main 
+- (void) setRecords:(NSString*)recordsFile
+{
+	if(recordings != NULL)
+	{
+		for(int idx = 0; idx < totRecordings; idx++)
+		{
+			for(int idx2 = 0; idx2 < 4; idx2++)
+			{
+				free(recordings[idx].buffers[idx2].data);
+			}
+			
+			[recordings[idx].asset release];
+		}
+
+		free(recordings);
+		recordings = NULL;
+		
+		totRecordings = 0;
+	}
+	
+	NSMutableArray *records = [NSMutableArray arrayWithContentsOfFile:recordsFile];
+	if(records != nil && [records count] > 0)
+	{
+		// Filter all the disabled recordings
+		[records filterUsingPredicate:[NSPredicate predicateWithFormat:@"(enabled == YES)"]];
+		
+		// Sort recordings by positioning time. Newer first
+		NSArray *sortedRecords = [records sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2)
+								  {
+									  int result = [[obj2 objectForKey:@"posTime"] compare:[obj1 objectForKey:@"posTime"]];
+									  return result;
+								  }];
+		
+		for(NSDictionary *record in sortedRecords)
+		{
+			NSString *fileName = [record objectForKey:@"fileName"];
+			
+			NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory , NSUserDomainMask, YES);
+			NSURL *fileURL = [NSURL fileURLWithPath:[[paths objectAtIndex:0] stringByAppendingPathComponent:fileName]];
+			
+			AVURLAsset *theAsset = [[AVURLAsset alloc] initWithURL:fileURL options:nil];
+			if(theAsset != nil)
+			{
+				NSArray *tracks = [theAsset tracks];
+				if([tracks count] > 0)
+				{
+					AVAssetTrack *theTrack = [tracks objectAtIndex:0];
+					if(theTrack != nil)
+					{
+						recordings = (recordingPtr)realloc(recordings, sizeof(recording) * (totRecordings + 1));
+						assert(recordings != NULL);
+						
+						recordings[totRecordings].name = [fileName copy];
+						recordings[totRecordings].asset = theAsset;
+						recordings[totRecordings].track = theTrack;
+						recordings[totRecordings].startPacket = [[record objectForKey:@"startPacket"] integerValue];
+						recordings[totRecordings].endPacket = [[record objectForKey:@"endPacket"] integerValue];
+						recordings[totRecordings].duration = theAsset.duration;
+						recordings[totRecordings].packets = ((double)theAsset.duration.value / (double)theAsset.duration.timescale) * 44100.0;
+						
+						for(int idx = 0; idx < 4; idx++)
+						{
+							recordings[totRecordings].buffers[idx].data = (UInt32*)malloc(audioBuffersSize);
+							recordings[totRecordings].buffers[idx].size = 0;
+							recordings[totRecordings].buffers[idx].status = 0;
+						}
+						
+						recordings[totRecordings].firstBufferLoaded	 = NO;
+						recordings[totRecordings].loaded = NO;
+						recordings[totRecordings].played = NO;
+						recordings[totRecordings].noDataAvailable = YES;
+						recordings[totRecordings].readerStatus = 0;
+						totRecordings++;
+						
+						continue;
+					}
+				}
+			}
+			
+			NSLog(@"Sequencer recording %@ can't be used", fileName);
+		}
+		
+		// If some recordings intersect, the newer one takes precedence
+		if(totRecordings > 1)
+		{			
+			for(int idx = 0; idx < totRecordings - 1; idx++)
+			{
+				for(int idx2 = idx + 1; idx2 < totRecordings; idx2++)
+				{
+					if(recordings[idx2].startPacket < recordings[idx].endPacket && recordings[idx2].endPacket > recordings[idx].startPacket)
+					{
+						totRecordings--;
+						for(int idx3 = idx2; idx3 < totRecordings - 1; idx3++)
+						{
+							recordings[idx3] = recordings[idx3 + 1];
+						}
+						
+						idx2--;
+					}
+				}
+			}
+		}
+		
+		NSLog(@"Sequencer recordings: %d", totRecordings);
+		for(int idx = 0; idx < totRecordings; idx++)
+		{
+			double start = (double)recordings[idx].startPacket / 44100.0;
+			double end = (double)recordings[idx].endPacket / 44100.0;
+			NSLog(@"%@ %d packets from %d to %d - %.1f to %.1f", recordings[idx].name, recordings[idx].packets, recordings[idx].startPacket, recordings[idx].endPacket, start, end);
+		}
+		
+		noDataAvailable = (totRecordings == 0);
+	}
+	else
+	{
+		noDataAvailable = YES;
+	}
+}
+
+
+- (void) main
 {
 	NSLog(@"SequencerOperation: Main ++");
-    	
+    
     waitForAction = [[NSCondition alloc] init];
     
     while(!self.isCancelled)
@@ -204,59 +229,97 @@ const size_t kAudioDataBufferSize = (1024 * 256) + kSampleBufferSize;
 			break;
 		}
 
-		if(curReading == NULL || curReading->readerStatus == AVAssetReaderStatusCompleted)
+		// If no recording is being read/played at the moment, loops on the records and load the first buffer for everyone that hasn't...
+		if(curReading == NULL && curPlaying == NULL)
 		{
-			curReading = NULL;
-			
-			if(readingIdx == totRecordings)
+			for(int idx = 0; idx < totRecordings; idx++)
 			{
-				readingIdx = 0;
-			}
-			
-			while(readingIdx < totRecordings)
-			{
-				if(recordings[readingIdx].noDataAvailable)
+				if(!recordings[idx].firstBufferLoaded)
 				{
-					if(reader != NULL)
-					{
-						[reader cancelReading];
-						[reader release];
-						reader = nil;
-					}
-
-					curReading = &recordings[readingIdx++];
+					[self loadFirstBuffer:&recordings[idx]];
 					
-					[self openAudioFile];
 					break;
 				}
+			}
+			
+			[NSThread sleepForTimeInterval:0.01]; // Let's save some cpu...
+		}
+		
+		if(curPlaying != NULL)
+		{
+			// Sequencer is playing at thgis time...
+			
+			if(curReading != curPlaying)
+			{
+				if(curReading != NULL)
+				{
+					curReading->firstBufferLoaded = NO;
+				}
+
+				// If the recording to read is changed deactivate the current reader if any
+				if(reader != nil)
+				{
+					[reader cancelReading];
+					[reader release];
+					reader = nil;
+				}
+								
+				curReading = curPlaying;
+
+				// If the reader is not active, activate it for the recording to read
+				if(reader == nil)
+				{
+					[self openAudioFile:curReading];
+				}
+			}
+						
+			if(curReading->readerStatus == AVAssetReaderStatusReading)
+			{
+				audioBufferPtr buffer = NULL;
 				
-				readingIdx++;
+				@synchronized(self)
+				{
+					for(int idx = 0; idx < 4; idx++)
+					{
+						if(curReading->buffers[idx].status == 0)
+						{
+							buffer = &curReading->buffers[idx];
+							buffer->status = 1;
+							
+							break;
+						}
+					}
+				}
+				
+				if(buffer != NULL)
+				{
+					[self fillAudioBuffer:buffer];
+				}
+			}
+			else if(curReading->readerStatus >= AVAssetReaderStatusCompleted)
+			{
+				[reader cancelReading];
+				[reader release];
+				reader = nil;
 			}
 		}
-
-		if(curReading != NULL && curReading->readerStatus != AVAssetReaderStatusCompleted)
+		else 
 		{
-			if(curReading->fillAudioData1)
+			// Sequencer is not playiong at this time...
+			
+			if(curReading != NULL)
 			{
-				@synchronized(self)
+				// If the reader is still active, deactivate it
+				if(reader != nil)
 				{
-					curReading->sizeAudioData1 = [self fillAudioBuffer:curReading->audioData1];
-					if(curReading->sizeAudioData1 > 0)
-					{
-						curReading->fillAudioData1 = NO;
-					}
+					[reader cancelReading];
+					[reader release];
+					reader = nil;
 				}
-			}
-			else if(curReading->fillAudioData2)
-			{
-				@synchronized(self)
-				{
-					curReading->sizeAudioData2 = [self fillAudioBuffer:curReading->audioData2];
-					if(curReading->sizeAudioData2 > 0)
-					{
-						curReading->fillAudioData2 = NO;
-					}
-				}
+				
+				curReading->firstBufferLoaded = NO;		// Reload the first buffer as soon as is possible
+				
+				curReading = NULL;
 			}
 		}
 		
@@ -279,58 +342,57 @@ END:
 
 - (UInt32*) getNextAudioBuffer:(NSUInteger*)packetsInBuffer;
 {
-	NSLog(@"Sequencer getNextAudioBuffer %@", curPlaying->name);
-
 	*packetsInBuffer = 0;
 	
-	if(curPlaying->readerStatus == AVAssetReaderStatusCompleted)
+	if(curPlaying->noDataAvailable)
 	{
-		if(curPlaying->currentAudioBuffer == 1)
+		NSLog(@"Sequencer getNextAudioBuffer %@ noDataAvailable", curPlaying->name);
+
+		return NULL;
+	}
+	
+	@synchronized(self)
+	{
+		int idx2 = 0;
+		
+		for(int idx = 0; idx < 4; idx++)
 		{
-			curPlaying->sizeAudioData1 = 0;
-			
-			if(curPlaying->sizeAudioData2 == 0)
+			if(curPlaying->buffers[idx].status == 3)
 			{
-				curPlaying->noDataAvailable = YES;
-				return NULL;
+				curPlaying->buffers[idx].status = 0;
+				
+				if(idx < 3)
+				{
+					idx2 = idx + 1;
+				}
+				
+				break;
 			}
 		}
-		else if(curPlaying->currentAudioBuffer == 2)
+		
+		for(; idx2 < 4; idx2++)
 		{
-			curPlaying->sizeAudioData2 = 0;
-
-			if(curPlaying->sizeAudioData1 == 0)
+			if(curPlaying->buffers[idx2].status == 2)
 			{
-				curPlaying->noDataAvailable = YES;
-				return NULL;
+				*packetsInBuffer = curPlaying->buffers[idx2].size / sizeof(UInt32);
+				curPlaying->buffers[idx2].status = 3;
+				
+				NSLog(@"Sequencer getNextAudioBuffer %@ %p", curPlaying->name, curPlaying->buffers[idx2].data);
+
+				return curPlaying->buffers[idx2].data;
 			}
 		}
 	}
-		
-    if(curPlaying->currentAudioBuffer == 1)
-    {
-        curPlaying->fillAudioData1 = YES;
+	
+	curPlaying->noDataAvailable = YES;
+	
+	NSLog(@"Sequencer getNextAudioBuffer %@ noDataAvailable", curPlaying->name);
 
-        curPlaying->currentAudioBuffer = 2;
-        
-        *packetsInBuffer = (curPlaying->sizeAudioData2 / sizeof(UInt32));
-        
-        return curPlaying->audioData2;
-    }
-    else
-    {
-        curPlaying->fillAudioData2 = YES;
-        
-        curPlaying->currentAudioBuffer = 1;
-        
-        *packetsInBuffer = (curPlaying->sizeAudioData1 / sizeof(UInt32));
-        
-        return curPlaying->audioData1;
-    }
+	return NULL;
 }
 
 
-- (NSUInteger) fillAudioBuffer:(void*)audioBuffer
+- (NSUInteger) fillAudioBuffer:(audioBufferPtr)buffer
 {
 /*
     AVAssetReaderStatusUnknown = 0,
@@ -339,21 +401,15 @@ END:
     AVAssetReaderStatusFailed,
     AVAssetReaderStatusCancelled,
 */
-	if(curReading->readerStatus == AVAssetReaderStatusCompleted || curReading->readerStatus == AVAssetReaderStatusCancelled)
+	NSLog(@"Sequencer fillAudioBuffer %@", curReading->name);
+
+	if(curReading->readerStatus >= AVAssetReaderStatusCompleted) // Gets also AVAssetReaderStatusFailed and AVAssetReaderStatusCancelled
 	{		
 		return 0;
 	}
 	
-	if(reader == nil)
-    {
-		NSLog(@"Reader == nil");
-		
-		[self openAudioFile];
-	}
-
+	Byte *audioBuffer = (Byte*)buffer->data;	
     NSUInteger dataIdx = 0;
-	
-	// NSLog(@"AVAssetReaderStatus-1: %d", readerStatus);
   
     while((curReading->readerStatus = reader.status) == AVAssetReaderStatusReading)
     {
@@ -366,17 +422,12 @@ END:
             CMBlockBufferRef blockBuffer = CMSampleBufferGetDataBuffer(sampleBuffer);
             if(blockBuffer != NULL)
             {
-				size_t dataLen = CMBlockBufferGetDataLength(blockBuffer);
-				
+				size_t dataLen = CMBlockBufferGetDataLength(blockBuffer);				
 				if(dataLen > 0)
                 {
-					curReading->noDataAvailable = NO;
-
-					// NSLog(@"Read %lu bytes", dataLen);
  					currentSamplePacket += dataLen / 4;
-					// NSLog(@"currentSamplePacket: %d", currentSamplePacket);
 					
-                    OSStatus err = CMBlockBufferCopyDataBytes(blockBuffer, 0, dataLen, (Byte*)audioBuffer + dataIdx);
+                    OSStatus err = CMBlockBufferCopyDataBytes(blockBuffer, 0, dataLen, audioBuffer + dataIdx);
 
                     CMSampleBufferInvalidate(sampleBuffer);
                     CFRelease(sampleBuffer);
@@ -412,6 +463,8 @@ END:
         {
 			if(curReading->readerStatus == AVAssetReaderStatusFailed)  // If reader must be restarted, save the current packet
 			{
+				NSLog(@"Sequencer AVAssetReaderStatus Failed");
+
 				restartSamplePacket = currentSamplePacket;
 			}
 			
@@ -421,34 +474,39 @@ END:
         }
     }
     	
-	NSLog(@"Sequencer AVAssetReaderStatus: %d", curReading->readerStatus);
-
-	if(curReading->readerStatus == AVAssetReaderStatusCompleted || curReading->readerStatus == AVAssetReaderStatusFailed || curReading->readerStatus == AVAssetReaderStatusCancelled)
+	if(curReading->readerStatus >= AVAssetReaderStatusCompleted) // Gets also AVAssetReaderStatusFailed and AVAssetReaderStatusCancelled
     {
+		NSLog(@"Sequencer AVAssetReaderStatus: %d", curReading->readerStatus);
+
+		NSLog(@"%u packets - %g secs", currentSamplePacket, (double)currentSamplePacket / 44100.0);
+
 		[reader cancelReading];
 		[reader release];
 		reader = nil;
-		
-		curReading->loaded = YES;
 	}
+	
+	buffer->size = dataIdx;
+	buffer->status = 2;
+	
+	curReading->noDataAvailable = NO;
 
     return dataIdx;
 }
 
 
-- (BOOL) openAudioFile
+- (BOOL) openAudioFile:(recordingPtr)recording
 {
-	NSLog(@"Sequencer openAudioFile: %@", curReading->name);
+	NSLog(@"Sequencer openAudioFile: %@", recording->name);
 	
 	NSError *error = nil;
-	reader = [[AVAssetReader alloc] initWithAsset:curReading->asset error:&error];
+	reader = [[AVAssetReader alloc] initWithAsset:recording->asset error:&error];
 	if(reader == nil)
 	{
-		NSLog(@"Error %@ opening file %@", [error description], curReading->name);
+		NSLog(@"Error %@ opening file %@", [error description], recording->name);
 		return NO;
 	}
 		
-	output = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:curReading->track outputSettings:settings];
+	output = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:recording->track outputSettings:settings];
 	if(output == nil)
 	{
 		NSLog(@"Error in assetReaderTrackOutputWithTrack()");
@@ -458,54 +516,25 @@ END:
 	[reader addOutput:output];
 	
 	currentSamplePacket = 0;
-	// TEST!!
-	//reader.timeRange = CMTimeRangeMake(kCMTimeZero, CMTimeMake(44100 * 5, 44100));
-
-	if(NO/*restartSamplePacket != -1*/)
+	
+	NSUInteger startPacket = 0;
+	
+	if(recording->firstBufferLoaded)
 	{
-		NSLog(@"Sequencer Restart reading %@ from packet %d", curReading->name, restartSamplePacket);
-
-		reader.timeRange = CMTimeRangeMake(CMTimeMake(restartSamplePacket, 44100), kCMTimePositiveInfinity);
-		
-		currentSamplePacket = restartSamplePacket;
-		restartSamplePacket = -1;
-	}
-	else if(NO/*startSamplePacket != -1*/)
+		startPacket = recording->firstPackets;
+	}	
+	else if(startSamplePacket != -1 && startSamplePacket > recording->startPacket)
 	{
-		NSLog(@"Sequencer Start reading %@ from packet %d", curReading->name, startSamplePacket);
-
-		reader.timeRange = CMTimeRangeMake(CMTimeMake(startSamplePacket, 44100), kCMTimePositiveInfinity);
+		startPacket = startSamplePacket - recording->startPacket;
 		
-		currentSamplePacket = startSamplePacket;
 		startSamplePacket = -1;
 	}
 	
+	reader.timeRange = CMTimeRangeMake(CMTimeMake(startPacket, 44100), kCMTimePositiveInfinity);
+	
 	[reader startReading];
 	
-	curReading->readerStatus = reader.status;
-/*
-	curStartPacket = curReading->startPacket;
-	curEndPacket = curReading->endPacket;
-	
-	if(startSamplePacket > curStartPacket)
-	{
-		if(startSamplePacket < curEndPacket)
-		{
-			curStartPacket = startSamplePacket;
-		}
-		else
-		{
-			curStartPacket = 0;
-			curEndPacket = 0;
-		}
-	}
-	
-	NSLog(@"Sequencer curStartPacket: %d", curStartPacket);
-	NSLog(@"Sequencer curEndPacket: %d", curEndPacket);
-*/
-	curReading->fillAudioData1 = YES;
-	curReading->fillAudioData2 = NO;
-	curReading->currentAudioBuffer = 0;
+	recording->readerStatus = reader.status;
 
 	return YES;
 }
@@ -515,7 +544,7 @@ END:
 {
 	@synchronized(self)
 	{
-		NSLog(@"Operation Reset");
+		NSLog(@"Sequencer Operation Reset");
 
 		if(reader != nil)
 		{
@@ -526,44 +555,30 @@ END:
 		
 		for(int idx = 0; idx < totRecordings; idx++)
 		{
-			recordings[idx].fillAudioData1 = NO;
-			recordings[idx].fillAudioData2 = NO;
-			recordings[idx].currentAudioBuffer = 0;
+			for(int idx2 = 0; idx2 < 4; idx2++)
+			{
+				recordings[idx].buffers[idx2].size = 0;
+				recordings[idx].buffers[idx2].status = 0;
+			}
+
 			recordings[idx].loaded = NO;
 			recordings[idx].played = NO;
+			recordings[idx].firstBufferLoaded = NO;
 			recordings[idx].noDataAvailable = YES;
-			curReading->readerStatus = 0;
+			recordings[idx].readerStatus = 0;
 		}
 		
-		readingIdx = 0;
-		playingIdx = 0;
+		readingIdx = -1;
+		playingIdx = -1;
 		
 		curPlaying = NULL;
 		curReading = NULL;
-
-		//fillAudioData1 = YES;
-		//fillAudioData2 = NO;
-		
-		//currentAudioBuffer = 0;
-		//readerStatus = 0;
 		
 		startSamplePacket = -1;
 		restartSamplePacket = -1;
 		currentSamplePacket = -1;
-
-		//free(audioData1);
-		//audioData1 = (UInt32*)malloc(audioBuffersSize);
-		
-		//free(audioData2);
-        //audioData2 = (UInt32*)malloc(audioBuffersSize);
 		
 		working = NO;
-/*
-		FIX IT
-		curReading
-		curPlaying
-		etc...
-*/
 	}
 }
 
@@ -580,96 +595,37 @@ END:
 		}
 			
 		startSamplePacket = newStartPosition;		
-/*
-		FIX IT
-		if(curPlaying != NULL && curPlaying->startPacket != 0 && curPlaying->endPacket != 0)
-		{
-			curStartPacket = curPlaying->startPacket;
-			curEndPacket = curPlaying->endPacket;
-			
-			if(newStartPosition > curStartPacket)
-			{
-				if(newStartPosition < curEndPacket)
-				{
-					curStartPacket = newStartPosition;
-				}
-				else
-				{
-					curStartPacket = 0;
-					curEndPacket = 0;
-				}
-			}
-			
-			NSLog(@"Sequencer curStartPacket: %d", curStartPacket);
-			NSLog(@"Sequencer curEndPacket: %d", curEndPacket);
-		}
-		else
-		{
-			curStartPacket = 0;
-			curEndPacket = 0;
-		}
-*/
-	}
-}
-
-
-- (void) setCurrentPlayPosition:(NSTimeInterval)time
-{
-	@synchronized(self)
-	{
-		NSUInteger newStartPosition = time * 44100.0;
-
-		startSamplePacket = newStartPosition;
-/*
-		FIX IT
-		if(curPlaying != NULL && curPlaying->startPacket != 0 && curPlaying->endPacket != 0)
-		{
-			curStartPacket = curPlaying->startPacket;
-			curEndPacket = curPlaying->endPacket;
-			
-			if(newStartPosition > curStartPacket)
-			{
-				if(newStartPosition < curEndPacket)
-				{
-					curStartPacket = newStartPosition;
-				}
-				else
-				{
-					curStartPacket = 0;
-					curEndPacket = 0;
-				}
-			}
-			
-			NSLog(@"Sequencer curStartPacket: %d", curStartPacket);
-			NSLog(@"Sequencer curEndPacket: %d", curEndPacket);
-		}
-		else
-		{
-			curStartPacket = 0;
-			curEndPacket = 0;
-		}
-*/
 	}
 }
 
 
 - (void) activate
 {
-	active = YES;
+	if(!active)
+	{
+		NSLog(@"Sequencer activated");
+		
+		active = YES;
 
-	[waitForAction lock];
-	[waitForAction signal];
-	[waitForAction unlock];
+		[waitForAction lock];
+		[waitForAction signal];
+		[waitForAction unlock];
+	}
 }
 
 
 - (void) deactivate
 {
-	active = NO;
-	
-	[waitForAction lock];
-	[waitForAction signal];
-	[waitForAction unlock];
+	if(active)
+	{
+		NSLog(@"Sequencer deactivated");
+		
+		active = NO;
+		
+		[waitForAction lock];
+		[waitForAction signal];
+		[waitForAction unlock];
+	}
 }
 
 
@@ -691,6 +647,12 @@ END:
 }
 
 
+- (BOOL) isActive
+{
+	return active;
+}
+
+
 - (BOOL) sequencerActive
 {
 	if(!active)
@@ -698,43 +660,37 @@ END:
 		return NO;
 	}
 
-	NSUInteger packetIdx = mixer->durationPacketsIndex;
+	NSUInteger packetIdx = mixer->durationPacketsIndex + mixer->framePacketsIndex;
 
 	if(curPlaying != NULL)
 	{
-		if(packetIdx < curPlaying->startPacket || packetIdx > curPlaying->endPacket || curPlaying->noDataAvailable)
+		if(packetIdx < curPlaying->startPacket || packetIdx >= curPlaying->endPacket)
 		{
-				curPlaying->noDataAvailable = YES;
-				
-				curPlaying->readerStatus = AVAssetReaderStatusCompleted;
-
 			if(working)
 			{
-				NSLog(@"Sequencer Disactive %ld %@", mixer->durationPacketsIndex, curPlaying->name);
+				NSLog(@"Sequencer Disactive at %ld for %@", mixer->durationPacketsIndex, curPlaying->name);
+				
 				working = NO;
 			}
 			
 			curPlaying = NULL;
 		}
 	}
-		
+	
 	if(curPlaying == NULL)
 	{
 		for(int idx = 0; idx < totRecordings; idx++)
 		{
 			if(packetIdx >= recordings[idx].startPacket && packetIdx < recordings[idx].endPacket)
-			{
-				if(!recordings[idx].noDataAvailable)
-				{
-					curPlaying = &recordings[idx];
+			{				
+				curPlaying = &recordings[idx];
 
-					if(!working)
-					{
-						NSLog(@"Sequencer Active %ld %@ %u %u", mixer->durationPacketsIndex, curPlaying->name, curPlaying->startPacket, curPlaying->endPacket);
-						working = YES;
-						
-						curPlaying->loaded = NO;
-					}
+				if(!working)
+				{
+					double secs = (double)(curPlaying->endPacket - curPlaying->startPacket) / 44100.0;
+					NSLog(@"Sequencer Active at %ld (%u-%u %g secs) for %@", mixer->durationPacketsIndex, curPlaying->startPacket, curPlaying->endPacket, secs, curPlaying->name);
+					
+					working = YES;
 				}
 				
 				break;
@@ -745,59 +701,123 @@ END:
 	return (curPlaying != NULL);
 }
 
-/*
-- (BOOL) sequencerActive
+
+- (void) loadFirstBuffer:(recordingPtr)recording
 {
-	if(curPlaying == NULL)
+	NSError *error = nil;
+	AVAssetReader *theReader = [[AVAssetReader alloc] initWithAsset:recording->asset error:&error];
+	if(theReader == nil)
 	{
-		return NO;
+		NSLog(@"Error %@ opening file %@", [error description], recording->name);
+		return;
 	}
 	
-	NSUInteger startPacket = curPlaying->startPacket;
-	NSUInteger endPacket = curPlaying->endPacket;
-	
-	if(active && !curPlaying->noDataAvailable && (mixer->durationPacketsIndex >= startPacket && mixer->durationPacketsIndex < endPacket))
+	AVAssetReaderTrackOutput *theOutput = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:recording->track outputSettings:settings];
+	if(theOutput == nil)
 	{
-		if(!working)
-		{
-			NSLog(@"Sequencer Active - %ld %u %u", mixer->durationPacketsIndex, startPacket, endPacket);
-			working = YES;
-			
-			curPlaying->loaded = NO;
-		}
+		NSLog(@"Error in assetReaderTrackOutputWithTrack()");
+		return;
+	}
+	
+	[theReader addOutput:theOutput];
+
+	NSUInteger startPacket = 0;
+
+	if(startSamplePacket != -1 && (startSamplePacket > recording->startPacket && startSamplePacket < recording->endPacket))
+	{
+		startPacket = startSamplePacket - recording->startPacket;
+		theReader.timeRange = CMTimeRangeMake(CMTimeMake(startPacket, 44100), kCMTimePositiveInfinity);
 		
-		return YES;
+		startSamplePacket = -1;
 	}
-	else
-	{
-		if(working)
-		{
-			NSLog(@"Sequencer Disactive - %ld %u %u", mixer->durationPacketsIndex, startPacket, endPacket);
-			working = NO;
-			
-			curPlaying->noDataAvailable = YES;
-			
-			if(++playingIdx == totRecordings)
-			{
-				if(mixer.loop)
-				{
-					playingIdx = 0;
-					curPlaying = &recordings[playingIdx];
-				}
+	
+	[theReader startReading];
+	
+	recording->firstPackets = 0;
+	
+	Byte *audioBuffer = (Byte*)recording->buffers[0].data;
+	recording->buffers[0].status = 1;
+	
+	NSUInteger dataIdx = 0;
+	
+    while(theReader.status == AVAssetReaderStatusReading)
+    {
+        CMSampleBufferRef sampleBuffer = [theOutput copyNextSampleBuffer];		
+        if(sampleBuffer != NULL)
+        {
+            CMBlockBufferRef blockBuffer = CMSampleBufferGetDataBuffer(sampleBuffer);
+            if(blockBuffer != NULL)
+            {
+				size_t dataLen = CMBlockBufferGetDataLength(blockBuffer);				
+				if(dataLen > 0)
+                {
+					OSStatus err = CMBlockBufferCopyDataBytes(blockBuffer, 0, dataLen, audioBuffer + dataIdx);
+					
+                    CMSampleBufferInvalidate(sampleBuffer);
+                    CFRelease(sampleBuffer);
+					
+                    if(err != kCMBlockBufferNoErr)
+                    {
+                        NSLog(@"Sequencer CMBlockBufferCopyDataBytes returned error %lu", err);
+						break;
+                    }
+                }
 				else
 				{
-					curPlaying = NULL;
+					NSLog(@"Sequencer No Data");
 				}
-			}
-			else
+                
+                dataIdx += dataLen;
+                if(dataIdx >= audioBuffersSize - kSampleBufferSize)
+                {
+                    NSLog(@"AudioBuffer %p filled with %d bytes", audioBuffer, dataIdx);                    
+                    break;
+                }
+            }
+            else
+            {
+                NSLog(@"Sequencer CMSampleBufferGetDataBuffer returned NULL");                
+                break;
+            }
+        }
+        else
+        {
+			if(theReader.status == AVAssetReaderStatusFailed)
 			{
-				curPlaying = &recordings[playingIdx];
+				NSLog(@"Sequencer AVAssetReaderStatus Failed");
 			}
 			
-		}
+			NSLog(@"Sequencer copyNextSampleBuffer returned nil - Status %d", theReader.status);			
+			break;
+        }
+    }
+	
+	if(theReader.status == AVAssetReaderStatusReading || theReader.status == AVAssetReaderStatusCompleted)
+	{
+		recording->buffers[0].size = dataIdx;
+		recording->buffers[0].status = 2;
 		
+		recording->firstPackets = startPacket + (dataIdx / sizeof(UInt32));
+		recording->firstBufferLoaded = YES;
+		
+		recording->noDataAvailable = NO;
+
+		NSLog(@"Sequencer loadFirstBuffer: %@ - %u packets", recording->name, recording->firstPackets);
+	}
+	
+	[theReader cancelReading];
+	[theReader release];
+}
+
+
+- (BOOL) hasData
+{
+	if(curPlaying == NULL || curPlaying->noDataAvailable)
+	{
 		return NO;
 	}
+	
+	return YES;
 }
-*/
+
 @end

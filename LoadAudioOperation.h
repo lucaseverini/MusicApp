@@ -26,6 +26,7 @@
 	NSUInteger currentSamplePacket;
 	NSUInteger restartSamplePacket;
 	BOOL active;
+	AVAssetReader *preReader;
 }
 
 @property (nonatomic, retain) DJMixer *mixer;
@@ -35,8 +36,7 @@
 @property (nonatomic, retain) NSDictionary *settings;
 @property (nonatomic, retain) AVAssetTrack *track;
 @property (nonatomic, assign) NSUInteger trackCount;
-@property (nonatomic, retain) AVAssetReader *reader;
-@property (nonatomic, retain) AVAssetReaderTrackOutput *output;
+@property (nonatomic, assign) AVAssetReader *reader;
 @property (nonatomic, assign) size_t audioBuffersSize;
 @property (nonatomic, assign) NSUInteger sizeAudioData1;
 @property (nonatomic, assign) NSUInteger sizeAudioData2;

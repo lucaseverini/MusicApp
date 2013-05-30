@@ -112,7 +112,26 @@ static OSStatus crossFaderMixerCallback (void *inRefCon, AudioUnitRenderActionFl
                 UInt16 value = djMixer.inputAudioData[djMixer->packetIndex++];
                 frameBuffer[frameNum] = value + (value << 16);
             }
-        }
+
+#pragma message "Change this part"
+			if(djMixer.savingFile)
+			{
+				if(djMixer.savingFileStartPacket == -1)
+				{
+					djMixer.savingFileStartPacket = djMixer->durationPacketsIndex;
+				}
+				
+				OSStatus status = ExtAudioFileWriteAsync(djMixer.savingFileRef, inNumberFrames, ioData);
+				if(status != noErr)
+				{
+					NSLog(@"Error %d in ExtAudioFileWriteAsync", (int)status);
+				}
+				else
+				{
+					djMixer.savingFilePackets += inNumberFrames;
+				}
+			}
+		}
     }
 	else if(inBusNumber == 0)	// This is the Sequencer channel (0)
 	{
@@ -124,6 +143,7 @@ static OSStatus crossFaderMixerCallback (void *inRefCon, AudioUnitRenderActionFl
             for(int frameNum = 0; frameNum < inNumberFrames; frameNum++)
             {
                 // getNextPacket returns a 32 bit value, one frame which is one packet.
+				djMixer->framePacketsIndex = frameNum;
 				frameBuffer[frameNum] = [sequencer getNextPacket];
             }
         }
@@ -139,7 +159,8 @@ static OSStatus crossFaderMixerCallback (void *inRefCon, AudioUnitRenderActionFl
 		InMemoryAudioFile *channel = djMixer.channels[inBusNumber - 1];
         if(channel.playing && !channel.noData)
         {
-			if(djMixer.sequencer.playing)
+#pragma message "Change this part"
+			if(NO /*djMixer.sequencer.playing*/)
 			{
 				if(playing)
 				{
@@ -167,7 +188,7 @@ static OSStatus crossFaderMixerCallback (void *inRefCon, AudioUnitRenderActionFl
 				*ioActionFlags &= ~kAudioUnitRenderAction_OutputIsSilence;
 
 				for(int frameNum = 0; frameNum < inNumberFrames; frameNum++)
-				{
+				{					
 					// getNextPacket returns a 32 bit value, one frame which is one packet.
 					frameBuffer[frameNum] = [channel getNextPacket];
 				}
@@ -190,7 +211,7 @@ static OSStatus masterFaderCallback (void *inRefCon, AudioUnitRenderActionFlags 
 
 	DJMixer *djMixer = (DJMixer*)inRefCon;
 	
-	if(djMixer->durationPacketsIndex >= djMixer.durationPackets)
+	if(djMixer->durationPacketsIndex >= djMixer->durationPackets)
 	{
 		if(djMixer.loop)
 		{
@@ -203,6 +224,8 @@ static OSStatus masterFaderCallback (void *inRefCon, AudioUnitRenderActionFlags 
     // Apply master effect, if any...
 	if(err == noErr)
 	{
+#pragma message "Change this part"
+/*
 		if(djMixer.savingFile)
 		{
 			if(djMixer.savingFileStartPacket == -1)
@@ -220,8 +243,8 @@ static OSStatus masterFaderCallback (void *inRefCon, AudioUnitRenderActionFlags 
 				djMixer.savingFilePackets += inNumberFrames;
 			}
 		}
-		
-		if(djMixer->durationPacketsIndex < djMixer.durationPackets)
+*/		
+		if(djMixer->durationPacketsIndex < djMixer->durationPackets)
 		{
 			djMixer->durationPacketsIndex += inNumberFrames;
 		}
@@ -320,7 +343,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 		sequencer = [[InMemoryAudioFile alloc] initForSequencer];
         
         loadAudioQueue = [[NSOperationQueue alloc] init];
-        [loadAudioQueue setMaxConcurrentOperationCount:10];
+        [loadAudioQueue setMaxConcurrentOperationCount:12];
 		
 		_this = self;
 
@@ -403,11 +426,11 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 {
 	if(channel >= 1 && channel <= 8)
 	{
-		NSLog(@"Channel %d fader:%.1f", channel, volume);
+		// NSLog(@"Channel %d fader:%.1f", channel, volume);
 	}
 	else
 	{
-		NSLog(@"Playback fader:%.1f", volume);
+		// NSLog(@"Playback fader:%.1f", volume);
 	}
 	
 	// set the volume levels on the two input channels to the crossfader
@@ -910,7 +933,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 			[channels[idx].operation setStartPlayPosition:time reset:reset];
 		}
 	}
-	
+
 	if(sequencer.loaded)
 	{
 		if(reset)

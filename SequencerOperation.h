@@ -9,8 +9,16 @@
 #import <CoreMedia/CoreMedia.h>
 
 
-typedef struct recording
+typedef struct audioBuffer
 {
+	UInt32		*data;
+	NSUInteger	size;
+	NSInteger	status;		// 0 -> Empty or finished to read, 1 -> Filling, 2 -> Filled/Ready to be read, 3 -> Reading
+}
+audioBuffer, *audioBufferPtr;
+
+typedef struct recording
+{	
 	NSString		*name;
 	AVURLAsset		*asset;
 	AVAssetTrack	*track;
@@ -18,13 +26,13 @@ typedef struct recording
 	NSUInteger		packets;
 	NSUInteger		startPacket;
 	NSUInteger		endPacket;
-	NSUInteger		sizeAudioData1;
-	NSUInteger		sizeAudioData2;
-	UInt32			*audioData1;
-	UInt32			*audioData2;
-	BOOL			fillAudioData1;
-	BOOL			fillAudioData2;
-	NSUInteger		currentAudioBuffer;
+	
+	audioBuffer		buffers[4];
+	NSUInteger		fillingBufferIdx;
+	NSUInteger		readingBufferIdx;
+
+	BOOL			firstBufferLoaded;
+	NSUInteger		firstPackets;
 	BOOL			loaded;
 	BOOL			played;
 	BOOL			noDataAvailable;
@@ -56,8 +64,6 @@ recording, *recordingPtr;
 	recordingPtr recordings;
 	recordingPtr curPlaying;
 	recordingPtr curReading;
-	NSUInteger playingIdx;
-	NSUInteger readingIdx;
 }
 
 @property (nonatomic, retain) DJMixer *mixer;
@@ -75,6 +81,8 @@ recording, *recordingPtr;
 @property (atomic, assign) BOOL endReading;
 @property (atomic, assign) BOOL noDataAvailable;
 @property (atomic, assign) NSUInteger currentAudioBuffer;
+@property (atomic, assign) NSInteger playingIdx;
+@property (atomic, assign) NSInteger readingIdx;
 //@property (nonatomic, assign) CMTime duration;
 //@property (nonatomic, assign) NSUInteger packets;
 
@@ -83,18 +91,20 @@ recording, *recordingPtr;
 @property (nonatomic, assign) NSUInteger curStartPacket;	// Sequencer
 @property (nonatomic, assign) NSUInteger curEndPacket;		// Sequencer
 
-- (id) initWithRecordsFile:(NSString*)recordsFile;
-- (BOOL) openAudioFile;
-- (NSUInteger) fillAudioBuffer:(void*)audioBuffer;
+- (id) initWithRecords:(NSString*)recordsFile;
+- (BOOL) openAudioFile:(recordingPtr)recording;
 - (UInt32*) getNextAudioBuffer:(NSUInteger*)packetsInBuffer;
 - (void) reset;
-- (void) setCurrentPlayPosition:(NSTimeInterval)time;
 - (void) setStartPlayPosition:(NSTimeInterval)time reset:(BOOL)reset;
 - (void) activate;
 - (void) deactivate;
 - (void) remove;
 - (BOOL) sequencerActive;
+- (BOOL) isActive;
+- (BOOL) hasData;
 - (NSInteger) getRecordings:(recordingPtr*)theRecordings;
+- (void) setRecords:(NSString*)recordsFile;
+- (void) loadFirstBuffer:(recordingPtr)recording;
 
 @end
 

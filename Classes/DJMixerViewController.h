@@ -6,13 +6,15 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <AVFoundation/AVFoundation.h>
 
 @class UITextScroll;
 @class DJMixer;
 @class SelectionViewController;
 @class Karaoke;
+@class AVAudioPlayer;
 
-@interface DJMixerViewController : UIViewController
+@interface DJMixerViewController : UIViewController <AVAudioPlayerDelegate, UIAlertViewDelegate>
 {
 	DJMixer *djMixer;	
     NSDate *karaokePauseStart;
@@ -22,6 +24,8 @@
 	NSMutableDictionary *channelSliders;
 	BOOL wasPlaying;
 	NSString *userDocDirPath;
+	UIButton *selectedRecording;
+	AVAudioPlayer *audioPlayer;
 }
 
 @property (nonatomic, retain) IBOutlet UIView *portraitView;
@@ -62,15 +66,23 @@
 @property (nonatomic, retain) IBOutlet UILabel *durationLabelLS;
 @property (nonatomic, retain) IBOutlet UISlider *positionSliderLS;
 @property (nonatomic, retain) IBOutlet UISwitch *sequencerSwitchLS;
+@property (nonatomic, retain) IBOutlet UIButton *sequencerUndoLS;
+@property (nonatomic, retain) IBOutlet UIScrollView *sequencerScrollViewLS;
+@property (nonatomic, retain) IBOutlet UIView *sequencerRecViewLS;
+@property (nonatomic, retain) IBOutlet UIButton *recordingDeleteLS;
+@property (nonatomic, retain) IBOutlet UIButton *recordingPlayLS;
+@property (nonatomic, retain) IBOutlet UIButton *recordingShiftLS;
+@property (nonatomic, retain) IBOutlet UIButton *recordingEnableLS;
 
 @property (nonatomic, retain) DJMixer *djMixer;
 @property (nonatomic, retain) Karaoke *karaoke;
 @property (nonatomic, retain) NSTimer *karaokeTimer;
 @property (nonatomic, retain) NSTimer *checkDiskSizeTimer;
 @property (nonatomic, retain) NSTimer *checkPositionTimer;
+@property (nonatomic, retain) NSTimer *updateRecViewTimer;
 @property (nonatomic, assign) BOOL isPortrait;
 @property (atomic, assign) BOOL karaokeActivated;
-@property (nonatomic, retain) NSArray *downArrows;
+@property (nonatomic, retain) NSMutableArray *sequencerButtons;
 
 - (IBAction) changeVolume:(UISlider*)sender;
 - (IBAction) playOrStop;
@@ -79,7 +91,13 @@
 - (IBAction) doKaraoke:(UIButton*)sender;
 - (IBAction) doRecord:(UIButton*)sender;
 - (IBAction) setPlayPosition:(UISlider*)sender;
-- (IBAction) doSequencer:(UISwitch*)sender;
+- (IBAction) doPauseSequencer:(UISwitch*)sender;
+- (IBAction) doUndoSequencer:(UIButton*)sender;
+- (IBAction) doSelectLastRecording:(UIButton*)sender;
+- (IBAction) doDeleteRecording:(UIButton*)sender;
+- (IBAction) doPlayRecording:(UIButton*)sender;
+- (IBAction) doShiftRecording:(UIButton*)sender;
+- (IBAction) doEnableRecording:(UIButton*)sender;
 
 - (void) pause:(BOOL)flag;
 - (void) saveControlsValue;
@@ -91,5 +109,6 @@
 - (void) setPlayPositionEnded:(NSNotification*)notification;
 - (void) enableAudioInput;
 - (void) disableAudioInput;
+- (void) updateSequencerButtons;
 
 @end

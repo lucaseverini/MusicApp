@@ -23,13 +23,14 @@
 	UInt32 packetsInBuffer;		// Used for live playback channel
 	UInt32 packetIndex;			// Used for live playback channel	
 	UInt32 durationPacketsIndex;
+	UInt32 framePacketsIndex;
 	UInt32 totFrameNum;
+	UInt32 durationPackets;
 
 	// Properties declared also here are visible in gdb as instance variables
 	@private
 	double duration;
 	double playPosition;
-	UInt32 durationPackets;
 	BOOL savingFile;
 	ExtAudioFileRef savingFileRef;
 	NSURL *savingFileUrl;

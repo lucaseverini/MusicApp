@@ -245,7 +245,7 @@
 
 			if(![player prepareToPlay] || [player duration] == 0.0)
 			{
-				NSString *msg = [NSString stringWithFormat:@"The audio file %@ is empty or unusable.", fileName ];
+				NSString *msg = [NSString stringWithFormat:@"The audio file %@ is empty or unplayable.", fileName ];
 				alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
 				[alert show];
 			}
