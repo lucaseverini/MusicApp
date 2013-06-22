@@ -20,7 +20,7 @@
         if(style == UITableViewCellStyleDefault)
         {
             CGRect frame = CGRectMake(5, 4, self.frame.size.width - 10, 22);
-            self.words = [[UITextField alloc] initWithFrame:frame];
+            self.words = [[[UITextField alloc] initWithFrame:frame] autorelease];
             self.words.font = [UIFont boldSystemFontOfSize:18.0];
             self.words.textAlignment = NSTextAlignmentLeft;
             self.words.autocorrectionType = UITextAutocorrectionTypeNo;
@@ -31,8 +31,8 @@
             self.words.keyboardType = UIKeyboardTypeDefault;
             [self.contentView addSubview:self.words];
 
-            frame = CGRectMake(5, 26, 140, 15);
-            self.time = [[UITextField alloc] initWithFrame:frame];
+            frame = CGRectMake(5, 26, self.frame.size.width - 30, 15);
+            self.time = [[[UITextField alloc] initWithFrame:frame] autorelease];
             self.time.font = [UIFont systemFontOfSize:13.0];
             self.time.textAlignment = NSTextAlignmentLeft;
             self.time.autocorrectionType = UITextAutocorrectionTypeNo;

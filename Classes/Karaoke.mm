@@ -9,6 +9,10 @@
 #import "KaraokeViewController.h"
 
 
+NSString *kWordsKey = @"wordsKey";
+NSString *kTimeKey = @"timeKey";
+NSString *kTypeKey = @"typeKey";
+
 @implementation Karaoke
 
 @synthesize text;
@@ -40,31 +44,37 @@
     if(self != nil)
     {
         NSMutableArray *mutTime = [NSMutableArray array];
-        NSMutableString *mutText = [NSMutableString stringWithString:@"\r"];
-#if 1
+        NSMutableString *mutText = [NSMutableString stringWithString:@"\r\r"];
+
+		float prevRowTime = 0;
         for(NSDictionary *row in karaokeData)
         {
             NSString *rowText = [row objectForKey:kWordsKey];
             if(rowText == nil)
                 continue;
             
-            NSNumber *rowTime = [row valueForKey:kTimeKey];
+			float thisRowTime = [[row valueForKey:kTimeKey] floatValue];
+            NSNumber *rowTime = [NSNumber numberWithFloat:(thisRowTime - prevRowTime)];			
             if(rowTime == nil)
                 continue;
+			
+			if([rowText isEqualToString:@"[end]"])
+			{
+				[mutText appendFormat:@"%@\r", @""];
+				[mutTime addObject:rowTime];
+				
+				break;
+			}
             
-            [mutText appendFormat:@"%@\r", rowText];             
+            [mutText appendFormat:@"%@\r", rowText];
             [mutTime addObject:rowTime];
+			
+			prevRowTime = thisRowTime;
         }
         
         // NSLog(@"%@", mutText);
         // NSLog(@"%@", mutTime);
-#else
-        [mutText appendString:@"Riga 1\rRiga 2\rRiga 3\rRiga 4\rRiga 5\rRiga 6\rRiga 7\rRiga 8\rRiga 9\rRiga 10\rRiga 11\rRiga 12\r "];
-        for(int idx = 0; idx < 14; idx++)
-        {
-            [mutTime addObject:[NSNumber numberWithDouble:(NSTimeInterval)1.0]];
-        }
-#endif
+
         text = [[NSString alloc] initWithString:mutText];
         attribText = [[NSMutableAttributedString alloc] initWithString:text];
         attribTextLS = [[NSMutableAttributedString alloc] initWithString:text];

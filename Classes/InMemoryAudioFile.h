@@ -44,7 +44,6 @@
 @property (nonatomic, retain) NSString *fileName;
 @property (nonatomic, retain) NSString *url;
 @property (nonatomic, assign) NSInteger channel;
-@property (nonatomic, assign) NSInteger trackCount;
 @property (atomic, assign) BOOL playing;
 @property (atomic, assign) BOOL paused;
 @property (atomic, assign) BOOL loaded;

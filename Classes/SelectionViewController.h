@@ -17,6 +17,7 @@
     NSString *fileTitleText;
     NSIndexPath *selectedRow;
     NSInteger channel;
+	NSString *userDocDirPath;
 }
 
 @property (nonatomic, retain) IBOutlet UIButton *backButton;
@@ -29,5 +30,6 @@
 - (IBAction) doClearList:(UIButton*)sender;
 
 - (void) doSelectFile:(NSIndexPath*)row;
+- (NSURL*) copyAudioFile:(NSString*)fileUrlString to:(NSString*)folderPathString named:(NSString*)fileName;
 
 @end

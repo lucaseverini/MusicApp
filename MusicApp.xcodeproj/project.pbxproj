@@ -24,8 +24,10 @@
 		810FBED115AA522000AEFB2F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 810FBECA15AA522000AEFB2F /* Foundation.framework */; };
 		810FBED215AA522000AEFB2F /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 810FBECB15AA522000AEFB2F /* CoreGraphics.framework */; };
 		810FBED315AA522000AEFB2F /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 810FBECC15AA522000AEFB2F /* CoreMedia.framework */; };
+		8112C39A175C478000608998 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8112C399175C478000608998 /* QuartzCore.framework */; };
 		81520D6416BD2214000F917E /* MyNavigationController.m in Sources */ = {isa = PBXBuildFile; fileRef = 81520D6316BD2214000F917E /* MyNavigationController.m */; };
-		8159E84E173AE282002D96DA /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8159E84D173AE282002D96DA /* QuartzCore.framework */; };
+		8160C95A175A0602001F5F83 /* SVProgressHUD.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 8160C957175A0602001F5F83 /* SVProgressHUD.bundle */; };
+		8160C95B175A0602001F5F83 /* SVProgressHUD.mm in Sources */ = {isa = PBXBuildFile; fileRef = 8160C959175A0602001F5F83 /* SVProgressHUD.mm */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
 		81742950172C73CC00AD6FB4 /* UIButtonBarArrowDownGreen.png in Resources */ = {isa = PBXBuildFile; fileRef = 8174294E172C73CC00AD6FB4 /* UIButtonBarArrowDownGreen.png */; };
 		81742951172C73CC00AD6FB4 /* UIButtonBarArrowDownRed.png in Resources */ = {isa = PBXBuildFile; fileRef = 8174294F172C73CC00AD6FB4 /* UIButtonBarArrowDownRed.png */; };
 		81AA156416CD8EDB0068669D /* SettingsView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 81AA156316CD8EDB0068669D /* SettingsView.xib */; };
@@ -43,6 +45,8 @@
 		81E9650F16AF8A9500C1A67B /* UIButtonBarArrowRight.png in Resources */ = {isa = PBXBuildFile; fileRef = 81E9650D16AF8A9500C1A67B /* UIButtonBarArrowRight.png */; };
 		81E9651016AF9B3300C1A67B /* KeyboardToolbarView.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81E9650916AF88FC00C1A67B /* KeyboardToolbarView.mm */; };
 		81E9651116AF9B4B00C1A67B /* KeyboardToolbarController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81E9650716AF88FB00C1A67B /* KeyboardToolbarController.mm */; };
+		81EE808A17606A40009F2D57 /* ActionSheetStringPicker.m in Sources */ = {isa = PBXBuildFile; fileRef = 81EE808917606A40009F2D57 /* ActionSheetStringPicker.m */; };
+		81EE808D17606B48009F2D57 /* AbstractActionSheetPicker.m in Sources */ = {isa = PBXBuildFile; fileRef = 81EE808C17606B48009F2D57 /* AbstractActionSheetPicker.m */; };
 		81F1657D1724907500898F5F /* SequencerOperation.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81F1657C1724907500898F5F /* SequencerOperation.mm */; };
 		ADF06FAC100069A800632942 /* DJMixerView.xib in Resources */ = {isa = PBXBuildFile; fileRef = ADF06FAB100069A800632942 /* DJMixerView.xib */; };
 		ADF06FB110006AF000632942 /* DJMixerViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF06FB010006AF000632942 /* DJMixerViewController.mm */; };
@@ -74,10 +78,13 @@
 		810FBECA15AA522000AEFB2F /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		810FBECB15AA522000AEFB2F /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		810FBECC15AA522000AEFB2F /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
+		8112C399175C478000608998 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		813D56B016D18992001219B3 /* ToDoList.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = ToDoList.txt; sourceTree = "<group>"; };
 		81520D6216BD2214000F917E /* MyNavigationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MyNavigationController.h; sourceTree = "<group>"; };
 		81520D6316BD2214000F917E /* MyNavigationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MyNavigationController.m; sourceTree = "<group>"; };
-		8159E84D173AE282002D96DA /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = QuartzCore.framework; sourceTree = "<group>"; };
+		8160C957175A0602001F5F83 /* SVProgressHUD.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = SVProgressHUD.bundle; sourceTree = SOURCE_ROOT; };
+		8160C958175A0602001F5F83 /* SVProgressHUD.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SVProgressHUD.h; sourceTree = SOURCE_ROOT; };
+		8160C959175A0602001F5F83 /* SVProgressHUD.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SVProgressHUD.mm; sourceTree = SOURCE_ROOT; };
 		8174294E172C73CC00AD6FB4 /* UIButtonBarArrowDownGreen.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = UIButtonBarArrowDownGreen.png; sourceTree = "<group>"; };
 		8174294F172C73CC00AD6FB4 /* UIButtonBarArrowDownRed.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = UIButtonBarArrowDownRed.png; sourceTree = "<group>"; };
 		81AA156316CD8EDB0068669D /* SettingsView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = SettingsView.xib; sourceTree = "<group>"; };
@@ -103,6 +110,10 @@
 		81E9650916AF88FC00C1A67B /* KeyboardToolbarView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = KeyboardToolbarView.mm; sourceTree = SOURCE_ROOT; };
 		81E9650C16AF8A9500C1A67B /* UIButtonBarArrowLeft.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = UIButtonBarArrowLeft.png; sourceTree = "<group>"; };
 		81E9650D16AF8A9500C1A67B /* UIButtonBarArrowRight.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = UIButtonBarArrowRight.png; sourceTree = "<group>"; };
+		81EE808817606A40009F2D57 /* ActionSheetStringPicker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ActionSheetStringPicker.h; sourceTree = SOURCE_ROOT; };
+		81EE808917606A40009F2D57 /* ActionSheetStringPicker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ActionSheetStringPicker.m; sourceTree = SOURCE_ROOT; };
+		81EE808B17606B48009F2D57 /* AbstractActionSheetPicker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AbstractActionSheetPicker.h; sourceTree = SOURCE_ROOT; };
+		81EE808C17606B48009F2D57 /* AbstractActionSheetPicker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AbstractActionSheetPicker.m; sourceTree = SOURCE_ROOT; };
 		81F1657B1724907500898F5F /* SequencerOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SequencerOperation.h; sourceTree = SOURCE_ROOT; };
 		81F1657C1724907500898F5F /* SequencerOperation.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SequencerOperation.mm; sourceTree = SOURCE_ROOT; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -128,7 +139,7 @@
 				810FBED215AA522000AEFB2F /* CoreGraphics.framework in Frameworks */,
 				810FBED315AA522000AEFB2F /* CoreMedia.framework in Frameworks */,
 				81B2A20016ACE20D00DB8E11 /* CoreText.framework in Frameworks */,
-				8159E84E173AE282002D96DA /* QuartzCore.framework in Frameworks */,
+				8112C39A175C478000608998 /* QuartzCore.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -138,7 +149,7 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				ADD46D4A1001966E00ADB7CE /* Audio playback */,
+				ADD46D4A1001966E00ADB7CE /* Audio Playback */,
 				ADF06FAE10006ADB00632942 /* Views */,
 				1D3623240D0F684500981E51 /* MusicAppAppDelegate.h */,
 				1D3623250D0F684500981E51 /* MusicAppAppDelegate.mm */,
@@ -193,7 +204,7 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				8159E84D173AE282002D96DA /* QuartzCore.framework */,
+				8112C399175C478000608998 /* QuartzCore.framework */,
 				810FBEC615AA522000AEFB2F /* AVFoundation.framework */,
 				810FBEC715AA522000AEFB2F /* AudioToolbox.framework */,
 				810FBEC815AA522000AEFB2F /* MediaPlayer.framework */,
@@ -204,6 +215,16 @@
 				81B2A1FF16ACE20D00DB8E11 /* CoreText.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		8160C956175A05B8001F5F83 /* Progress View */ = {
+			isa = PBXGroup;
+			children = (
+				8160C958175A0602001F5F83 /* SVProgressHUD.h */,
+				8160C959175A0602001F5F83 /* SVProgressHUD.mm */,
+				8160C957175A0602001F5F83 /* SVProgressHUD.bundle */,
+			);
+			name = "Progress View";
 			sourceTree = "<group>";
 		};
 		8187031316BDC5DE00615D2C /* Images */ = {
@@ -222,7 +243,18 @@
 			name = Images;
 			sourceTree = "<group>";
 		};
-		ADD46D4A1001966E00ADB7CE /* Audio playback */ = {
+		81EE808E17606B50009F2D57 /* ActionSheet Picker */ = {
+			isa = PBXGroup;
+			children = (
+				81EE808B17606B48009F2D57 /* AbstractActionSheetPicker.h */,
+				81EE808C17606B48009F2D57 /* AbstractActionSheetPicker.m */,
+				81EE808817606A40009F2D57 /* ActionSheetStringPicker.h */,
+				81EE808917606A40009F2D57 /* ActionSheetStringPicker.m */,
+			);
+			name = "ActionSheet Picker";
+			sourceTree = "<group>";
+		};
+		ADD46D4A1001966E00ADB7CE /* Audio Playback */ = {
 			isa = PBXGroup;
 			children = (
 				ADF0F873100162C300AACC54 /* InMemoryAudioFile.h */,
@@ -236,7 +268,7 @@
 				810C3D5C16ADEF55009839BE /* Karaoke.h */,
 				810C3D5D16ADEF55009839BE /* Karaoke.mm */,
 			);
-			name = "Audio playback";
+			name = "Audio Playback";
 			sourceTree = "<group>";
 		};
 		ADF06FAE10006ADB00632942 /* Views */ = {
@@ -264,6 +296,8 @@
 				81D8E10515A8FD7D00E2DCB4 /* UICheckBox.m */,
 				81DACD2616ACB29B00AC4369 /* UITextScroll.h */,
 				81DACD2716ACB29B00AC4369 /* UITextScroll.m */,
+				81EE808E17606B50009F2D57 /* ActionSheet Picker */,
+				8160C956175A05B8001F5F83 /* Progress View */,
 			);
 			name = Views;
 			sourceTree = "<group>";
@@ -334,6 +368,7 @@
 				810729D2172B818900192927 /* UIButtonBarArrowDownWhite.png in Resources */,
 				81742950172C73CC00AD6FB4 /* UIButtonBarArrowDownGreen.png in Resources */,
 				81742951172C73CC00AD6FB4 /* UIButtonBarArrowDownRed.png in Resources */,
+				8160C95A175A0602001F5F83 /* SVProgressHUD.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -362,6 +397,9 @@
 				81AA156716CD90040068669D /* SettingsViewController.mm in Sources */,
 				810E023616CEF45D00D1FCC7 /* LoadAudioOperation.mm in Sources */,
 				81F1657D1724907500898F5F /* SequencerOperation.mm in Sources */,
+				8160C95B175A0602001F5F83 /* SVProgressHUD.mm in Sources */,
+				81EE808A17606A40009F2D57 /* ActionSheetStringPicker.m in Sources */,
+				81EE808D17606B48009F2D57 /* AbstractActionSheetPicker.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

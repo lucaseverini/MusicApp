@@ -219,6 +219,14 @@ static OSStatus masterFaderCallback (void *inRefCon, AudioUnitRenderActionFlags 
 		}
 	}
     
+#if TARGET_IPHONE_SIMULATOR
+    // This is a workaround for an issue with core audio on the simulator, likely due to 44100 vs 48000 difference in OSX
+    if(inNumberFrames == 471)
+	{
+        inNumberFrames = 470;
+	}
+#endif
+
     // Get the audio from the crossfader, we could directly connect them but this gives us a chance to get at the audio to apply an effect
     OSStatus err = AudioUnitRender(djMixer.crossFaderMixer, ioActionFlags, inTimeStamp, inBusNumber, inNumberFrames, ioData);
     // Apply master effect, if any...
@@ -343,7 +351,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 		sequencer = [[InMemoryAudioFile alloc] initForSequencer];
         
         loadAudioQueue = [[NSOperationQueue alloc] init];
-        [loadAudioQueue setMaxConcurrentOperationCount:12];
+        [loadAudioQueue setMaxConcurrentOperationCount:10];
 		
 		_this = self;
 
@@ -621,12 +629,13 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
                 [channels[idx] stop];
             }
         }
-		
+/*
 		// Set next start position to stop position
         for(int idx = 0; idx < kNumChannels; idx++)
         {
 			[channels[idx].operation setStartPlayPosition:playPosition reset:NO];
 		}
+*/
 	}
 }
 
@@ -945,33 +954,6 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	}
 
 	playPosition = time;
-}
-
-
-- (void) setCurrentPlayPosition:(NSTimeInterval)time
-{
-	for(int idx = 0; idx < kNumChannels; idx++)
-	{
-		if(channels[idx].loaded)
-		{
-			[channels[idx] stop];
-			[channels[idx] reset];
-			
-			[channels[idx].operation setCurrentPlayPosition:time];
-		}
-	}
-
-	playPosition = time;
-	packetIndex = 0;
-	durationPacketsIndex = playPosition * 44100.0;
-
-	for(int idx = 0; idx < kNumChannels; idx++)
-	{
-		if(channels[idx].loaded)
-		{
-			[channels[idx] start];
-		}
-	}
 }
 
 @end

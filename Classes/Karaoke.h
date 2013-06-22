@@ -7,7 +7,12 @@
 
 #import <Foundation/Foundation.h>
 
-@interface Karaoke : NSObject 
+
+extern NSString *kWordsKey;
+extern NSString *kTimeKey;
+extern NSString *kTypeKey;
+
+@interface Karaoke : NSObject
 {
     NSUInteger colorStart;
 }

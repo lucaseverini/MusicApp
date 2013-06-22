@@ -57,7 +57,7 @@ static MusicAppDelegate *sharedInstance = nil;
     djMixerViewController.djMixer = djMixer;
 
     // setRootViewController is necessary for correct multiple orientation support on iOS6
-    MyNavigationController *navControl = [[MyNavigationController alloc]initWithRootViewController:djMixerViewController];
+    MyNavigationController *navControl = [[[MyNavigationController alloc] initWithRootViewController:djMixerViewController] autorelease];
     navControl.navigationBarHidden = YES;
     [window setRootViewController:navControl];
    

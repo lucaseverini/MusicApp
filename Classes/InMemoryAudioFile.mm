@@ -20,7 +20,6 @@
 @synthesize fileName;
 @synthesize url;
 @synthesize channel;
-@synthesize trackCount;
 @synthesize playing;
 @synthesize paused;
 @synthesize loaded;
@@ -45,7 +44,6 @@
         monoFloatDataLeft = NULL;
         monoFloatDataRight = NULL;
         mPacketDescs = NULL;
-        trackCount = 0;
         packetCount = 0;
         packetIndex = 0;
         lostPackets = 0;
@@ -73,7 +71,6 @@
         monoFloatDataLeft = NULL;
         monoFloatDataRight = NULL;
         mPacketDescs = NULL;
-        trackCount = 0;
         packetCount = 0;
         packetIndex = 0;
         lostPackets = 0;
@@ -101,7 +98,6 @@
         monoFloatDataLeft = NULL;
         monoFloatDataRight = NULL;
         mPacketDescs = NULL;
-        trackCount = 0;
         packetCount = 0;
         packetIndex = 0;
         lostPackets = 0;
@@ -149,8 +145,6 @@
         free(rightAudioData);
         rightAudioData = NULL;
     }
-    
-    trackCount = 0;
     
     packetCount = 0;
     packetIndex = 0;
@@ -592,8 +586,6 @@
 		[operation release];
         operation = nil;
         
-        trackCount = 0;
-        
         packetCount = 0;
         packetIndex = 0;
         lostPackets = 0;
@@ -620,7 +612,6 @@
 	
 	if(!isPlayback && !isSequencer)
 	{
-		trackCount = [sequencerOperation trackCount];
 		url = [[sequencerOperation fileURL] absoluteString];
 	}
     
@@ -640,7 +631,6 @@
 	
 	if(!isPlayback && !isSequencer)
 	{
-		trackCount = [loadOperation trackCount];
 		url = [[loadOperation fileURL] absoluteString];
 	}
     
@@ -660,8 +650,6 @@
     assert(asset != nil);
     
     NSArray *tracks = [asset tracks];
-    trackCount = [tracks count];
-
     AVAssetTrack *track = [tracks objectAtIndex:0];
     assert(track != nil);
     

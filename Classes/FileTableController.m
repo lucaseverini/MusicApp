@@ -61,7 +61,7 @@
     NSDictionary *channelDict = [defaults objectForKey:[NSString stringWithFormat:@"Channel-%d", cellIdx + 1]];
     if(channelDict != nil && [channelDict objectForKey:@"AudioTitle"] != nil) 
     {        
-        NSString *text = [[NSString alloc ] initWithFormat:@"%@ (%.1f secs)", [channelDict objectForKey:@"AudioTitle"], [[channelDict objectForKey:@"AudioDuration"] doubleValue]];
+        NSString *text = [NSString stringWithFormat:@"%@ (%.1f secs)", [channelDict objectForKey:@"AudioTitle"], [[channelDict objectForKey:@"AudioDuration"] doubleValue]];
  
         cell.tag = 1;
         cell.textLabel.text = text;
@@ -150,9 +150,27 @@
 {
     if(editingStyle == UITableViewCellEditingStyleDelete) 
     {
-        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];    
-        NSDictionary *channelDict = [NSDictionary dictionaryWithObjectsAndKeys:nil, @"AudioUrl", nil, @"AudioTitle", nil, @"AudioDuration", nil, @"AudioVolume", nil];     
-        [defaults setObject:channelDict forKey:[NSString stringWithFormat:@"Channel-%d", [indexPath row] + 1]];
+ 		NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
+		NSString *channelStr = [NSString stringWithFormat:@"Channel-%d", [indexPath row] + 1];
+		NSDictionary *channelDict = [defaults objectForKey:channelStr];
+		if(channelDict != nil)
+		{
+			NSString *UrlStr = [channelDict objectForKey:@"AudioUrl"];
+			NSURL *oldAudioUrl = [NSURL URLWithString:UrlStr];
+			
+			if([[NSFileManager defaultManager] fileExistsAtPath:[oldAudioUrl path]])
+			{
+				[[NSFileManager defaultManager] removeItemAtURL:oldAudioUrl error:nil];
+				if([[NSFileManager defaultManager] fileExistsAtPath:[oldAudioUrl absoluteString]])
+				{
+					NSLog(@"File %@ not deleted", [oldAudioUrl path]);
+				}
+			}
+		}
+
+        channelDict = [NSDictionary dictionaryWithObjectsAndKeys:nil, @"AudioUrl", nil, @"AudioTitle", nil, @"AudioDuration", nil, @"AudioVolume", nil];     
+        [defaults setObject:channelDict forKey:channelStr];
         [defaults synchronize];
 		 
 		NSArray *indexes = [NSArray arrayWithObject:indexPath];

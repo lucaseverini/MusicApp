@@ -13,6 +13,7 @@
 #import "MusicAppAppDelegate.h"
 #import "DJMixer.h"
 #import "InMemoryAudioFile.h"
+#import "SVProgressHUD.h"
 
 
 @implementation SelectionViewController
@@ -29,6 +30,9 @@
     NSString *appName = [infoDict objectForKey:@"CFBundleDisplayName"];
     NSString *appVersion = [infoDict objectForKey:@"CFBundleShortVersionString"];    
     versionLabel.text = [NSString stringWithFormat:@"%@ %@", appName, appVersion];
+
+	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory , NSUserDomainMask, YES);
+	userDocDirPath = [[paths objectAtIndex:0] copy];
 }
 
 
@@ -63,7 +67,7 @@
     
     for(int idx = 1; idx <= 8; idx++)
     {
-        NSDictionary *channelDict = [NSDictionary dictionaryWithObjectsAndKeys:nil, @"AudioUrl", nil, @"AudioTitle", nil, @"AudioDuration", nil, @"AudioVolume", nil];     
+        NSDictionary *channelDict = [NSDictionary dictionaryWithObjectsAndKeys:[NSNull null], @"AudioUrl", [NSNull null], @"AudioTitle", [NSNull null], @"AudioDuration", [NSNull null], @"AudioVolume", nil];
         [defaults setObject:channelDict forKey:[NSString stringWithFormat:@"Channel-%d", idx]];
     }
     
@@ -103,7 +107,7 @@
 
     selectedRow = row;
     channel = [selectedRow row] + 1;    
-    picker.prompt = [NSString stringWithFormat:@"Select Audio File to Play for Track %d", channel];
+    picker.prompt = [NSString stringWithFormat:@"Select the Audio File to Play for Track %d", channel];
     
     // The media item picker uses the default UI style, so it needs a default-style status bar to match it visually
     [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleDefault animated:YES];
@@ -125,11 +129,11 @@
                                                               @"/Users/Luca/Desktop/Music App/Tracce/HH.wav",
                                                               @"/Users/Luca/Desktop/Music App/Tracce/RytmhSynth.wav",
                                                               @"/Users/Luca/Desktop/Music App/Tracce/Shakers.wav",
-							  //@"/Users/Luca/Desktop/Music App/Tracce/Tamburine.wav",
+															//@"/Users/Luca/Desktop/Music App/Tracce/Tamburine.wav",
                                                               @"/Users/Luca/Desktop/Music App/Tracce/Take On Me (Lyrics Tag).mp3",
                                                               nil];
     
-    NSURL *url = [[NSURL alloc] initFileURLWithPath:[tracks objectAtIndex:[selectedRow row]]];
+    NSURL *url = [NSURL fileURLWithPath:[tracks objectAtIndex:[selectedRow row]]];
     NSLog(@"Track url: %@", url);
     AVURLAsset *songAsset = [[[AVURLAsset alloc] initWithURL:url options:nil] autorelease];
     assert(songAsset != nil);
@@ -144,16 +148,26 @@
         }
     }
 
-    NSNumber *duration = [NSNumber numberWithDouble:(double)songAsset.duration.value / (double)songAsset.duration.timescale];
-    NSNumber *volume = [NSNumber numberWithDouble:1.0];
+	NSURL *copyUrl = [[self copyAudioFile:[url absoluteString] to:userDocDirPath named:nil] autorelease];
+	if(copyUrl != nil)
+	{
+		NSNumber *duration = [NSNumber numberWithDouble:(double)songAsset.duration.value / (double)songAsset.duration.timescale];
+		NSNumber *volume = [NSNumber numberWithDouble:1.0];
 
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    NSDictionary *channelDict = [NSDictionary dictionaryWithObjectsAndKeys:[url absoluteString], @"AudioUrl", title, @"AudioTitle", duration, @"AudioDuration", volume, @"AudioVolume", nil];
-    [defaults setObject:channelDict forKey:[NSString stringWithFormat:@"Channel-%d", channel]];
-    [defaults synchronize];
-    
-    NSArray *indexes = [NSArray arrayWithObject:selectedRow];
-    [fileTable reloadRowsAtIndexPaths:indexes withRowAnimation:UITableViewRowAnimationAutomatic];
+		NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+		NSDictionary *channelDict = [NSDictionary dictionaryWithObjectsAndKeys:[copyUrl absoluteString], @"AudioUrl", title, @"AudioTitle", duration, @"AudioDuration", volume, @"AudioVolume", nil];
+		[defaults setObject:channelDict forKey:[NSString stringWithFormat:@"Channel-%d", channel]];
+		[defaults synchronize];
+		
+		NSArray *indexes = [NSArray arrayWithObject:selectedRow];
+		[fileTable reloadRowsAtIndexPaths:indexes withRowAnimation:UITableViewRowAnimationAutomatic];
+	}
+	else
+	{
+		NSString *messageStr = [NSString stringWithFormat:@"The track %@ can't be copied.", title];
+		UIAlertView *alert = [[[UIAlertView alloc] initWithTitle:nil message:messageStr delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:nil] autorelease];
+		[alert show];
+	}
 }
 
 
@@ -162,65 +176,222 @@
 {    
 	// Dismiss the media item picker.
 	[self dismissViewControllerAnimated:YES completion:nil];
-    
+	
 	[[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleBlackOpaque animated:YES];
-    
-    if([mediaItemCollection count] == 0)
-        return;
-    
-    MPMediaItem *audioFile = [[mediaItemCollection items]objectAtIndex:0];
-    assert(audioFile != nil);
-    NSInteger type = [[audioFile valueForProperty:MPMediaItemPropertyMediaType] integerValue];
-    
-    if(type == MPMediaTypeMusic)
-    {
-        NSString *url = [[audioFile valueForProperty:MPMediaItemPropertyAssetURL] absoluteString];
-        NSString *title = [audioFile valueForProperty:MPMediaItemPropertyTitle];
-        NSNumber *duration = [audioFile valueForProperty:MPMediaItemPropertyPlaybackDuration];
-        NSNumber *volume = [NSNumber numberWithDouble:1.0];
+	
+	if([mediaItemCollection count] == 0)
+	{
+		return;
+	}
+	
+	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
-        AVURLAsset *songAsset = [[[AVURLAsset alloc] initWithURL:[NSURL URLWithString:url] options:nil] autorelease];
-        assert(songAsset != nil);        
-        BOOL isReadable = [songAsset isReadable];
-        BOOL isPlayable = [songAsset isPlayable];
-        if(!isReadable || !isPlayable)
-        {
-            NSString *messageStr = [NSString stringWithFormat:@"The track %@ can't be read or played.", title];
-            UIAlertView *alert = [[[UIAlertView alloc] initWithTitle:nil message:messageStr delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:nil] autorelease];
-            [alert show];
-            return;
-        }
-/*
-        NSString* lyrics = [songAsset lyrics];
-        NSLog(@"Lyrics: (%d chars)", lyrics.length);
- 
-        NSArray *metaData = [songAsset commonMetadata];
-        NSLog(@"MetaData: %@", metaData);
-        for(AVMetadataItem* item in metaData)
-        {
-            NSString *key = [item commonKey];
-            NSString *value = [item stringValue];
-            NSLog(@"key = %@, value = %@", key, value);
-        }
-*/        
-        // Retain objs going to be added to dictionary to avoid later problems
-        // [url retain];
-        // [title retain];
-        // [duration retain];
-        // [volume retain];
-        
-        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];        
-        NSDictionary *channelDict = [NSDictionary dictionaryWithObjectsAndKeys:url, @"AudioUrl", title, @"AudioTitle", duration, @"AudioDuration", volume, @"AudioVolume", nil];
-        [defaults setObject:channelDict forKey:[NSString stringWithFormat:@"Channel-%d", channel]];
-        [defaults synchronize];
+	NSString *channelStr = [NSString stringWithFormat:@"Channel-%d", channel];	
+	NSDictionary *channelDict = [defaults objectForKey:channelStr];
+	if(channelDict != nil)
+	{
+		NSString *UrlStr = [channelDict objectForKey:@"AudioUrl"];
+		NSURL *oldAudioUrl = [NSURL URLWithString:UrlStr];
+		
+		if([[NSFileManager defaultManager] fileExistsAtPath:[oldAudioUrl path]])
+		{		
+			[[NSFileManager defaultManager] removeItemAtURL:oldAudioUrl error:nil];			
+			if([[NSFileManager defaultManager] fileExistsAtPath:[oldAudioUrl absoluteString]])
+			{
+				NSLog(@"File %@ not deleted", [oldAudioUrl path]);
+			}
+		}
+	}
+	
+	MPMediaItem *audioFile = [[mediaItemCollection items]objectAtIndex:0];
+	assert(audioFile != nil);
+	NSInteger type = [[audioFile valueForProperty:MPMediaItemPropertyMediaType] integerValue];
+	
+	if(type == MPMediaTypeMusic)
+	{
+		NSString *url = [[audioFile valueForProperty:MPMediaItemPropertyAssetURL] absoluteString];
+		NSString *title = [audioFile valueForProperty:MPMediaItemPropertyTitle];
+		NSNumber *duration = [audioFile valueForProperty:MPMediaItemPropertyPlaybackDuration];
+		NSNumber *volume = [NSNumber numberWithDouble:1.0];
 
-        NSArray *indexes = [NSArray arrayWithObject:selectedRow];
-        [fileTable reloadRowsAtIndexPaths:indexes withRowAnimation:UITableViewRowAnimationAutomatic];
-    }
-    else
-    {
-        NSLog(@"File is not of type MPMediaTypeMusic");
-    }
+		AVURLAsset *songAsset = [[[AVURLAsset alloc] initWithURL:[NSURL URLWithString:url] options:nil] autorelease];
+		assert(songAsset != nil);        
+		BOOL isReadable = [songAsset isReadable];
+		BOOL isPlayable = [songAsset isPlayable];
+		if(!isReadable || !isPlayable)
+		{
+			NSString *messageStr = [NSString stringWithFormat:@"The track %@ can't be read or played.", title];
+			UIAlertView *alert = [[[UIAlertView alloc] initWithTitle:nil message:messageStr delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:nil] autorelease];
+			[alert show];
+			return;
+		}
+		
+		[SVProgressHUD showWithStatus:[NSString stringWithFormat:@"Copying the Audio File\r%@", title] maskType:SVProgressHUDMaskTypeClear];
+				
+		__block NSURL *copyUrl = nil;
+		dispatch_queue_t globalQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, NULL);
+		dispatch_async(globalQueue,
+		^{
+			copyUrl = [self copyAudioFile:url to:userDocDirPath named:title];
+			
+			[SVProgressHUD dismiss];
+
+			if(copyUrl != nil)
+			{
+				NSDictionary *channelDict = [NSDictionary dictionaryWithObjectsAndKeys:[copyUrl absoluteString], @"AudioUrl", title, @"AudioTitle", duration, @"AudioDuration", volume, @"AudioVolume", nil];
+				[defaults setObject:channelDict forKey:[NSString stringWithFormat:@"Channel-%d", channel]];
+				[defaults synchronize];
+				
+				NSArray *indexes = [NSArray arrayWithObject:selectedRow];
+				[fileTable reloadRowsAtIndexPaths:indexes withRowAnimation:UITableViewRowAnimationAutomatic];
+			}
+			else
+			{				
+				dispatch_sync(dispatch_get_main_queue(),
+				^{
+					NSString *messageStr = [NSString stringWithFormat:@"The Audio File %@ can't be copied.", title];
+					UIAlertView *alert = [[[UIAlertView alloc] initWithTitle:nil message:messageStr delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:nil] autorelease];
+					[alert show];
+				});
+			}
+		});
+	}
+	else
+	{
+		NSLog(@"File is not of type MPMediaTypeMusic");
+	}
+}
+
+
+- (NSURL*) copyAudioFile:(NSString*)fileUrlString to:(NSString*)folderPathString named:(NSString*)fileName
+{
+	NSError *error = nil;
+
+	NSURL *fileURL = [NSURL URLWithString:fileUrlString];
+	
+	if(fileName == nil)
+	{
+		fileName = [fileURL lastPathComponent];
+	}
+
+	fileName = [fileName stringByDeletingPathExtension];
+	fileName = [fileName stringByAppendingPathExtension:@"caf"];
+	
+	NSString *copyPath = [userDocDirPath stringByAppendingPathComponent:fileName];
+	
+	[[NSFileManager defaultManager] removeItemAtPath:copyPath error:nil];
+	
+	AVURLAsset *asset = [AVURLAsset URLAssetWithURL:fileURL options:nil];
+	if(asset == nil)
+	{
+		return nil;
+	}
+	
+	AVAssetReader *assetReader = [AVAssetReader assetReaderWithAsset:asset error:&error];
+	if(error != nil)
+	{
+		NSLog(@"Error %@ in assetReaderWithAsset", error);
+		return nil;
+	}
+	
+	AVAssetReaderOutput *readerOutput = [AVAssetReaderAudioMixOutput assetReaderAudioMixOutputWithAudioTracks:asset.tracks audioSettings:nil];
+	if(![assetReader canAddOutput:readerOutput])
+	{
+		NSLog(@"Can't add AVAssetReaderOutput");
+		return nil;
+	}
+	[assetReader addOutput: readerOutput];	
+	
+	NSURL *copyUrl = [[NSURL alloc] initFileURLWithPath:copyPath];
+	AVAssetWriter *assetWriter = [AVAssetWriter assetWriterWithURL:copyUrl fileType:AVFileTypeCoreAudioFormat error:&error];
+	if(error != nil)
+	{
+		NSLog (@"Error %@ in assetWriterWithURL", error);
+		
+		[copyUrl release];
+		return nil;
+	}
+	
+	AudioChannelLayout channelLayout;
+	memset(&channelLayout, 0, sizeof(AudioChannelLayout));
+	channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
+	NSDictionary *outputSettings = [NSDictionary dictionaryWithObjectsAndKeys:
+											[NSNumber numberWithInt:kAudioFormatLinearPCM], AVFormatIDKey,
+											[NSNumber numberWithFloat:44100.0], AVSampleRateKey,
+											[NSNumber numberWithInt:2], AVNumberOfChannelsKey,
+											[NSData dataWithBytes:&channelLayout length:sizeof(AudioChannelLayout)], AVChannelLayoutKey,
+											[NSNumber numberWithInt:16], AVLinearPCMBitDepthKey,
+											[NSNumber numberWithBool:NO], AVLinearPCMIsNonInterleaved,
+											[NSNumber numberWithBool:NO],AVLinearPCMIsFloatKey,
+											[NSNumber numberWithBool:NO], AVLinearPCMIsBigEndianKey, nil];
+	
+	AVAssetWriterInput *assetWriterInput = [AVAssetWriterInput assetWriterInputWithMediaType:AVMediaTypeAudio outputSettings:outputSettings];
+	if([assetWriter canAddInput:assetWriterInput])
+	{
+		[assetWriter addInput:assetWriterInput];
+	}
+	else
+	{
+		NSLog (@"Can't add AVAssetWriterInput");
+
+		[copyUrl release];
+		return nil;
+	}
+	assetWriterInput.expectsMediaDataInRealTime = NO;
+	
+	[assetWriter startWriting];
+	[assetReader startReading];
+	
+	AVAssetTrack *track = [asset.tracks objectAtIndex:0];
+	CMTime startTime = CMTimeMake (0, track.naturalTimeScale);
+	[assetWriter startSessionAtSourceTime: startTime];
+
+	NSLog(@"Copying %@ to %@...", fileUrlString, copyPath);
+	
+	__block BOOL fileCopied = NO;
+	dispatch_queue_t globalQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, NULL);
+	[assetWriterInput requestMediaDataWhenReadyOnQueue:globalQueue usingBlock:
+	^{
+		// The block will be called repeatedly by GCD, but we still need to make sure that the writer input is able to accept new samples.
+		while(assetWriterInput.readyForMoreMediaData)
+		{
+			CMSampleBufferRef nextBuffer = [readerOutput copyNextSampleBuffer];
+			if(nextBuffer != nil)
+			{
+				// Append buffer
+				[assetWriterInput appendSampleBuffer: nextBuffer];
+			}
+			else
+			{
+				// Done!
+				[assetWriterInput markAsFinished];
+				
+				[assetWriter finishWritingWithCompletionHandler:^{}];
+				[assetReader cancelReading];
+				
+				NSLog (@"Done");
+
+				fileCopied = YES;
+				break;
+			}
+		}
+	}];
+	
+	while(!fileCopied)
+	{
+		[NSThread sleepForTimeInterval:0.1];
+	}
+			
+	NSDictionary *outputFileAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath:copyPath error:nil];
+	if([outputFileAttributes fileSize] == 0)
+	{
+		[copyUrl release];
+		return nil;
+	}
+	else
+	{
+		return copyUrl;
+	}
 }
 
 
@@ -230,67 +401,6 @@
 	[self dismissViewControllerAnimated:YES completion:nil];
 	
 	[[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleBlackOpaque animated:YES];
-}
-
-
-// Never called for now
-- (void) exportMP3:(NSURL*)url toFileUrl:(NSString*)fileURL
-{
-    AVURLAsset *asset=[[[AVURLAsset alloc] initWithURL:url options:nil] autorelease];
-    AVAssetReader *reader=[[[AVAssetReader alloc] initWithAsset:asset error:nil] autorelease];
-    NSMutableArray *myOutputs =[[[NSMutableArray alloc] init] autorelease];
-    for(id track in [asset tracks])
-    {
-        AVAssetReaderTrackOutput *output=[AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:track outputSettings:nil];
-        [myOutputs addObject:output];   
-        [reader addOutput:output];
-    }
-    [reader startReading];
-    NSFileHandle *fileHandle ;
-    NSFileManager *fm=[NSFileManager defaultManager];
-    if(![fm fileExistsAtPath:fileURL])
-    {
-        [fm createFileAtPath:fileURL contents:[[[NSData alloc] init] autorelease] attributes:nil];
-    }
-    fileHandle=[NSFileHandle fileHandleForUpdatingAtPath:fileURL];    
-    [fileHandle seekToEndOfFile];
-    
-    AVAssetReaderOutput *output=[myOutputs objectAtIndex:0];
-    int totalBuff=0;
-    while(YES)
-    {
-        CMSampleBufferRef ref=[output copyNextSampleBuffer];
-        if(ref==NULL)
-            break;
-        //copy data to file
-        //read next one
-        AudioBufferList audioBufferList;
-        NSMutableData *data=[[NSMutableData alloc] init];
-        CMBlockBufferRef blockBuffer;
-        CMSampleBufferGetAudioBufferListWithRetainedBlockBuffer(ref, NULL, &audioBufferList, sizeof(audioBufferList), NULL, NULL, 0, &blockBuffer);
-        
-        for( int y=0; y<audioBufferList.mNumberBuffers; y++ )
-        {
-            AudioBuffer audioBuffer = audioBufferList.mBuffers[y];
-            Float32 *frame = (Float32*)audioBuffer.mData;
-            
-            //  Float32 currentSample = frame[i];
-            [data appendBytes:frame length:audioBuffer.mDataByteSize];
-            
-            //  written= fwrite(frame, sizeof(Float32), audioBuffer.mDataByteSize, f);
-            ////NSLog(@"Wrote %d", written);
-            
-        }
-        totalBuff++;
-        CFRelease(blockBuffer);
-        CFRelease(ref);
-        [fileHandle writeData:data];
-        //  //NSLog(@"writting %d frame for amounts of buffers %d ", data.length, audioBufferList.mNumberBuffers);
-        [data release];
-    }
-    //  NSLog(@"total buffs %d", totalBuff);
-    //  fclose(f);
-    [fileHandle closeFile];
 }
 
 

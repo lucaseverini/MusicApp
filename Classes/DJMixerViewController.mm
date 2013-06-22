@@ -111,7 +111,7 @@ static const char *kAssociationKey = "RecTime";
 		userDocDirPath = [[paths objectAtIndex:0] copy];
 	}
 	
-	sequencerButtons = [[NSMutableArray alloc] init];
+	self.sequencerButtons = [[[NSMutableArray alloc] init] autorelease];
     
     return self;
 }
@@ -231,10 +231,15 @@ static const char *kAssociationKey = "RecTime";
 				[djMixer.channels[idx] removeLoadOperation]; // Remove the previous operation if present
 				
 				LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
-				assert(loadOperation != nil);
-				
-				[djMixer.loadAudioQueue addOperation:loadOperation];
-				[djMixer.channels[idx] setLoadOperation:loadOperation mixer:djMixer];
+				if(loadOperation != nil)
+				{
+					[djMixer.loadAudioQueue addOperation:loadOperation];
+					[djMixer.channels[idx] setLoadOperation:loadOperation mixer:djMixer];
+				}
+				else
+				{
+					NSLog(@"Can't load audio file %@", [url lastPathComponent]);
+				}
 			}
 		}
 		
@@ -246,7 +251,7 @@ static const char *kAssociationKey = "RecTime";
 			totLoadedChannels++;
 			double sliderValue = [[channelDict objectForKey:@"AudioVolume"] doubleValue];
 			
-			[label setText:[NSString stringWithFormat:@"%@ (%d)", [channelDict objectForKey:@"AudioTitle"], djMixer.channels[idx].trackCount]];
+			[label setText:[NSString stringWithFormat:@"%@", [channelDict objectForKey:@"AudioTitle"]]];
 			[slider setEnabled:YES];
 			[slider setValue:sliderValue];
 			
@@ -316,28 +321,12 @@ static const char *kAssociationKey = "RecTime";
 */
     [pauseSwitch setEnabled:NO];
     [pauseSwitchLS setEnabled:NO];
-   
-    [karaokeText setAttributedText:nil];
-    [karaokeTextLS setAttributedText:nil];
-    
-    NSString *karaokePList = [userDocDirPath stringByAppendingPathComponent:@"KaraokeData.plist"];
-    if([[NSFileManager defaultManager] fileExistsAtPath:karaokePList])
-    {
-        NSLog(@"Karaoke file %@ is available", karaokePList);
-        
-        NSArray *data = [NSArray arrayWithContentsOfFile:karaokePList];
-        self.karaoke = [[Karaoke alloc] initKaraoke:data];
-    }
-    else
-    {
-        NSLog(@"Karaoke file %@ is missing", karaokePList);
-    }
-	
+   	
 	// Seems better to use applicationDidEnterBackground in app delegate
     // [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationWillResignActive:) name:UIApplicationWillResignActiveNotification object:nil];
 
-    [self.karaokeButton setEnabled: (self.karaoke != nil)];
-    [self.karaokeButtonLS setEnabled: (self.karaoke != nil)];
+    [self.karaokeButton setEnabled: YES];
+    [self.karaokeButtonLS setEnabled: YES];
     
 	[positionSliderLS addTarget:self action:@selector(setPlayPositionEnded:) forControlEvents:UIControlEventTouchUpInside];
 	
@@ -1464,49 +1453,34 @@ static const char *kAssociationKey = "RecTime";
 
 - (void) karaokeStep
 {
-    if(self.karaoke.step == 0)
-    {
-        [karaokeText setAttributedText:self.karaoke.attribText];
-        [karaokeText setContentOffset:CGPointMake(0, 1) animated:NO];
+	BOOL advanced = [self.karaoke advanceRedRow];
+	if(advanced)
+	{
+		// Do for Portrait
+		[karaokeText setAttributedText:self.karaoke.attribText];
+			
+		CGPoint position = [karaokeText contentOffset];                
+		CGFloat LINE_HEIGHT = 20.2f;  // Line height is fixed for now (find a way for get it from used font).
+		position.y += LINE_HEIGHT;
 
-        [karaokeTextLS setAttributedText:self.karaoke.attribTextLS];
-        [karaokeTextLS setContentOffset:CGPointMake(0, 1) animated:NO];
-    }
-    else
-    {
-        BOOL advanced = [self.karaoke advanceRedRow];
-        if(advanced)
-        {
-            // Do for Portrait
-            [karaokeText setAttributedText:self.karaoke.attribText];
-                
-            CGPoint position = [karaokeText contentOffset];                
-            CGFloat LINE_HEIGHT = 20.2f;  // Line height is fixed for now (find a way for get it from used font).
-            position.y += LINE_HEIGHT;
+		[karaokeText setContentOffset:position animated:YES];
 
-            [karaokeText setContentOffset:position animated:YES];
- 
-            // Do for Landscape
-            [karaokeTextLS setAttributedText:self.karaoke.attribTextLS];
-    
-            position = [karaokeTextLS contentOffset];                
-            CGFloat LINE_HEIGHT_LS = 31.0f;  // Line height is fixed for now (find a way for get it from used font).
-            position.y += LINE_HEIGHT_LS;
-                
-            [karaokeTextLS setContentOffset:position animated:YES];
-        }
-        else
-        {
-            [self.karaokeButton setHighlighted:NO];
-            [self.karaokeButtonLS setHighlighted:NO];
-            
-            [karaokeTimer invalidate];
-            karaokeTimer = nil;
-            
-            return;
-        }
-    }
-    
+		// Do for Landscape
+		[karaokeTextLS setAttributedText:self.karaoke.attribTextLS];
+
+		position = [karaokeTextLS contentOffset];                
+		CGFloat LINE_HEIGHT_LS = 31.0f;  // Line height is fixed for now (find a way for get it from used font).
+		position.y += LINE_HEIGHT_LS;
+			
+		[karaokeTextLS setContentOffset:position animated:YES];
+	}
+	else
+	{
+		[self karaokeStop];
+		
+		return;
+	}
+     
     if(++self.karaoke.step < self.karaoke.time.count)
     {
         NSTimeInterval newInterval = [[self.karaoke.time objectAtIndex:self.karaoke.step] doubleValue];
@@ -1515,22 +1489,41 @@ static const char *kAssociationKey = "RecTime";
     }
     else
     {
-        [self.karaokeButton setHighlighted:NO];
-        [self.karaokeButtonLS setHighlighted:NO];
-
-        [karaokeTimer invalidate];
-        karaokeTimer = nil;
+        [self karaokeStop];
     }
 }
 
 
 - (void) karaokeStart
 {
-    [self.karaoke resetRedRow];
-    
     [karaokeText setAttributedText:nil];
     [karaokeTextLS setAttributedText:nil];
     
+    NSString *karaokePList = [userDocDirPath stringByAppendingPathComponent:@"KaraokeData.plist"];
+    if([[NSFileManager defaultManager] fileExistsAtPath:karaokePList])
+    {
+        NSLog(@"Karaoke file %@ is available", karaokePList);
+        
+        NSArray *data = [NSArray arrayWithContentsOfFile:karaokePList];
+        self.karaoke = [[Karaoke alloc] initKaraoke:data];
+    }
+    else
+    {
+        NSLog(@"Karaoke file %@ is missing", karaokePList);
+    }
+
+    [self.karaoke resetRedRow];
+    
+	// Do for Portrait
+	[karaokeText setAttributedText:self.karaoke.attribText];	
+	CGPoint position = [karaokeText contentOffset];
+	[karaokeText setContentOffset:position animated:YES];
+
+	// Do for Landscape
+	[karaokeTextLS setAttributedText:self.karaoke.attribTextLS];
+	position = [karaokeTextLS contentOffset];
+	[karaokeTextLS setContentOffset:position animated:YES];
+
     NSTimeInterval interval = [[self.karaoke.time objectAtIndex:self.karaoke.step] doubleValue];
     karaokeTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(karaokeStep) userInfo:nil repeats:YES];
     
@@ -1548,6 +1541,9 @@ static const char *kAssociationKey = "RecTime";
     
     [karaokeTimer invalidate];
     karaokeTimer = nil;
+	
+	[self.karaoke release];
+	self.karaoke = nil;
     
     karaokeActivated = NO;
 }

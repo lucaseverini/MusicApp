@@ -18,12 +18,12 @@ typedef struct audioBuffer
 audioBuffer, *audioBufferPtr;
 
 typedef struct recording
-{	
+{
+	ExtAudioFileRef fileRef;
+	NSURL			*file;
 	NSString		*name;
-	AVURLAsset		*asset;
-	AVAssetTrack	*track;
 	CMTime			duration;
-	NSUInteger		packets;
+	SInt64			packets;
 	NSUInteger		startPacket;
 	NSUInteger		endPacket;
 	
@@ -42,54 +42,25 @@ recording, *recordingPtr;
 
 @class NSURL;
 @class NSCondition;
-@class AVURLAsset;
-@class AVAssetReader;
-@class AVAssetReaderTrackOutput;
-@class AVAssetTrack;
 @class DJMixer;
 
 @interface SequencerOperation : NSOperation
 {
-	// NSInteger readerStatus;
-	// NSUInteger sizeAudioData1;
-	// NSUInteger sizeAudioData2;
-	// UInt32 *audioData1;
-	// UInt32 *audioData2;
 	NSUInteger startSamplePacket;
-	NSUInteger currentSamplePacket;
-	NSUInteger restartSamplePacket;
 	BOOL active;
 	BOOL working;
 	NSUInteger totRecordings;
 	recordingPtr recordings;
 	recordingPtr curPlaying;
 	recordingPtr curReading;
+
+	int numChannels;
+	AudioStreamBasicDescription outputFormat;
 }
 
 @property (nonatomic, retain) DJMixer *mixer;
 @property (nonatomic, retain) NSCondition *waitForAction;
-//@property (nonatomic, retain) NSURL *fileURL;
-//@property (nonatomic, retain) AVURLAsset *asset;
-@property (nonatomic, retain) NSDictionary *settings;
-//@property (nonatomic, retain) AVAssetTrack *track;
-//@property (nonatomic, assign) NSUInteger trackCount;
-@property (nonatomic, retain) AVAssetReader *reader;
-@property (nonatomic, retain) AVAssetReaderTrackOutput *output;
-@property (nonatomic, assign) size_t audioBuffersSize;
-@property (atomic, assign) BOOL fillAudioData1;
-@property (atomic, assign) BOOL fillAudioData2;
-@property (atomic, assign) BOOL endReading;
 @property (atomic, assign) BOOL noDataAvailable;
-@property (atomic, assign) NSUInteger currentAudioBuffer;
-@property (atomic, assign) NSInteger playingIdx;
-@property (atomic, assign) NSInteger readingIdx;
-//@property (nonatomic, assign) CMTime duration;
-//@property (nonatomic, assign) NSUInteger packets;
-
-//@property (nonatomic, assign) NSUInteger startPacket;		// Sequencer
-//@property (nonatomic, assign) NSUInteger endPacket;			// Sequencer
-@property (nonatomic, assign) NSUInteger curStartPacket;	// Sequencer
-@property (nonatomic, assign) NSUInteger curEndPacket;		// Sequencer
 
 - (id) initWithRecords:(NSString*)recordsFile;
 - (BOOL) openAudioFile:(recordingPtr)recording;

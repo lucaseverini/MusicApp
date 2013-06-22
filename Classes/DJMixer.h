@@ -74,6 +74,5 @@
 - (void) freeData;
 - (UInt32) getTotalPackets;
 - (void) setStartPosition:(NSTimeInterval)time reset:(BOOL)reset;
-- (void) setCurrentPlayPosition:(NSTimeInterval)time;
 
 @end
