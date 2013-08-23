@@ -5,8 +5,7 @@
 //  Created by Luca Severini on 15/2/2013.
 //
 
-#import <AVFoundation/AVFoundation.h>
-#import <AudioToolbox/AudioToolbox.h>
+
 #import "LoadAudioOperation.h"
 #import "DJMixer.h"
 
@@ -26,7 +25,6 @@
 
 // 44,100 x 16 x 2 = 1,411,200 bits per second (bps) = 1,411 kbps = ~142 KBytes/sec per channel
 const size_t kAudioDataBufferSize = (1024 * 256);
-const double kSamplingRate = 44100.0;
 const double kLatency = 0.011609977;	// 512 samples at (44100 samples per sec)
 
 

@@ -5,8 +5,6 @@
 //  Created by Luca Severini on 14/2/2012.
 //
 
-#import <UIKit/UIKit.h>
-#import <AVFoundation/AVFoundation.h>
 
 @class KaraokeViewController;
 @class AVAudioPlayer;

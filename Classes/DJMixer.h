@@ -5,12 +5,12 @@
 //  Created by Luca Severini on 6/1/2012.
 //
 
-#import <Foundation/Foundation.h>
-#import <AudioUnit/AudioUnit.h>
-#import "AudioToolbox/AudioToolbox.h"
+
 #import "InMemoryAudioFile.h"
 
 #define kNumChannels 8 // 8 output channels
+
+const double kSamplingRate = 44100.0;
 
 @interface DJMixer : NSObject 
 {

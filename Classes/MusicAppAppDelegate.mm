@@ -9,6 +9,7 @@
 #import "DJMixerViewController.h"
 #import "DJMixer.h"
 #import "MyNavigationController.h"
+#import "Utilities.h"
 
 
 static MusicAppDelegate *sharedInstance = nil;
@@ -19,12 +20,9 @@ static MusicAppDelegate *sharedInstance = nil;
 @synthesize djMixerViewController;
 @synthesize karaokeData;
 @synthesize inBackGround;
-
-+ (MusicAppDelegate*) shared
-{
-	return sharedInstance;
-}
-
+@synthesize retinaDisplay;
+@synthesize deviceIdiom;
+@synthesize appVersion;
 
 - (id) init
 {
@@ -32,6 +30,21 @@ static MusicAppDelegate *sharedInstance = nil;
     if(self != nil)
     {
 		sharedInstance = self;
+
+		deviceIdiom = [[UIDevice currentDevice] userInterfaceIdiom];
+		
+		CGSize screenSize = [[UIScreen mainScreen] currentMode].size;
+		if(deviceIdiom == UIUserInterfaceIdiomPad)
+		{
+			retinaDisplay = (screenSize.height >= 1536.0);
+		}
+		else
+		{
+			retinaDisplay = (screenSize.height >= 640.0);
+		}
+		
+		NSDictionary *pList = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Info" ofType:@"plist"]];
+		appVersion = [[NSString alloc] initWithFormat:@"Version %@ (built %s %s)", [pList objectForKey:@"CFBundleShortVersionString"], __DATE__, __TIME__];
 	}
 	
 	return self;
@@ -42,28 +55,51 @@ static MusicAppDelegate *sharedInstance = nil;
 {
 	[super dealloc];
 	
+	[appVersion release];
+	
 	sharedInstance = nil;
 }
 
 
 - (BOOL) application:(UIApplication*)application didFinishLaunchingWithOptions:(NSDictionary*)launchOptions 
 {    	
-    // NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+	[Crashlytics startWithAPIKey:kCrashlyticsAPIKey];
+	
+	NSLog(@"App %@ %@ launched", [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"], appVersion);
+	
+#if TARGET_IPHONE_SIMULATOR
+	NSLog(@"App folder: %@", NSHomeDirectory());
+#endif // TARGET_IPHONE_SIMULATOR
+	
+	NSLog(@"Device name: %@", [[UIDevice currentDevice] name]);
+	NSLog(@"Device model: %@", [[UIDevice currentDevice] model]);
+	NSLog(@"Localized model: %@", [[UIDevice currentDevice] localizedModel]);
+	NSLog(@"System version: %@", [[UIDevice currentDevice] systemVersion]);
+	NSLog(@"Platform: %@", platformString());
+	NSLog(@"UI idiom: %d %@", deviceIdiom, deviceIdiom == UIUserInterfaceIdiomPhone ? @"(iPhone)" : @"(iPad)");
+	
+	CGSize screenSize = [[UIScreen mainScreen] currentMode].size;
+	NSLog(@"Screen size: %gx%g %@", screenSize.width, screenSize.height, retinaDisplay ? @"(Retina)" : @"");
+	
+	NSLog(@"Screen scale: %g", [UIScreen mainScreen].scale);
+	
+	NSInteger orientation = [UIApplication sharedApplication].statusBarOrientation;
+	NSLog(@"Orientation: %d (%@)", orientation, GetOrientationName(orientation));
 
 	djMixerViewController = [[DJMixerViewController alloc] initWithNibName:@"DJMixerView" bundle:[NSBundle mainBundle]];
 	
     // Init the audio
 	djMixer = [[DJMixer alloc] init];
     djMixerViewController.djMixer = djMixer;
-
+	
     // setRootViewController is necessary for correct multiple orientation support on iOS6
     MyNavigationController *navControl = [[[MyNavigationController alloc] initWithRootViewController:djMixerViewController] autorelease];
     navControl.navigationBarHidden = YES;
     [window setRootViewController:navControl];
-   
-    [window makeKeyAndVisible];
 	
-    return YES;
+    [window makeKeyAndVisible];
+
+	return YES;
 }
 
 
@@ -162,6 +198,30 @@ static MusicAppDelegate *sharedInstance = nil;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setBool:NO forKey:@"Crashed"];
     [defaults synchronize];
+}
+
+
++ (MusicAppDelegate*) sharedInstance
+{
+	return sharedInstance;
+}
+
+
++ (NSInteger) deviceIdiom
+{
+	return sharedInstance.deviceIdiom;
+}
+
+
++ (BOOL) isRetinaDisplay
+{
+	return sharedInstance.retinaDisplay;
+}
+
+
++ (NSString*) appVersion
+{
+	return sharedInstance.appVersion;
 }
 
 @end

@@ -5,9 +5,6 @@
 //  Created by Luca Severini on 6/1/2012.
 //
 
-#import <UIKit/UIKit.h>
-#import <AVFoundation/AVFoundation.h>
-#import <MediaPlayer/MediaPlayer.h>
 #import "InMemoryAudioFile.h"
 #import "LoadAudioOperation.h"
 #import "SequencerOperation.h"
@@ -28,7 +25,7 @@
 
 - (id) initForChannel:(NSInteger)numChannel
 { 
-    [super init];
+    self = [super init];
     if(self != nil)
     {
 		isPlayback = NO;
@@ -55,7 +52,7 @@
 
 - (id) initForSequencer
 {
-    [super init];
+    self = [super init];
     if(self != nil)
     {
 		isPlayback = NO;
@@ -82,7 +79,7 @@
 
 - (id) initForPlayback
 {
-    [super init];
+    self = [super init];
     if(self != nil)
     {
 		isPlayback = YES;
@@ -267,7 +264,11 @@
 			// Allocate the buffer
 			audioData = (UInt32 *)malloc(sizeof(UInt32) * packetCount);
 			// Read the packets
-			result = AudioFileReadPackets(mAudioFile, false, &numBytesRead, NULL, 0, &packetsRead,  audioData); 
+			result = AudioFileReadPackets(mAudioFile, false, &numBytesRead, NULL, 0, &packetsRead,  audioData);
+			if(result != noErr)
+			{
+				NSLog(@"Error %ld in AudioFileReadPackets()", result);
+			}
             
             loaded = YES;
 		}
@@ -307,10 +308,14 @@
 			// For a stereo 32 bit per sample file this is ok
 			NSLog([NSString stringWithFormat:@"Sample count: %d\n", numBytesRead / 2]);
 			// For a 32bit per stereo sample at 44100khz this is correct
-			NSLog([NSString stringWithFormat:@"Time in Seconds: %f.4\n", ((float)numBytesRead / 4.0) / 44100.0]);
+			NSLog([NSString stringWithFormat:@"Time in Seconds: %f.4\n", ((float)numBytesRead / 4.0) / kSamplingRate]);
  		}
 */        
         result = AudioFileClose(mAudioFile);
+		if(result != noErr)
+		{
+			NSLog(@"Error %ld in AudioFileClose()", result);
+		}
 	}
 
 	CFRelease(audioFileURL);     
@@ -322,15 +327,14 @@
 - (OSStatus) getFileInfo 
 {	
 	OSStatus result = -1;
-	double duration;
 	
 	if(mAudioFile != nil)
 	{
 		UInt32 dataSize = sizeof packetCount;
 		result = AudioFileGetProperty(mAudioFile, kAudioFilePropertyAudioDataPacketCount, &dataSize, &packetCount);
-		if(result == noErr) 
+		if(result != noErr)
 		{
-			duration = ((double)packetCount * 2) / 44100.0;
+			// double duration = ((double)packetCount * 2) / kSamplingRate;
 		}
 		else
 		{
@@ -497,7 +501,7 @@
     assert(audioFileURL != nil);
     NSLog(@"URL: %@", audioFileURL);
  
-    NSMutableData *data = [self ReadAudioData:audioFileURL];
+    NSMutableData *data = [self readAudioData:audioFileURL];
     assert(data != nil);
      
     NSUInteger dataLen = [data length];
@@ -516,8 +520,6 @@
     // double duration = [[mediaItem valueForProperty:MPMediaItemPropertyPlaybackDuration] doubleValue];
     fileName = [[NSString alloc] initWithString:[mediaItem valueForProperty:MPMediaItemPropertyTitle]];
     
-    [data release];
-    
     loaded = YES;
    
     return noErr;
@@ -534,7 +536,7 @@
     url = fileUrl;
     packetCount = -1;
    
-    NSMutableData *data = [self ReadAudioData:[NSURL URLWithString:fileUrl]];
+    NSMutableData *data = [self readAudioData:[NSURL URLWithString:fileUrl]];
     if(data == nil)
     {
         return EINVAL;
@@ -552,8 +554,6 @@
     
     packetCount = dataLen / sizeof(UInt32);
     
-    [data release];
-    
     loaded = YES;
   
     return noErr;
@@ -566,11 +566,11 @@
     {
 		if(isSequencer)
 		{
-			NSLog(@"RemoveLoadOperation for Sequencer +++");
+			// NSLog(@"RemoveLoadOperation for Sequencer +++");
 		}
 		else
 		{
-			NSLog(@"RemoveLoadOperation for file %@ +++", self.url);
+			// NSLog(@"RemoveLoadOperation for file %@ +++", self.url);
 		}
 
         if(![operation isCancelled])
@@ -594,11 +594,11 @@
 
 		if(isSequencer)
 		{
-			NSLog(@"RemoveLoadOperation for Sequencer ---");
+			// NSLog(@"RemoveLoadOperation for Sequencer ---");
 		}
 		else
 		{
-			NSLog(@"RemoveLoadOperation for file %@ ---", self.url);
+			// NSLog(@"RemoveLoadOperation for file %@ ---", self.url);
 		}
 	}
 }
@@ -642,7 +642,7 @@
 }
 
 
-- (NSMutableData*) ReadAudioData:(NSURL*)audioFileURL
+- (NSMutableData*) readAudioData:(NSURL*)audioFileURL
 {
     NSMutableData *data = nil;
     
@@ -655,7 +655,7 @@
     
     NSDictionary* settings = [NSDictionary dictionaryWithObjectsAndKeys:
                               [NSNumber numberWithInt:kAudioFormatLinearPCM], AVFormatIDKey,
-                              // [NSNumber numberWithInt:44100.0], AVSampleRateKey,            // Not supported
+                              // [NSNumber numberWithInt:kSamplingRate], AVSampleRateKey,      // Not supported
                               // [NSNumber numberWithInt: 2], AVNumberOfChannelsKey,           // Not Supported
                               [NSNumber numberWithInt:16], AVLinearPCMBitDepthKey,
                               [NSNumber numberWithBool:NO], AVLinearPCMIsBigEndianKey,
@@ -672,7 +672,7 @@
     BOOL ready = [reader startReading];
     if(ready)
     {
-        data = [[NSMutableData alloc] init];
+        data = [[[NSMutableData alloc] init] autorelease];
         
         while(reader.status == AVAssetReaderStatusReading)
         {
@@ -696,7 +696,7 @@
                 else
                 {
                     [reader cancelReading];
-                    [data release];
+					
                     data = nil;
                 }
             }
@@ -713,7 +713,6 @@
     }
     
     [reader release];
-    
     [asset release];
     
     return data;

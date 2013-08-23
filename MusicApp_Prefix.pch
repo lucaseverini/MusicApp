@@ -5,4 +5,21 @@
 #ifdef __OBJC__
     #import <Foundation/Foundation.h>
     #import <UIKit/UIKit.h>
+	#import <AVFoundation/AVFoundation.h>
+	#import <MediaPlayer/MediaPlayer.h>
+	#import <AudioToolbox/AudioToolbox.h>
+	#import <AudioUnit/AudioUnit.h>
+	#import <CoreMedia/CoreMedia.h>
+	#import <CoreText/CoreText.h>
+	#import <Crashlytics/Crashlytics.h>
+#endif
+
+// Crashlytics stuff
+#define kCrashlyticsAPIKey @"88c9c4ad4fc9cf683851e90309df86b88651c49c"
+
+// Use Crashlytics log function
+#ifdef DEBUG
+	#define NSLog CLSNSLog
+#else
+	#define NSLog CLSLog
 #endif

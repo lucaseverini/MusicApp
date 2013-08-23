@@ -12,7 +12,7 @@
 @synthesize words;
 @synthesize time;
 
-- (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+- (id) initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
 {
     self = [super initWithStyle:UITableViewCellStyleDefault reuseIdentifier:reuseIdentifier];
     if(self != nil)
@@ -54,16 +54,17 @@
     return self;
 }
 
-- (void)setSelected:(BOOL)selected animated:(BOOL)animated
+- (void) setSelected:(BOOL)selected animated:(BOOL)animated
 {
     [super setSelected:selected animated:animated];
 
     // Configure the view for the selected state
 }
 
-- (void)done:(id)sender
+- (void) done:(id)sender
 {
     NSLog(@"done");
+	
     // [textField resignFirstResponder];
 }
 

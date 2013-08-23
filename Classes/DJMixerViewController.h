@@ -5,8 +5,6 @@
 //  Created by Luca Severini on 6/1/2012.
 //
 
-#import <UIKit/UIKit.h>
-#import <AVFoundation/AVFoundation.h>
 
 @class UITextScroll;
 @class DJMixer;
@@ -26,6 +24,8 @@
 	NSString *userDocDirPath;
 	UIButton *selectedRecording;
 	AVAudioPlayer *audioPlayer;
+	CGPoint textOffset;
+	CGPoint textOffsetLS;
 }
 
 @property (nonatomic, retain) IBOutlet UIView *portraitView;
@@ -51,14 +51,14 @@
 @property (nonatomic, retain) IBOutlet UILabel *audioInputLabel;
 @property (nonatomic, retain) IBOutlet UIButton *playButton;
 @property (nonatomic, retain) IBOutlet UIButton *selectButton;
-@property (nonatomic, retain) IBOutlet UISwitch *pauseSwitch;
+@property (nonatomic, retain) IBOutlet UIButton *pauseButton;
 @property (nonatomic, retain) IBOutlet UIButton *karaokeButton;
 @property (nonatomic, retain) IBOutlet UITextScroll *karaokeText;
 @property (nonatomic, retain) IBOutlet UIButton *recordButton;
 
 @property (nonatomic, retain) IBOutlet UIButton *playButtonLS;
 @property (nonatomic, retain) IBOutlet UIButton *selectButtonLS;
-@property (nonatomic, retain) IBOutlet UISwitch *pauseSwitchLS;
+@property (nonatomic, retain) IBOutlet UIButton *pauseButtonLS;
 @property (nonatomic, retain) IBOutlet UIButton *karaokeButtonLS;
 @property (nonatomic, retain) IBOutlet UIButton *recordButtonLS;
 @property (nonatomic, retain) IBOutlet UITextScroll *karaokeTextLS;
@@ -73,6 +73,8 @@
 @property (nonatomic, retain) IBOutlet UIButton *recordingPlayLS;
 @property (nonatomic, retain) IBOutlet UIButton *recordingShiftLS;
 @property (nonatomic, retain) IBOutlet UIButton *recordingEnableLS;
+@property (nonatomic, retain) IBOutlet UILabel *sequencerLabelLS;
+@property (nonatomic, retain) IBOutlet UISlider *sequencerSliderLS;
 
 @property (nonatomic, retain) DJMixer *djMixer;
 @property (nonatomic, retain) Karaoke *karaoke;
@@ -86,7 +88,7 @@
 
 - (IBAction) changeVolume:(UISlider*)sender;
 - (IBAction) playOrStop;
-- (IBAction) doPause:(UISwitch*)sender;
+- (IBAction) doPause:(UIButton*)sender;
 - (IBAction) goSettings:(UIButton*)sender;
 - (IBAction) doKaraoke:(UIButton*)sender;
 - (IBAction) doRecord:(UIButton*)sender;

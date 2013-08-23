@@ -41,13 +41,9 @@ CGFloat SVProgressHUDRingThickness = 6;
 
 @property (nonatomic, readonly) CGFloat visibleKeyboardHeight;
 
-- (void)showProgress:(float)progress
-              status:(NSString*)string
-            maskType:(SVProgressHUDMaskType)hudMaskType;
+- (void)showProgress:(float)progress status:(NSString*)string maskType:(SVProgressHUDMaskType)hudMaskType;
 
-- (void)showImage:(UIImage*)image
-           status:(NSString*)status
-         duration:(NSTimeInterval)duration;
+- (void)showImage:(UIImage*)image status:(NSString*)status duration:(NSTimeInterval)duration;
 
 - (void)dismiss;
 
@@ -148,8 +144,14 @@ CGFloat SVProgressHUDRingThickness = 6;
         [[self sharedView] dismiss];
 }
 
-+ (void)dismiss {
++ (void)dismiss
+{
 	[[self sharedView] dismiss];
+}
+
++ (void)dismissWithAnimation
+{
+	[[self sharedView] dismissWithAnimation];
 }
 
 
@@ -499,44 +501,62 @@ CGFloat SVProgressHUDRingThickness = 6;
     [[NSRunLoop mainRunLoop] addTimer:self.fadeOutTimer forMode:NSRunLoopCommonModes];
 }
 
-- (void)dismiss {
+- (void)dismiss
+{
     NSDictionary *notificationUserInfo = (self.stringLabel.text ? @{SVProgressHUDStatusUserInfoKey : self.stringLabel.text} : nil);
-    [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDWillDisappearNotification
-                                                        object:nil
-                                                      userInfo:notificationUserInfo];
+    [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDWillDisappearNotification object:nil userInfo:notificationUserInfo];
     
     self.activityCount = 0;
-     SVProgressHUD *__weak weakSelf=self;
-    [UIView animateWithDuration:0.15
-                          delay:0
-                        options:UIViewAnimationCurveEaseIn | UIViewAnimationOptionAllowUserInteraction
-                     animations:^{
-                         weakSelf.hudView.transform = CGAffineTransformScale(self.hudView.transform, 0.8, 0.8);
-                         weakSelf.alpha = 0;
-                     }
-                     completion:^(BOOL finished){
-                         if(weakSelf.alpha == 0) {
-                             [[NSNotificationCenter defaultCenter] removeObserver:weakSelf];
-                             [weakSelf cancelRingLayerAnimation];
-                             [hudView removeFromSuperview];
-                             hudView = nil;
-                             
-                             [overlayView removeFromSuperview];
-                             overlayView = nil;
-
-                             UIAccessibilityPostNotification(UIAccessibilityScreenChangedNotification, nil);
-
-                             [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDDidDisappearNotification
-                                                                                 object:nil
-                                                                               userInfo:notificationUserInfo];
-                             
-                             // uncomment to make sure UIWindow is gone from app.windows
-                             //NSLog(@"%@", [UIApplication sharedApplication].windows);
-                             //NSLog(@"keyWindow = %@", [UIApplication sharedApplication].keyWindow);
-                         }
-                     }];
+	
+	[[NSNotificationCenter defaultCenter] removeObserver:self];
+	[self cancelRingLayerAnimation];
+	[hudView removeFromSuperview];
+	hudView = nil;
+	
+	[overlayView removeFromSuperview];
+	overlayView = nil;
+	
+	UIAccessibilityPostNotification(UIAccessibilityScreenChangedNotification, nil);
+	
+	[[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDDidDisappearNotification object:nil userInfo:notificationUserInfo];
 }
 
+- (void)dismissWithAnimation
+{
+    NSDictionary *notificationUserInfo = (self.stringLabel.text ? @{SVProgressHUDStatusUserInfoKey : self.stringLabel.text} : nil);
+    [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDWillDisappearNotification object:nil userInfo:notificationUserInfo];
+    
+    self.activityCount = 0;
+
+	SVProgressHUD *__weak weakSelf = self;
+    [UIView animateWithDuration:0.15 delay:0 options:UIViewAnimationCurveLinear | UIViewAnimationOptionAllowUserInteraction
+				 animations:
+				 ^{
+					 weakSelf.hudView.transform = CGAffineTransformScale(self.hudView.transform, 0.8, 0.8);
+					 weakSelf.alpha = 0;
+				 }
+				 completion:^(BOOL finished)
+				 {
+					 if(weakSelf.alpha == 0)
+					 {
+						 [[NSNotificationCenter defaultCenter] removeObserver:weakSelf];
+						 [weakSelf cancelRingLayerAnimation];
+						 [hudView removeFromSuperview];
+						 hudView = nil;
+						 
+						 [overlayView removeFromSuperview];
+						 overlayView = nil;
+						 
+						 UIAccessibilityPostNotification(UIAccessibilityScreenChangedNotification, nil);
+						 
+						 [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDDidDisappearNotification object:nil userInfo:notificationUserInfo];
+						 
+						 // uncomment to make sure UIWindow is gone from app.windows
+						 // NSLog(@"%@", [UIApplication sharedApplication].windows);
+						 // NSLog(@"keyWindow = %@", [UIApplication sharedApplication].keyWindow);
+					 }
+				 }];
+}
 
 #pragma mark -
 #pragma mark Ring progress animation
@@ -631,7 +651,8 @@ CGFloat SVProgressHUDRingThickness = 6;
 
 #pragma mark - Getters
 
-- (NSTimeInterval)displayDurationForString:(NSString*)string {
+- (NSTimeInterval)displayDurationForString:(NSString*)string
+{
     return (float)string.length*0.06 + 0.3;
 }
 

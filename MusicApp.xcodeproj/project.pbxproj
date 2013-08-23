@@ -26,10 +26,12 @@
 		810FBED315AA522000AEFB2F /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 810FBECC15AA522000AEFB2F /* CoreMedia.framework */; };
 		8112C39A175C478000608998 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8112C399175C478000608998 /* QuartzCore.framework */; };
 		81520D6416BD2214000F917E /* MyNavigationController.m in Sources */ = {isa = PBXBuildFile; fileRef = 81520D6316BD2214000F917E /* MyNavigationController.m */; };
-		8160C95A175A0602001F5F83 /* SVProgressHUD.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 8160C957175A0602001F5F83 /* SVProgressHUD.bundle */; };
 		8160C95B175A0602001F5F83 /* SVProgressHUD.mm in Sources */ = {isa = PBXBuildFile; fileRef = 8160C959175A0602001F5F83 /* SVProgressHUD.mm */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
 		81742950172C73CC00AD6FB4 /* UIButtonBarArrowDownGreen.png in Resources */ = {isa = PBXBuildFile; fileRef = 8174294E172C73CC00AD6FB4 /* UIButtonBarArrowDownGreen.png */; };
 		81742951172C73CC00AD6FB4 /* UIButtonBarArrowDownRed.png in Resources */ = {isa = PBXBuildFile; fileRef = 8174294F172C73CC00AD6FB4 /* UIButtonBarArrowDownRed.png */; };
+		81755BCC17C31289004C5C1C /* MusicApp-Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 81755BCB17C31289004C5C1C /* MusicApp-Icon.png */; };
+		81755BCE17C312E6004C5C1C /* MusicApp-Icon@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 81755BCD17C312E6004C5C1C /* MusicApp-Icon@2x.png */; };
+		81755BD117C31612004C5C1C /* Utilities.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81755BD017C31612004C5C1C /* Utilities.mm */; };
 		81AA156416CD8EDB0068669D /* SettingsView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 81AA156316CD8EDB0068669D /* SettingsView.xib */; };
 		81AA156716CD90040068669D /* SettingsViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81AA156616CD90040068669D /* SettingsViewController.mm */; };
 		81B2A20016ACE20D00DB8E11 /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81B2A1FF16ACE20D00DB8E11 /* CoreText.framework */; };
@@ -39,12 +41,17 @@
 		81D8E10315A8CACA00E2DCB4 /* checkbox_full.png in Resources */ = {isa = PBXBuildFile; fileRef = 81D8E10115A8CACA00E2DCB4 /* checkbox_full.png */; };
 		81D8E10615A8FD7D00E2DCB4 /* UICheckBox.m in Sources */ = {isa = PBXBuildFile; fileRef = 81D8E10515A8FD7D00E2DCB4 /* UICheckBox.m */; };
 		81DACD2816ACB29B00AC4369 /* UITextScroll.m in Sources */ = {isa = PBXBuildFile; fileRef = 81DACD2716ACB29B00AC4369 /* UITextScroll.m */; };
+		81E66191177666A500E939E1 /* error.png in Resources */ = {isa = PBXBuildFile; fileRef = 81E6618D177666A500E939E1 /* error.png */; };
+		81E66192177666A500E939E1 /* error@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 81E6618E177666A500E939E1 /* error@2x.png */; };
+		81E66193177666A500E939E1 /* success.png in Resources */ = {isa = PBXBuildFile; fileRef = 81E6618F177666A500E939E1 /* success.png */; };
+		81E66194177666A500E939E1 /* success@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 81E66190177666A500E939E1 /* success@2x.png */; };
 		81E964FF16AF771800C1A67B /* KaraokeView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 81E964FE16AF771800C1A67B /* KaraokeView.xib */; };
 		81E9650216AF77AB00C1A67B /* KaraokeViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81E9650116AF77AA00C1A67B /* KaraokeViewController.mm */; };
 		81E9650E16AF8A9500C1A67B /* UIButtonBarArrowLeft.png in Resources */ = {isa = PBXBuildFile; fileRef = 81E9650C16AF8A9500C1A67B /* UIButtonBarArrowLeft.png */; };
 		81E9650F16AF8A9500C1A67B /* UIButtonBarArrowRight.png in Resources */ = {isa = PBXBuildFile; fileRef = 81E9650D16AF8A9500C1A67B /* UIButtonBarArrowRight.png */; };
 		81E9651016AF9B3300C1A67B /* KeyboardToolbarView.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81E9650916AF88FC00C1A67B /* KeyboardToolbarView.mm */; };
 		81E9651116AF9B4B00C1A67B /* KeyboardToolbarController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81E9650716AF88FB00C1A67B /* KeyboardToolbarController.mm */; };
+		81EA46F117C304310066B916 /* Crashlytics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81EA46F017C304310066B916 /* Crashlytics.framework */; };
 		81EE808A17606A40009F2D57 /* ActionSheetStringPicker.m in Sources */ = {isa = PBXBuildFile; fileRef = 81EE808917606A40009F2D57 /* ActionSheetStringPicker.m */; };
 		81EE808D17606B48009F2D57 /* AbstractActionSheetPicker.m in Sources */ = {isa = PBXBuildFile; fileRef = 81EE808C17606B48009F2D57 /* AbstractActionSheetPicker.m */; };
 		81F1657D1724907500898F5F /* SequencerOperation.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81F1657C1724907500898F5F /* SequencerOperation.mm */; };
@@ -82,11 +89,14 @@
 		813D56B016D18992001219B3 /* ToDoList.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = ToDoList.txt; sourceTree = "<group>"; };
 		81520D6216BD2214000F917E /* MyNavigationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MyNavigationController.h; sourceTree = "<group>"; };
 		81520D6316BD2214000F917E /* MyNavigationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MyNavigationController.m; sourceTree = "<group>"; };
-		8160C957175A0602001F5F83 /* SVProgressHUD.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = SVProgressHUD.bundle; sourceTree = SOURCE_ROOT; };
 		8160C958175A0602001F5F83 /* SVProgressHUD.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SVProgressHUD.h; sourceTree = SOURCE_ROOT; };
 		8160C959175A0602001F5F83 /* SVProgressHUD.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SVProgressHUD.mm; sourceTree = SOURCE_ROOT; };
 		8174294E172C73CC00AD6FB4 /* UIButtonBarArrowDownGreen.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = UIButtonBarArrowDownGreen.png; sourceTree = "<group>"; };
 		8174294F172C73CC00AD6FB4 /* UIButtonBarArrowDownRed.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = UIButtonBarArrowDownRed.png; sourceTree = "<group>"; };
+		81755BCB17C31289004C5C1C /* MusicApp-Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "MusicApp-Icon.png"; sourceTree = "<group>"; };
+		81755BCD17C312E6004C5C1C /* MusicApp-Icon@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "MusicApp-Icon@2x.png"; sourceTree = "<group>"; };
+		81755BCF17C31612004C5C1C /* Utilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Utilities.h; sourceTree = SOURCE_ROOT; };
+		81755BD017C31612004C5C1C /* Utilities.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Utilities.mm; sourceTree = SOURCE_ROOT; };
 		81AA156316CD8EDB0068669D /* SettingsView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = SettingsView.xib; sourceTree = "<group>"; };
 		81AA156516CD90040068669D /* SettingsViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SettingsViewController.h; sourceTree = "<group>"; };
 		81AA156616CD90040068669D /* SettingsViewController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SettingsViewController.mm; sourceTree = "<group>"; };
@@ -101,6 +111,10 @@
 		81D8E10515A8FD7D00E2DCB4 /* UICheckBox.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UICheckBox.m; sourceTree = "<group>"; };
 		81DACD2616ACB29B00AC4369 /* UITextScroll.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UITextScroll.h; sourceTree = "<group>"; };
 		81DACD2716ACB29B00AC4369 /* UITextScroll.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UITextScroll.m; sourceTree = "<group>"; };
+		81E6618D177666A500E939E1 /* error.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = error.png; path = SVProgressHUD.bundle/error.png; sourceTree = SOURCE_ROOT; };
+		81E6618E177666A500E939E1 /* error@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "error@2x.png"; path = "SVProgressHUD.bundle/error@2x.png"; sourceTree = SOURCE_ROOT; };
+		81E6618F177666A500E939E1 /* success.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = success.png; path = SVProgressHUD.bundle/success.png; sourceTree = SOURCE_ROOT; };
+		81E66190177666A500E939E1 /* success@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "success@2x.png"; path = "SVProgressHUD.bundle/success@2x.png"; sourceTree = SOURCE_ROOT; };
 		81E964FE16AF771800C1A67B /* KaraokeView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = KaraokeView.xib; sourceTree = "<group>"; };
 		81E9650016AF77AA00C1A67B /* KaraokeViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KaraokeViewController.h; sourceTree = "<group>"; };
 		81E9650116AF77AA00C1A67B /* KaraokeViewController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = KaraokeViewController.mm; sourceTree = "<group>"; };
@@ -110,6 +124,7 @@
 		81E9650916AF88FC00C1A67B /* KeyboardToolbarView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = KeyboardToolbarView.mm; sourceTree = SOURCE_ROOT; };
 		81E9650C16AF8A9500C1A67B /* UIButtonBarArrowLeft.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = UIButtonBarArrowLeft.png; sourceTree = "<group>"; };
 		81E9650D16AF8A9500C1A67B /* UIButtonBarArrowRight.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = UIButtonBarArrowRight.png; sourceTree = "<group>"; };
+		81EA46F017C304310066B916 /* Crashlytics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Crashlytics.framework; path = ../../../../../Developer/SDKs/Crashlytics/Crashlytics.framework; sourceTree = "<group>"; };
 		81EE808817606A40009F2D57 /* ActionSheetStringPicker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ActionSheetStringPicker.h; sourceTree = SOURCE_ROOT; };
 		81EE808917606A40009F2D57 /* ActionSheetStringPicker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ActionSheetStringPicker.m; sourceTree = SOURCE_ROOT; };
 		81EE808B17606B48009F2D57 /* AbstractActionSheetPicker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AbstractActionSheetPicker.h; sourceTree = SOURCE_ROOT; };
@@ -140,6 +155,7 @@
 				810FBED315AA522000AEFB2F /* CoreMedia.framework in Frameworks */,
 				81B2A20016ACE20D00DB8E11 /* CoreText.framework in Frameworks */,
 				8112C39A175C478000608998 /* QuartzCore.framework in Frameworks */,
+				81EA46F117C304310066B916 /* Crashlytics.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -153,6 +169,8 @@
 				ADF06FAE10006ADB00632942 /* Views */,
 				1D3623240D0F684500981E51 /* MusicAppAppDelegate.h */,
 				1D3623250D0F684500981E51 /* MusicAppAppDelegate.mm */,
+				81755BCF17C31612004C5C1C /* Utilities.h */,
+				81755BD017C31612004C5C1C /* Utilities.mm */,
 			);
 			path = Classes;
 			sourceTree = "<group>";
@@ -172,6 +190,7 @@
 				080E96DDFE201D6D7F000001 /* Classes */,
 				29B97315FDCFA39411CA2CEA /* Other Sources */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
+				81EA46F217C304590066B916 /* Properties */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
 			);
@@ -196,7 +215,6 @@
 				81AA156316CD8EDB0068669D /* SettingsView.xib */,
 				81B315BF158E4EC7009F6D8D /* SelectionView.xib */,
 				81E964FE16AF771800C1A67B /* KaraokeView.xib */,
-				8D1107310486CEB800E47090 /* Info.plist */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -204,6 +222,7 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				81EA46F017C304310066B916 /* Crashlytics.framework */,
 				8112C399175C478000608998 /* QuartzCore.framework */,
 				810FBEC615AA522000AEFB2F /* AVFoundation.framework */,
 				810FBEC715AA522000AEFB2F /* AudioToolbox.framework */,
@@ -222,7 +241,10 @@
 			children = (
 				8160C958175A0602001F5F83 /* SVProgressHUD.h */,
 				8160C959175A0602001F5F83 /* SVProgressHUD.mm */,
-				8160C957175A0602001F5F83 /* SVProgressHUD.bundle */,
+				81E6618D177666A500E939E1 /* error.png */,
+				81E6618E177666A500E939E1 /* error@2x.png */,
+				81E6618F177666A500E939E1 /* success.png */,
+				81E66190177666A500E939E1 /* success@2x.png */,
 			);
 			name = "Progress View";
 			sourceTree = "<group>";
@@ -230,6 +252,8 @@
 		8187031316BDC5DE00615D2C /* Images */ = {
 			isa = PBXGroup;
 			children = (
+				81755BCB17C31289004C5C1C /* MusicApp-Icon.png */,
+				81755BCD17C312E6004C5C1C /* MusicApp-Icon@2x.png */,
 				8174294E172C73CC00AD6FB4 /* UIButtonBarArrowDownGreen.png */,
 				8174294F172C73CC00AD6FB4 /* UIButtonBarArrowDownRed.png */,
 				810729D1172B818900192927 /* UIButtonBarArrowDownWhite.png */,
@@ -241,6 +265,14 @@
 				81D8E10115A8CACA00E2DCB4 /* checkbox_full.png */,
 			);
 			name = Images;
+			sourceTree = "<group>";
+		};
+		81EA46F217C304590066B916 /* Properties */ = {
+			isa = PBXGroup;
+			children = (
+				8D1107310486CEB800E47090 /* Info.plist */,
+			);
+			name = Properties;
 			sourceTree = "<group>";
 		};
 		81EE808E17606B50009F2D57 /* ActionSheet Picker */ = {
@@ -312,6 +344,7 @@
 				1D60588D0D05DD3D006BFB54 /* Resources */,
 				1D60588E0D05DD3D006BFB54 /* Sources */,
 				1D60588F0D05DD3D006BFB54 /* Frameworks */,
+				81EA46F317C30FA70066B916 /* Crashlytics Script */,
 			);
 			buildRules = (
 			);
@@ -368,11 +401,33 @@
 				810729D2172B818900192927 /* UIButtonBarArrowDownWhite.png in Resources */,
 				81742950172C73CC00AD6FB4 /* UIButtonBarArrowDownGreen.png in Resources */,
 				81742951172C73CC00AD6FB4 /* UIButtonBarArrowDownRed.png in Resources */,
-				8160C95A175A0602001F5F83 /* SVProgressHUD.bundle in Resources */,
+				81E66191177666A500E939E1 /* error.png in Resources */,
+				81E66192177666A500E939E1 /* error@2x.png in Resources */,
+				81E66193177666A500E939E1 /* success.png in Resources */,
+				81E66194177666A500E939E1 /* success@2x.png in Resources */,
+				81755BCC17C31289004C5C1C /* MusicApp-Icon.png in Resources */,
+				81755BCE17C312E6004C5C1C /* MusicApp-Icon@2x.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		81EA46F317C30FA70066B916 /* Crashlytics Script */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Crashlytics Script";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "./Crashlytics.framework/run 88c9c4ad4fc9cf683851e90309df86b88651c49c";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		1D60588E0D05DD3D006BFB54 /* Sources */ = {
@@ -400,6 +455,7 @@
 				8160C95B175A0602001F5F83 /* SVProgressHUD.mm in Sources */,
 				81EE808A17606A40009F2D57 /* ActionSheetStringPicker.m in Sources */,
 				81EE808D17606B48009F2D57 /* AbstractActionSheetPicker.m in Sources */,
+				81755BD117C31612004C5C1C /* Utilities.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -414,9 +470,12 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)\"",
+					"\"$(SRCROOT)/SDKs/Crashlytics\"",
+					/Developer/SDKs/Crashlytics,
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = MusicApp_Prefix.pch;
+				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
 				INFOPLIST_FILE = Info.plist;
 				PRODUCT_NAME = MusicApp;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -431,9 +490,12 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)\"",
+					"\"$(SRCROOT)/SDKs/Crashlytics\"",
+					/Developer/SDKs/Crashlytics,
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = MusicApp_Prefix.pch;
+				GCC_PREPROCESSOR_DEFINITIONS = "RELEASE=1";
 				INFOPLIST_FILE = Info.plist;
 				PRODUCT_NAME = MusicApp;
 				TARGETED_DEVICE_FAMILY = 1;

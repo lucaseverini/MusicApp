@@ -5,7 +5,7 @@
 //  Created by Luca Severini on 21/4/2013.
 //
 
-#import <AVFoundation/AVFoundation.h>
+
 #import <AudioToolbox/AudioFile.h>
 #import "SequencerOperation.h"
 #import "DJMixer.h"
@@ -19,7 +19,6 @@
 @synthesize noDataAvailable;
 
 // 44,100 x 16 x 2 = 1,411,200 bits per second (bps) = 1,411 kbps = ~142 KBytes/sec per channel
-const double kSamplingRate = 44100.0;
 const size_t kAudioDataBufferSize = (1024 * 256);
 
 
@@ -27,11 +26,9 @@ const size_t kAudioDataBufferSize = (1024 * 256);
 {
 	self = [super init];
     if(self != nil)
-    {
-		[self setRecords:recordsFile];
-
+    {		
 		[self setQueuePriority:NSOperationQueuePriorityHigh];
-		
+
 		numChannels = 2;
 
 		outputFormat.mSampleRate = kSamplingRate;
@@ -43,11 +40,12 @@ const size_t kAudioDataBufferSize = (1024 * 256);
 		outputFormat.mBytesPerFrame = (outputFormat.mBitsPerChannel * outputFormat.mChannelsPerFrame) / 8;
 		outputFormat.mBytesPerPacket = outputFormat.mBytesPerFrame * outputFormat.mFramesPerPacket;
 
-		startSamplePacket = -1;
+		startPacket = 0;
 		
 		curPlaying = NULL;
-		curReading = NULL;
-    }
+
+		[self setRecords:recordsFile];
+	}
     
     return self;
 }
@@ -62,10 +60,9 @@ const size_t kAudioDataBufferSize = (1024 * 256);
 			ExtAudioFileDispose(recordings[idx].fileRef);
 		}
 
-		for(int idx2 = 0; idx2 < 4; idx2++)
-		{
-			free(recordings[idx].buffers[idx2].data);
-		}
+		free(recordings[idx].buffer1.data);
+		free(recordings[idx].buffer2.data);
+		free(recordings[idx].buffer3.data);
 	}
     	
 	free(recordings);
@@ -80,10 +77,14 @@ const size_t kAudioDataBufferSize = (1024 * 256);
 	{
 		for(int idx = 0; idx < totRecordings; idx++)
 		{
-			for(int idx2 = 0; idx2 < 4; idx2++)
+			if(recordings[idx].fileRef != NULL)
 			{
-				free(recordings[idx].buffers[idx2].data);
+				ExtAudioFileDispose(recordings[idx].fileRef);
 			}
+
+			free(recordings[idx].buffer1.data);
+			free(recordings[idx].buffer2.data);
+			free(recordings[idx].buffer3.data);
 		}
 
 		free(recordings);
@@ -132,16 +133,25 @@ const size_t kAudioDataBufferSize = (1024 * 256);
 						recordings[totRecordings].duration = theAsset.duration;
 						recordings[totRecordings].packets = ((double)theAsset.duration.value / (double)theAsset.duration.timescale) * kSamplingRate;
 						
-						for(int idx = 0; idx < 4; idx++)
-						{
-							recordings[totRecordings].buffers[idx].data = (UInt32*)malloc(kAudioDataBufferSize);
-							recordings[totRecordings].buffers[idx].size = 0;
-							recordings[totRecordings].buffers[idx].status = 0;
-						}
+						recordings[totRecordings].buffer1.data = (UInt32*)malloc(kSamplingRate * outputFormat.mBytesPerPacket); // First buffer always up to 1 second of data
+						recordings[totRecordings].buffer1.size = 0;
+						recordings[totRecordings].buffer1.status = 0;
 						
-						recordings[totRecordings].firstBufferLoaded	 = NO;
-						recordings[totRecordings].loaded = NO;
-						recordings[totRecordings].played = NO;
+						recordings[totRecordings].buffer2.data = (UInt32*)malloc(kAudioDataBufferSize);
+						recordings[totRecordings].buffer2.size = 0;
+						recordings[totRecordings].buffer2.status = 0;
+
+						recordings[totRecordings].buffer3.data = (UInt32*)malloc(kAudioDataBufferSize);
+						recordings[totRecordings].buffer3.size = 0;
+						recordings[totRecordings].buffer3.status = 0;
+
+						recordings[totRecordings].fillBuffer = 0;
+						recordings[totRecordings].readBuffer = 0;
+						
+						recordings[totRecordings].readPackets = 0;
+						recordings[totRecordings].totReadPackets = 0;
+						recordings[totRecordings].totBufferPackets = 0;
+						
 						recordings[totRecordings].noDataAvailable = YES;
 						recordings[totRecordings].readerStatus = 0;
 						totRecordings++;
@@ -189,6 +199,15 @@ const size_t kAudioDataBufferSize = (1024 * 256);
 		}
 		
 		noDataAvailable = (totRecordings == 0);
+
+		// Open all recordings and fill the first buffer
+		for(int idx = 0; idx < totRecordings; idx++)
+		{
+			[self openAudioFile:&recordings[idx]];
+			
+			[self fillFirstBuffer:&recordings[idx] packetPosition:startPacket restorePosition:NO];
+		}
+		
 	}
 	else
 	{
@@ -215,101 +234,42 @@ const size_t kAudioDataBufferSize = (1024 * 256);
 		{
 			break;
 		}
-
-		// If no recording is being read/played at the moment, loops on the records and load the first buffer for everyone that hasn't...
-		if(curReading == NULL && curPlaying == NULL)
-		{
-			for(int idx = 0; idx < totRecordings; idx++)
-			{
-				if(!recordings[idx].firstBufferLoaded)
-				{
-					[self loadFirstBuffer:&recordings[idx]];
-					
-					break;
-				}
-			}
-			
-			[NSThread sleepForTimeInterval:0.01]; // Let's save some cpu...
-		}
-		
-		if(curPlaying != NULL)
-		{
-			// Sequencer is playing at this time...
-			
-			if(curReading != curPlaying)
-			{
-				if(curReading != NULL)
-				{
-					curReading->firstBufferLoaded = NO;
-
-					// If the file is changed close it
-					if(curReading->fileRef != NULL)
-					{
-						ExtAudioFileDispose(curReading->fileRef);
-						curReading->fileRef = NULL;
-					}
-				}
-								
-				curReading = curPlaying;
-
-				// No audio file is open, open it
-				if(curReading->fileRef == NULL)
-				{
-					[self openAudioFile:curReading];
-				}
-			}
-						
-			if(curReading->readerStatus == AVAssetReaderStatusReading)
-			{
-				audioBufferPtr buffer = NULL;
 				
-				@synchronized(self)
+		while(active)
+		{
+			if(curPlaying != NULL && curPlaying->readerStatus <= AVAssetReaderStatusReading)
+			{
+				for(int bufferNum = 1; bufferNum <= 3; bufferNum++)
 				{
-					for(int idx = 0; idx < 4; idx++)
+					switch(bufferNum)
 					{
-						if(curReading->buffers[idx].status == 0)
-						{
-							buffer = &curReading->buffers[idx];
-							buffer->status = 1;
-							
+						case 1:
+							if(curPlaying->buffer1.status == 0)
+							{
+								[self fillFirstBuffer:curPlaying packetPosition:0 restorePosition:YES];
+							}
 							break;
-						}
+
+						case 2:
+							if(curPlaying->buffer2.status == 0)
+							{
+								[self fillBuffer:curPlaying number:2];
+							}
+							break;
+							
+						case 3:
+							if(curPlaying->buffer3.status == 0)
+							{
+								[self fillBuffer:curPlaying number:3];
+							}
+							break;
 					}
 				}
-				
-				if(buffer != NULL)
-				{
-					[self fillAudioBuffer:buffer];
-				}
 			}
-			else if(curReading->readerStatus >= AVAssetReaderStatusCompleted)
-			{
-				ExtAudioFileDispose(curReading->fileRef);
-				curReading->fileRef = NULL;
-			}
-		}
-		else 
-		{
-			// Sequencer is not playing at this time...
 			
-			if(curReading != NULL)
-			{
-				// If the file is open, close it
-				if(curReading->fileRef != NULL)
-				{
-					ExtAudioFileDispose(curReading->fileRef);
-					curReading->fileRef = NULL;
-				}
-				
-				curReading->firstBufferLoaded = NO;		// Reload the first buffer as soon as is possible
-				
-				curReading = NULL;
-			}
+			[NSThread sleepForTimeInterval:0.1]; // Let's save some cpu..
 		}
-		
-        [NSThread sleepForTimeInterval:0.01]; // Let's save some cpu...
-    }
-    
+	}
 END:
     [waitForAction release];
     
@@ -317,9 +277,46 @@ END:
 }
 
 
-- (UInt32*) getNextAudioBuffer:(NSUInteger*)packetsInBuffer;
+- (UInt32*) getNextAudioBuffer:(NSUInteger*)packetsInBuffer
 {
 	*packetsInBuffer = 0;
+	
+	switch(curPlaying->readBuffer)
+	{
+		case 0:
+			if(curPlaying->buffer1.status == 2)
+			{
+				curPlaying->readBuffer = 1;			// Set buffer1 to be read
+			}
+			break;
+
+		case 1:
+			curPlaying->buffer1.status = 0;			// Set buffer1 status to Empty so it can be filled with data
+			
+			if(curPlaying->buffer2.status == 2)
+			{
+				curPlaying->readBuffer = 2;			// Set buffer2 to be read
+			}
+			break;
+
+		case 2:
+			curPlaying->buffer2.status = 0;			// Set buffer2 status to Empty so it can be filled with new data
+			
+			if(curPlaying->buffer3.status == 2)
+			{
+				curPlaying->readBuffer = 3;			// Set buffer3 to be read
+			}
+			break;
+
+		case 3:
+			curPlaying->buffer3.status = 0;			// Set buffer3 status to Empty so it can be filled with new data
+
+			if(curPlaying->buffer2.status == 2)
+			{
+				curPlaying->readBuffer = 2;			// Set buffer2 to be read
+			}
+			break;
+	}
 	
 	if(curPlaying->noDataAvailable)
 	{
@@ -328,37 +325,43 @@ END:
 		return NULL;
 	}
 	
-	@synchronized(self)
+	switch(curPlaying->readBuffer)
 	{
-		int idx2 = 0;
-		
-		for(int idx = 0; idx < 4; idx++)
-		{
-			if(curPlaying->buffers[idx].status == 3)
+		case 1:	// Gives back buffer1 to mixer
+			if(curPlaying->buffer1.status == 2)
 			{
-				curPlaying->buffers[idx].status = 0;
+				curPlaying->buffer1.status = 3;		// Set buffer1 status to Reading
 				
-				if(idx < 3)
-				{
-					idx2 = idx + 1;
-				}
+				curPlaying->fillBuffer = 2;			// Set buffer2 to be filled
 				
-				break;
+				*packetsInBuffer = curPlaying->buffer1.size / outputFormat.mBytesPerPacket;
+				return curPlaying->buffer1.data;
 			}
-		}
-		
-		for(; idx2 < 4; idx2++)
-		{
-			if(curPlaying->buffers[idx2].status == 2)
-			{
-				*packetsInBuffer = curPlaying->buffers[idx2].size / sizeof(UInt32);
-				curPlaying->buffers[idx2].status = 3;
-				
-				NSLog(@"Sequencer getNextAudioBuffer %@ %p", curPlaying->name, curPlaying->buffers[idx2].data);
+			break;
 
-				return curPlaying->buffers[idx2].data;
+		case 2:	// Gives back buffer2 to mixer
+			if(curPlaying->buffer2.status == 2)
+			{
+				curPlaying->buffer2.status = 3;		// Set buffer2 status to Reading
+				
+				curPlaying->fillBuffer = 3;			// Set buffer3 to be filled
+				
+				*packetsInBuffer = curPlaying->buffer2.size / outputFormat.mBytesPerPacket;
+				return curPlaying->buffer2.data;
 			}
-		}
+			break;
+
+		case 3:	// Gives back buffer3 to mixer
+			if(curPlaying->buffer3.status == 2)
+			{
+				curPlaying->buffer3.status = 3;		// Set buffer3 status to Reading
+				
+				curPlaying->fillBuffer = 2;			// Set buffer2 to be filled
+				
+				*packetsInBuffer = curPlaying->buffer3.size / outputFormat.mBytesPerPacket;
+				return curPlaying->buffer3.data;
+			}
+			break;
 	}
 	
 	curPlaying->noDataAvailable = YES;
@@ -369,56 +372,134 @@ END:
 }
 
 
-- (NSUInteger) fillAudioBuffer:(audioBufferPtr)buffer
+- (NSUInteger) fillFirstBuffer:(recordingPtr)recording packetPosition:(NSUInteger)packet restorePosition:(BOOL)restore
+{
+	NSLog(@"Sequencer fillFirstBuffer: %d %@", packet, recording->name);
+
+	if(recording->fileRef == NULL)
+    {
+		return 0;
+	}
+
+	recording->buffer1.status = 1;
+
+	SInt64 prevPacketPosition;
+	
+	if(restore)
+	{
+		OSStatus status = ExtAudioFileTell(recording->fileRef, &prevPacketPosition);
+		if(status != noErr)
+		{
+			NSLog(@"Error %ld in ExtAudioFileTell", status);
+		}
+	}
+
+	OSStatus status = ExtAudioFileSeek(recording->fileRef, packet);
+	if(status != noErr)
+	{
+		NSLog(@"Error %ld in ExtAudioFileSeek", status);
+	}
+	
+	AudioBufferList incomingAudio;
+	incomingAudio.mNumberBuffers = 1;
+	incomingAudio.mBuffers[0].mNumberChannels = numChannels;
+	incomingAudio.mBuffers[0].mDataByteSize = kSamplingRate * outputFormat.mBytesPerFrame;
+	incomingAudio.mBuffers[0].mData = recording->buffer1.data;
+	UInt32 framesRead = kSamplingRate;
+	status = ExtAudioFileRead(recording->fileRef, &framesRead, &incomingAudio);
+	if(status != noErr)
+	{
+		NSLog(@"Error %ld in ExtAudioFileRead", status);
+		
+		recording->buffer1.size = 0;
+		recording->buffer1.status = 0;
+		recording->readerStatus = AVAssetReaderStatusFailed;
+	}
+	else
+	{
+		NSLog(@"Read %ld frames", framesRead);
+
+		recording->buffer1.size = incomingAudio.mBuffers[0].mDataByteSize;
+		recording->buffer1.status = 2;
+		recording->readerStatus = framesRead != 0 ? AVAssetReaderStatusReading : AVAssetReaderStatusCompleted;
+		
+		recording->noDataAvailable = NO;
+	}
+
+	if(restore)
+	{
+		OSStatus status = ExtAudioFileSeek(recording->fileRef, prevPacketPosition);
+		if(status != noErr)
+		{
+			NSLog(@"Error %ld in ExtAudioFileSeek", status);
+		}
+	}
+
+	return framesRead;
+}
+
+
+- (NSUInteger) fillBuffer:(recordingPtr)recording number:(NSInteger)bufferNumber
 {
 	OSStatus status = noErr;
 	
-	NSLog(@"Sequencer fillAudioBuffer %@", curReading->name);
+	NSLog(@"Sequencer fillBuffer: %d %@", bufferNumber, recording->name);
 
-	if(curReading->fileRef == NULL)
+	if(recording->fileRef == NULL)
     {
 		return 0;
 	}
 	
-	// Read the audio
+	audioBuffer *buffer = bufferNumber == 2 ? &recording->buffer2 : &recording->buffer3;
+		
+	buffer->status = 1;
+
+	// Read the audio data
 	AudioBufferList incomingAudio;
 	incomingAudio.mNumberBuffers = 1;
 	incomingAudio.mBuffers[0].mNumberChannels = numChannels;
 	incomingAudio.mBuffers[0].mDataByteSize = kAudioDataBufferSize;
 	incomingAudio.mBuffers[0].mData = buffer->data;
 	UInt32 framesRead = kAudioDataBufferSize / outputFormat.mBytesPerFrame;
-	status = ExtAudioFileRead(curReading->fileRef, &framesRead, &incomingAudio);
+	status = ExtAudioFileRead(recording->fileRef, &framesRead, &incomingAudio);
 	if(status != noErr)
 	{
 		NSLog(@"Error %ld in ExtAudioFileRead", status);
 		
-		curReading->readerStatus = AVAssetReaderStatusFailed;
+		buffer->status = 0;
+		recording->readerStatus = AVAssetReaderStatusFailed;
 	}
 	else
 	{
-		// NSLog(@"Read %ld frames", framesRead);
+		NSLog(@"Read %ld frames", framesRead);
 		
 		if(framesRead == 0)
 		{
-			curReading->readerStatus = AVAssetReaderStatusCompleted;
+			buffer->status = 0;
+			recording->readerStatus = AVAssetReaderStatusCompleted;
 		}
 		else
 		{
-			curReading->readerStatus = AVAssetReaderStatusReading;
+			buffer->status = 2;
+			recording->readerStatus = AVAssetReaderStatusReading;
+			
+			recording->noDataAvailable = NO;
 		}
-	}
 		
-	buffer->size = incomingAudio.mBuffers[0].mDataByteSize;
-	buffer->status = 2;
-	
-	curReading->noDataAvailable = NO;
+		buffer->size = incomingAudio.mBuffers[0].mDataByteSize;
+	}
 
-	return incomingAudio.mBuffers[0].mDataByteSize;
+	return framesRead;
 }
 
 
 - (BOOL) openAudioFile:(recordingPtr)recording
 {
+	if(recording == NULL)
+	{
+		return NO;
+	}
+	
 	NSLog(@"Sequencer openAudioFile: %@", recording->name);
 	
 	recording->readerStatus = AVAssetReaderStatusFailed;
@@ -450,7 +531,7 @@ END:
 		return NO;
 	}
 
-	if(recording->packets == 0 || streamFormat.mSampleRate != kSamplingRate)
+	if(recording->packets == 0 /* || streamFormat.mSampleRate != kSamplingRate*/)
 	{
 		NSLog(@"File %@ can't be used", recording->name);
 		
@@ -460,50 +541,70 @@ END:
 	NSLog(@"File %@ open", recording->name);
 	NSLog(@"Duration: %.2f", (double)recording->packets / kSamplingRate);
 	
-	if(recording->firstPackets != 0)
-	{
-		SInt64 seekValue = recording->firstPackets;
-		status = ExtAudioFileSeek(recording->fileRef, seekValue);
-		if(status != noErr)
-		{
-			NSLog(@"Error %ld in ExtAudioFileSeek", status);
-		}
-		
-		recording->firstPackets = 0;
-	}
-
-	recording->readerStatus = AVAssetReaderStatusReading;
+	recording->readerStatus = 0;
 
 	return YES;
 }
 
 
-- (void) reset
+- (BOOL) setAudioFilePosition:(recordingPtr)recording packetPosition:(NSUInteger)packet
+{
+	NSLog(@"Sequencer setAudioFilePosition: %d - %@", packet, recording->name);
+	
+	SInt64 seekValue = packet;
+	OSStatus status = ExtAudioFileSeek(recording->fileRef, seekValue);
+	if(status != noErr)
+	{
+		NSLog(@"Error %ld in ExtAudioFileSeek", status);
+	}
+
+	return status == noErr;
+}
+
+
+- (recordingPtr) getRecording:(NSInteger)packet
+{
+	if(packet != -1)
+	{
+		for(int idx = 0; idx < totRecordings; idx++)
+		{
+			if(packet >= recordings[idx].startPacket && packet <= recordings[idx].endPacket)
+			{
+				return &recordings[idx];
+			}
+		}
+	}
+	
+	return nil;
+}
+
+
+- (void) reset:(NSUInteger)packetPosition
 {
 	@synchronized(self)
 	{
-		NSLog(@"Sequencer Operation Reset");
+		NSLog(@"Sequencer Reset: %d", packetPosition);
 		
 		for(int idx = 0; idx < totRecordings; idx++)
-		{
-			for(int idx2 = 0; idx2 < 4; idx2++)
-			{
-				recordings[idx].buffers[idx2].size = 0;
-				recordings[idx].buffers[idx2].status = 0;
-			}
-
-			recordings[idx].loaded = NO;
-			recordings[idx].played = NO;
-			recordings[idx].firstBufferLoaded = NO;
-			recordings[idx].noDataAvailable = YES;
+		{			
+			recordings[idx].fillBuffer = 0;
+			recordings[idx].readBuffer = 0;
 			recordings[idx].readerStatus = 0;
+
+			recordings[idx].noDataAvailable = YES;
+
+			if(packetPosition >= recordings[idx].startPacket && packetPosition < recordings[idx].endPacket)
+			{
+				NSUInteger packetToRead = (packetPosition - recordings[idx].startPacket);
+				[self fillFirstBuffer:&recordings[idx] packetPosition:packetToRead restorePosition:NO];
+			}
+			else
+			{
+				[self fillFirstBuffer:&recordings[idx] packetPosition:0 restorePosition:NO];
+			}
 		}
 		
-		curPlaying = NULL;
-		curReading = NULL;
-		
-		startSamplePacket = -1;
-		
+		curPlaying = NULL;		
 		working = NO;
 	}
 }
@@ -512,15 +613,13 @@ END:
 - (void) setStartPlayPosition:(NSTimeInterval)time reset:(BOOL)reset
 {
 	@synchronized(self)
-	{		
-		NSUInteger newStartPosition = time * kSamplingRate;
+	{
+		startPacket = time * kSamplingRate;
 		
 		if(reset)
 		{
-			[self reset];
+			[self reset:startPacket];
 		}
-			
-		startSamplePacket = newStartPosition;		
 	}
 }
 
@@ -619,116 +718,23 @@ END:
 					working = YES;
 				}
 				
+				NSUInteger packetToRead = (packetIdx - recordings[idx].startPacket) + (curPlaying->buffer1.size / outputFormat.mBytesPerPacket);
+				[self setAudioFilePosition:curPlaying packetPosition:packetToRead];
+
+				curPlaying->buffer1.status = 2;
+				curPlaying->buffer2.status = 0;
+				curPlaying->buffer3.status = 0;
+				
+				curPlaying->fillBuffer = 0;
+				curPlaying->readBuffer = 0;
+				curPlaying->readerStatus = 0;
+
 				break;
 			}
 		}
 	}
 			
 	return (curPlaying != NULL);
-}
-
-
-- (void) loadFirstBuffer:(recordingPtr)recording
-{
-	UInt32 propertySize;
-    AudioStreamBasicDescription streamFormat;
-	NSUInteger startPacket = 0;
-	SInt64 seekValue;
-	NSInteger readerStatus = 0;
-	AudioBufferList incomingAudio;
-	UInt32 framesRead;
-	
-	NSLog(@"Sequencer loadFirstBuffer: %@", recording->name);
-	
-	ExtAudioFileRef fileRef = NULL;
-	OSStatus status = ExtAudioFileOpenURL((CFURLRef)recording->file, &fileRef);
-	if(status != noErr)
-	{
-		goto END;
-	}
-	
-	status = ExtAudioFileSetProperty(fileRef, kExtAudioFileProperty_ClientDataFormat, sizeof(AudioStreamBasicDescription), &outputFormat);
-	if(status != noErr)
-	{
-		goto END;
-	}
-	
-	propertySize = sizeof(recording->packets);
-    status = ExtAudioFileGetProperty(fileRef, kExtAudioFileProperty_FileLengthFrames, &propertySize, &recording->packets);
-	if(status != noErr)
-	{
-		goto END;
-	}
-    
-	propertySize = sizeof(streamFormat);
-    status = ExtAudioFileGetProperty(fileRef, kExtAudioFileProperty_FileDataFormat, &propertySize, &streamFormat);
-	if(status != noErr)
-	{
-		goto END;
-	}
-
-	if(startSamplePacket != -1 && (startSamplePacket > recording->startPacket && startSamplePacket < recording->endPacket))
-	{
-		startPacket = startSamplePacket - recording->startPacket;
-		
-		seekValue = startPacket;
-		status = ExtAudioFileSeek(fileRef, seekValue);
-		if(status != noErr)
-		{
-			NSLog(@"Error %ld in ExtAudioFileSeek", status);
-		}
-
-		startSamplePacket = -1;
-	}
-	
-	recording->firstPackets = 0;
-	recording->buffers[0].status = 1;
-
-	// Read the audio
-	incomingAudio.mNumberBuffers = 1;
-	incomingAudio.mBuffers[0].mNumberChannels = numChannels;
-	incomingAudio.mBuffers[0].mDataByteSize = kAudioDataBufferSize;
-	incomingAudio.mBuffers[0].mData = recording->buffers[0].data;
-	framesRead = kAudioDataBufferSize / outputFormat.mBytesPerFrame;
-	status = ExtAudioFileRead(fileRef, &framesRead, &incomingAudio);
-	if(status != noErr)
-	{
-		NSLog(@"Error %ld in ExtAudioFileRead", status);
-		
-		readerStatus = AVAssetReaderStatusFailed;
-	}
-	else
-	{
-		NSLog(@"Read %ld frames", framesRead);
-		
-		if(framesRead == 0)
-		{
-			readerStatus = AVAssetReaderStatusCompleted;
-		}
-		else
-		{
-			readerStatus = AVAssetReaderStatusReading;
-		}
-	}
-		
-	if(readerStatus == AVAssetReaderStatusReading || readerStatus == AVAssetReaderStatusCompleted)
-	{
-		recording->buffers[0].size = incomingAudio.mBuffers[0].mDataByteSize;
-		recording->buffers[0].status = 2;
-		
-		recording->firstPackets = startPacket + framesRead;
-		recording->firstBufferLoaded = YES;
-		
-		recording->noDataAvailable = NO;
-		recording->readerStatus = readerStatus;
-
-		NSLog(@"Sequencer loadFirstBuffer: %@ - %u packets", recording->name, recording->firstPackets);
-	}
-END:
-	if(fileRef != NULL)
-	{
-		ExtAudioFileDispose(fileRef);
-	}
 }
 
 

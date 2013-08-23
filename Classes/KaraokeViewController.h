@@ -5,8 +5,6 @@
 //  Created by Luca Severini on 22/1/2013.
 //
 
-#import <UIKit/UIKit.h>
-
 
 @class NSIndexPath;
 @class UIToolbar;
@@ -39,7 +37,8 @@
 @property (nonatomic, retain) IBOutlet KeyboardToolbarController *keyboardController;
 
 @property (nonatomic, retain) NSString *userDocDirPath;
-@property (nonatomic, retain) NSMutableArray *dataSourceArray;
+@property (nonatomic, retain) NSMutableArray *lyricsDataArray;
+@property (nonatomic, retain) NSMutableArray *lyricsTagArray;
 @property (nonatomic, retain) NSIndexPath *tableSelection;
 @property (nonatomic, assign) BOOL isEditing;
 @property (nonatomic, retain) KaraokeTableCell *activeCell;
@@ -61,7 +60,7 @@
 - (IBAction) doDeleteLyrics:(id)sender;
 
 - (BOOL) fileDataToLyrics:(NSString*)fileName;
-- (NSData*) lyricsToFileData:(NSArray*)lyricsArray title:(NSString*)title artist:(NSString*)artist;
+- (NSData*) lyricsToFileData:(NSArray*)lyricsArray;
 - (void) lyricsFileSelected:(NSNumber*)selectedIndex reference:(id)reference;
 - (BOOL) stringToLyrics:(NSString*)string;
 

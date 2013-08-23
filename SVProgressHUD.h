@@ -54,6 +54,7 @@ typedef NSUInteger SVProgressHUDMaskType;
 
 + (void)popActivity;
 + (void)dismiss;
++ (void)dismissWithAnimation;
 
 + (BOOL)isVisible;
 

@@ -5,8 +5,7 @@
 //  Created by Luca Severini on 6/1/2012.
 //
 
-#import <UIKit/UIKit.h>
-#import <AVFoundation/AVFoundation.h>
+
 #import "SelectionViewController.h"
 #import "KaraokeViewController.h"
 #import "UICheckBox.h"
@@ -160,11 +159,11 @@
 		[defaults synchronize];
 		
 		NSArray *indexes = [NSArray arrayWithObject:selectedRow];
-		[fileTable reloadRowsAtIndexPaths:indexes withRowAnimation:UITableViewRowAnimationAutomatic];
+		[fileTable reloadRowsAtIndexPaths:indexes withRowAnimation:UITableViewRowAnimationNone];
 	}
 	else
 	{
-		NSString *messageStr = [NSString stringWithFormat:@"The track %@ can't be copied.", title];
+		NSString *messageStr = [NSString stringWithFormat:@"The track %@ can't be copied", title];
 		UIAlertView *alert = [[[UIAlertView alloc] initWithTitle:nil message:messageStr delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:nil] autorelease];
 		[alert show];
 	}
@@ -220,7 +219,7 @@
 		BOOL isPlayable = [songAsset isPlayable];
 		if(!isReadable || !isPlayable)
 		{
-			NSString *messageStr = [NSString stringWithFormat:@"The track %@ can't be read or played.", title];
+			NSString *messageStr = [NSString stringWithFormat:@"The track %@ can't be read or played", title];
 			UIAlertView *alert = [[[UIAlertView alloc] initWithTitle:nil message:messageStr delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:nil] autorelease];
 			[alert show];
 			return;
@@ -234,7 +233,10 @@
 		^{
 			copyUrl = [self copyAudioFile:url to:userDocDirPath named:title];
 			
-			[SVProgressHUD dismiss];
+			[SVProgressHUD dismissWithAnimation];
+			
+			// Sleep for a while to avoid a graphical glitch when the selected table row redraws
+			[NSThread sleepForTimeInterval:1.0];
 
 			if(copyUrl != nil)
 			{
@@ -243,13 +245,13 @@
 				[defaults synchronize];
 				
 				NSArray *indexes = [NSArray arrayWithObject:selectedRow];
-				[fileTable reloadRowsAtIndexPaths:indexes withRowAnimation:UITableViewRowAnimationAutomatic];
+				[fileTable reloadRowsAtIndexPaths:indexes withRowAnimation:UITableViewRowAnimationNone];
 			}
 			else
 			{				
 				dispatch_sync(dispatch_get_main_queue(),
 				^{
-					NSString *messageStr = [NSString stringWithFormat:@"The Audio File %@ can't be copied.", title];
+					NSString *messageStr = [NSString stringWithFormat:@"The Audio File %@ can't be copied", title];
 					UIAlertView *alert = [[[UIAlertView alloc] initWithTitle:nil message:messageStr delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:nil] autorelease];
 					[alert show];
 				});
@@ -317,7 +319,7 @@
 	channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
 	NSDictionary *outputSettings = [NSDictionary dictionaryWithObjectsAndKeys:
 											[NSNumber numberWithInt:kAudioFormatLinearPCM], AVFormatIDKey,
-											[NSNumber numberWithFloat:44100.0], AVSampleRateKey,
+											[NSNumber numberWithFloat:kSamplingRate], AVSampleRateKey,
 											[NSNumber numberWithInt:2], AVNumberOfChannelsKey,
 											[NSData dataWithBytes:&channelLayout length:sizeof(AudioChannelLayout)], AVChannelLayoutKey,
 											[NSNumber numberWithInt:16], AVLinearPCMBitDepthKey,

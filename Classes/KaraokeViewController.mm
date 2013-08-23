@@ -5,12 +5,204 @@
 //  Created by Luca Severini on 22/1/20132.
 //
 
-#import <UIKit/UIKit.h>
+
 #import "KaraokeViewController.h"
 #import "Karaoke.h"
 #import "KaraokeTableCell.h"
 #import "KeyboardToolbarController.h"
 #import "ActionSheetStringPicker.h"
+
+
+@interface ModalAlert : NSObject <UIAlertViewDelegate>
+{
+    BOOL isCanceled;
+	NSInteger button;
+}
+
++ (NSInteger) ModalAlertWithTitle:(NSString*)title text:(NSString*)text firstButton:(NSString*)firstBtn secondButton:(NSString*)secondBtn;
+
+@end
+
+
+@implementation ModalAlert
+
++ (NSInteger) ModalAlertWithTitle:(NSString*)title text:(NSString*)text firstButton:(NSString*)firstBtn secondButton:(NSString*)secondBtn
+{
+    ModalAlert *modal = [[[ModalAlert alloc] init] autorelease];
+	
+    UIAlertView *alertView = [[[UIAlertView alloc] init] autorelease];
+    alertView.delegate = modal;
+    alertView.title = title;
+    alertView.message = text;
+
+	[alertView addButtonWithTitle:firstBtn];
+	
+	if(secondBtn != nil)
+	{
+		[alertView addButtonWithTitle:secondBtn];
+	}
+	
+    NSRunLoop *run_loop = [NSRunLoop currentRunLoop];
+	
+    [alertView show];
+	
+    while(!modal->isCanceled)
+	{
+        [run_loop runMode:NSDefaultRunLoopMode beforeDate:[NSDate date]];
+    }
+	
+    return modal->button;
+}
+
+- (void) alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    button = buttonIndex;
+    isCanceled = YES;
+}
+
+@end
+
+
+@interface SaveKaraokeAlertView : UIAlertView
+
+@property (nonatomic, assign) BOOL dontDismiss;
+
+- (UITextField*) textFieldAtIndex:(NSInteger)textFieldIndex;
+- (UIButton*) buttonAtIndex:(NSInteger)buttonIndex;
+- (void) dismissWithClickedButtonIndex:(NSInteger)buttonIndex animated:(BOOL)animated;
+- (BOOL) goNextTextField;
+- (BOOL) goPreviousTextField;
+
+@end
+
+@implementation SaveKaraokeAlertView
+
+@synthesize dontDismiss;
+
+- (UITextField*) textFieldAtIndex:(NSInteger)textFieldIndex
+{
+	NSArray *subViews = [self subviews];
+	NSInteger index = 0;
+	for(id subView in subViews)
+	{
+		if([subView isKindOfClass:[UITextField class]])
+		{
+			if(index++ == textFieldIndex)
+			{
+				return subView;
+			}
+		}
+	}
+	
+	return nil;
+}
+
+- (UIButton*) buttonAtIndex:(NSInteger)buttonIndex;
+{
+	NSArray *subViews = [self subviews];
+	NSInteger index = 0;
+	for(id subView in subViews)
+	{
+		if([subView isKindOfClass:[UIButton class]])
+		{
+			if(index++ == buttonIndex)
+			{
+				return subView;
+			}
+		}
+	}
+	
+	return nil;
+}
+
+- (void) dismissWithClickedButtonIndex:(NSInteger)buttonIndex animated:(BOOL)animated
+{
+	if(!dontDismiss)
+	{
+		[super dismissWithClickedButtonIndex:buttonIndex animated:animated];
+	}
+}
+
+- (BOOL) goNextTextField
+{
+	NSArray *textFields = [self getTextFields];
+	for(UITextField *field in textFields)
+	{
+		if([field isFirstResponder])
+		{
+			NSInteger fieldIdx = [textFields indexOfObject:field];
+			
+			for(NSInteger idx = fieldIdx + 1; idx != fieldIdx; idx++)
+			{
+				if(idx >= textFields.count)
+				{
+					idx = 0;
+				}
+				if(idx == fieldIdx)
+				{
+					return NO;
+				}
+
+				if([[textFields objectAtIndex:idx] canBecomeFirstResponder])
+				{
+					return [[textFields objectAtIndex:idx] becomeFirstResponder];
+				}				
+			}
+		}
+	}
+	
+	return NO;
+}
+
+- (BOOL) goPreviousTextField
+{
+	NSArray *textFields = [self getTextFields];
+	for(UITextField *field in textFields)
+	{
+		if([field isFirstResponder])
+		{
+			NSInteger fieldIdx = [textFields indexOfObject:field];
+			
+			for(NSInteger idx = fieldIdx - 1; idx != fieldIdx; idx--)
+			{
+				if(idx < 0)
+				{
+					idx = textFields.count - 1;
+				}
+				if(idx == fieldIdx)
+				{
+					return NO;
+				}
+				
+				if([[textFields objectAtIndex:idx] canBecomeFirstResponder])
+				{
+					return [[textFields objectAtIndex:idx] becomeFirstResponder];
+				}
+			}
+		}
+	}
+	
+	return NO;
+}
+
+- (NSArray*) getTextFields
+{
+	NSMutableArray *textFields = [NSMutableArray array];
+	
+	NSArray *subViews = [self subviews];
+	for(id subView in subViews)
+	{
+		if([subView isKindOfClass:[UITextField class]])
+		{
+			[textFields addObject:subView];
+		}
+	}
+	
+	return [NSArray arrayWithArray:textFields];
+}
+
+@end
+
 
 @implementation KaraokeViewController
 
@@ -33,7 +225,8 @@
 @synthesize userDocDirPath;
 
 @synthesize tableSelection;
-@synthesize dataSourceArray;
+@synthesize lyricsDataArray;
+@synthesize lyricsTagArray;
 @synthesize isEditing;
 @synthesize activeCell;
 
@@ -70,21 +263,26 @@
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIKeyboardWillHideNotification object:nil];
 
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory , NSUserDomainMask, YES);
-    NSString *filePath = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"KaraokeData.plist"];
     
-	[dataSourceArray insertObject:karaokeTitle.text atIndex:0];	// Insert title in array as first element
+	[lyricsDataArray insertObject:karaokeTitle.text atIndex:0];	// Insert title in array as first element
 	
-	if([dataSourceArray writeToFile:filePath atomically:YES])
-	{
-		NSLog(@"File %@ written", filePath);
-	}
-	else
+    NSString *filePath = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"KaraokeData.plist"];
+	if(![self writeKaraokeToFile:lyricsDataArray filePath:filePath])
 	{
 		NSLog(@"File %@ not written", filePath);
 	}
-    
-	[dataSourceArray release];
-    dataSourceArray = nil;
+ 		
+    filePath = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"KaraokeTags.plist"];
+	if(![lyricsTagArray writeToFile:filePath atomically:YES])
+	{
+		NSLog(@"File %@ not written", filePath);
+	}
+
+	[lyricsDataArray release];
+    lyricsDataArray = nil;
+
+	[lyricsTagArray release];
+    lyricsTagArray = nil;
 }
 
 
@@ -99,11 +297,10 @@
     NSString *filePath = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"KaraokeData.plist"];
     if([[NSFileManager defaultManager] fileExistsAtPath:filePath])
     {
-        NSLog(@"File %@ is available", filePath);
-        
-        self.dataSourceArray = [NSMutableArray arrayWithContentsOfFile:filePath];
+		// Load lyrics from plist
+        lyricsDataArray = [[NSMutableArray alloc] initWithContentsOfFile:filePath];
 		
-		NSString *title = [dataSourceArray objectAtIndex:0];
+		NSString *title = [lyricsDataArray objectAtIndex:0];
 		if(title == nil || ![title isKindOfClass:[NSString class]] || title.length == 0)
 		{
 			karaokeTitle.text = @"Untitled";
@@ -115,16 +312,29 @@
 
 		if([title isKindOfClass:[NSString class]])
 		{
-			[dataSourceArray removeObjectAtIndex:0];
+			[lyricsDataArray removeObjectAtIndex:0];
 		}
 	}
     else
     {
         NSLog(@"File %@ is missing", filePath);
 
-        self.dataSourceArray = [NSMutableArray array];
+        lyricsDataArray = [[NSMutableArray alloc] init];
     }
-    
+	
+    filePath = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"KaraokeTags.plist"];
+    if([[NSFileManager defaultManager] fileExistsAtPath:filePath])
+    {
+		// Load tags from plist
+        lyricsTagArray = [[NSMutableArray alloc] initWithContentsOfFile:filePath];
+	}
+	else
+    {
+        NSLog(@"File %@ is missing", filePath);
+		
+        lyricsTagArray = [[NSMutableArray alloc] init];
+    }
+
     self.editing = NO;
     
     [tableBarItem setLeftBarButtonItem:tableBarEditButton];
@@ -135,7 +345,28 @@
 
 - (IBAction) goBack:(id)sender
 {
-    // Because of how is implemented this table implemented both are needed
+	NSDictionary *error = [self checkKaraokeData:lyricsDataArray];
+	if(error != nil)
+	{
+		NSMutableString *msg = [NSMutableString stringWithString:@"There is one or more errors in the karaoke data.\r"];
+		if([[error objectForKey:@"kErrorNumber"] integerValue] == 1)
+		{
+			[msg appendString:[NSString stringWithFormat:@"The Text of row %d is longer than 128 characters.",
+							   [[error objectForKey:@"kErrorRow"] integerValue]]];
+		}
+		else
+		{
+			[msg appendString:[NSString stringWithFormat:@"The Time of row %d is lower or equal to the Time of the previous row.",
+							   [[error objectForKey:@"kErrorRow"] integerValue]]];
+		}
+		UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
+		[alert show];
+		[alert release];
+		
+		return;
+	}
+	
+    // Because of how is implemented this table both are needed
     [self setEditing:NO];
     [karaokeTable setEditing:NO animated:NO];
     
@@ -166,7 +397,7 @@
 - (NSInteger) tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section
 {
     // Return the number of rows in the list.
-    return [dataSourceArray count];
+    return [lyricsDataArray count];
 }
 
 
@@ -176,7 +407,7 @@
     
     NSUInteger row = [indexPath row];
     
-    NSDictionary *rowDict = [dataSourceArray objectAtIndex:row];
+    NSDictionary *rowDict = [lyricsDataArray objectAtIndex:row];
     assert(rowDict != nil);
     
     NSString *rowType = [rowDict objectForKey:kTypeKey];
@@ -211,12 +442,12 @@
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
         
         cell.words.delegate = self;
-        cell.words.text = [[dataSourceArray objectAtIndex: row] valueForKey:kWordsKey];
+        cell.words.text = [[lyricsDataArray objectAtIndex: row] valueForKey:kWordsKey];
         cell.words.enabled = self.isEditing;
         cell.words.returnKeyType = UIReturnKeyDefault;
         
         cell.time.delegate = self;
-        NSNumber *value = [[dataSourceArray objectAtIndex: row] valueForKey:kTimeKey];
+        NSNumber *value = [[lyricsDataArray objectAtIndex: row] valueForKey:kTimeKey];
         cell.time.text = (cell.words.text.length == 0) ? nil : [value stringValue];
         cell.time.enabled = self.isEditing;
         cell.time.returnKeyType = UIReturnKeyDefault;
@@ -229,112 +460,128 @@
 #pragma mark - doPrevTextField
 - (IBAction) doPrevTextField:(id)sender
 {
-	if(dataSourceArray.count == 1)
-	{
-		return;
+	if(editingTextField.tag > 100)
+    {
+		SaveKaraokeAlertView *alert = (SaveKaraokeAlertView*)[editingTextField superview];
+		[alert goPreviousTextField];
 	}
-	
-	KaraokeTableCell *curCell = (KaraokeTableCell*)[[editingTextField superview] superview];
-	NSIndexPath *curCellPath = [NSIndexPath indexPathForRow:curCell.tag inSection:0];
-
-    if(editingTextField.tag == 1)	// Words field
-    {
-		NSInteger newRow = curCellPath.row > 0 ? curCellPath.row - 1 : dataSourceArray.count - 1;
-		NSString *rowType = [[dataSourceArray objectAtIndex:newRow] objectForKey:kTypeKey];
-		while([rowType isEqualToString:@"Add"])
+	else
+	{
+		if(lyricsDataArray.count == 1)
 		{
-			if(--newRow < 0)
+			return;
+		}
+		
+		KaraokeTableCell *curCell = (KaraokeTableCell*)[[editingTextField superview] superview];
+		NSIndexPath *curCellPath = [NSIndexPath indexPathForRow:curCell.tag inSection:0];
+
+		if(editingTextField.tag == 1)	// Words field
+		{
+			NSInteger newRow = curCellPath.row > 0 ? curCellPath.row - 1 : lyricsDataArray.count - 1;
+			NSString *rowType = [[lyricsDataArray objectAtIndex:newRow] objectForKey:kTypeKey];
+			while([rowType isEqualToString:@"Add"])
 			{
-				newRow = dataSourceArray.count - 1;
+				if(--newRow < 0)
+				{
+					newRow = lyricsDataArray.count - 1;
+				}
+				rowType = [[lyricsDataArray objectAtIndex:newRow] objectForKey:kTypeKey];
 			}
-			rowType = [[dataSourceArray objectAtIndex:newRow] objectForKey:kTypeKey];
-		}
-		
-		NSIndexPath *newSelection = [NSIndexPath indexPathForRow:newRow inSection:0];
+			
+			NSIndexPath *newSelection = [NSIndexPath indexPathForRow:newRow inSection:0];
 
-		NSArray *visibleCells = [karaokeTable indexPathsForVisibleRows];
-		if(![visibleCells containsObject:newSelection])
-		{
-			[karaokeTable scrollToRowAtIndexPath:newSelection atScrollPosition:UITableViewScrollPositionMiddle animated:NO];
+			NSArray *visibleCells = [karaokeTable indexPathsForVisibleRows];
+			if(![visibleCells containsObject:newSelection])
+			{
+				[karaokeTable scrollToRowAtIndexPath:newSelection atScrollPosition:UITableViewScrollPositionMiddle animated:NO];
+			}
+			
+			[karaokeTable selectRowAtIndexPath:newSelection animated:YES scrollPosition:UITableViewScrollPositionMiddle];
+			[self tableView:karaokeTable didSelectRowAtIndexPath:newSelection];
+			
+			self.activeCell = (KaraokeTableCell*)[karaokeTable cellForRowAtIndexPath:newSelection];
+			
+			[activeCell.time becomeFirstResponder];
 		}
-        
-        [karaokeTable selectRowAtIndexPath:newSelection animated:YES scrollPosition:UITableViewScrollPositionMiddle];
-        [self tableView:karaokeTable didSelectRowAtIndexPath:newSelection];
-		
-		self.activeCell = (KaraokeTableCell*)[karaokeTable cellForRowAtIndexPath:newSelection];
-		
-        [activeCell.time becomeFirstResponder];
-    }
-    else if(editingTextField.tag == 2)	// Time field
-    {
-		NSArray *visibleCells = [karaokeTable indexPathsForVisibleRows];
-		if(![visibleCells containsObject:curCellPath])
+		else if(editingTextField.tag == 2)	// Time field
 		{
-			[karaokeTable scrollToRowAtIndexPath:curCellPath atScrollPosition:UITableViewScrollPositionMiddle animated:NO];
-		}
-		
-		[karaokeTable selectRowAtIndexPath:curCellPath animated:YES scrollPosition:UITableViewScrollPositionMiddle];
-		[self tableView:karaokeTable didSelectRowAtIndexPath:curCellPath];
+			NSArray *visibleCells = [karaokeTable indexPathsForVisibleRows];
+			if(![visibleCells containsObject:curCellPath])
+			{
+				[karaokeTable scrollToRowAtIndexPath:curCellPath atScrollPosition:UITableViewScrollPositionMiddle animated:NO];
+			}
+			
+			[karaokeTable selectRowAtIndexPath:curCellPath animated:YES scrollPosition:UITableViewScrollPositionMiddle];
+			[self tableView:karaokeTable didSelectRowAtIndexPath:curCellPath];
 
-		self.activeCell = (KaraokeTableCell*)[karaokeTable cellForRowAtIndexPath:curCellPath];
-		
-        [activeCell.words becomeFirstResponder];
-    }
+			self.activeCell = (KaraokeTableCell*)[karaokeTable cellForRowAtIndexPath:curCellPath];
+			
+			[activeCell.words becomeFirstResponder];
+		}
+	}
 }
 
 #pragma mark - doNextTextField
 - (IBAction) doNextTextField:(id)sender
 {
-	if(dataSourceArray.count == 1)
-	{
-		return;
+	if(editingTextField.tag > 100)
+    {
+		SaveKaraokeAlertView *alert = (SaveKaraokeAlertView*)[editingTextField superview];
+		[alert goNextTextField];
 	}
-
-	KaraokeTableCell *curCell = (KaraokeTableCell*)[[editingTextField superview] superview];
-	NSIndexPath *curCellPath = [NSIndexPath indexPathForRow:curCell.tag inSection:0];
-
-    if(editingTextField.tag == 1)	// Words field
-    {
-		NSArray *visibleCells = [karaokeTable indexPathsForVisibleRows];
-		if(![visibleCells containsObject:curCellPath])
+	else
+	{
+		if(lyricsDataArray.count == 1)
 		{
-			[karaokeTable scrollToRowAtIndexPath:curCellPath atScrollPosition:UITableViewScrollPositionMiddle animated:NO];
+			return;
 		}
 
-		[karaokeTable selectRowAtIndexPath:curCellPath animated:YES scrollPosition:UITableViewScrollPositionMiddle];
-		[self tableView:karaokeTable didSelectRowAtIndexPath:curCellPath];
+		KaraokeTableCell *curCell = (KaraokeTableCell*)[[editingTextField superview] superview];
+		NSIndexPath *curCellPath = [NSIndexPath indexPathForRow:curCell.tag inSection:0];
 
-		self.activeCell = (KaraokeTableCell*)[karaokeTable cellForRowAtIndexPath:curCellPath];
-		
-        [activeCell.time becomeFirstResponder];
-    }
-    else if(editingTextField.tag == 2)	// Time field
-    {
-		NSInteger newRow = curCellPath.row < dataSourceArray.count - 1 ? curCellPath.row + 1 : 0;
-		NSString *rowType = [[dataSourceArray objectAtIndex:newRow] objectForKey:kTypeKey];
-		while([rowType isEqualToString:@"Add"])
+		if(editingTextField.tag == 1)	// Words field
 		{
-			if(++newRow >= dataSourceArray.count - 1)
+			NSArray *visibleCells = [karaokeTable indexPathsForVisibleRows];
+			if(![visibleCells containsObject:curCellPath])
 			{
-				newRow = 0;
+				[karaokeTable scrollToRowAtIndexPath:curCellPath atScrollPosition:UITableViewScrollPositionMiddle animated:NO];
 			}
-			rowType = [[dataSourceArray objectAtIndex:newRow] objectForKey:kTypeKey];
+
+			[karaokeTable selectRowAtIndexPath:curCellPath animated:YES scrollPosition:UITableViewScrollPositionMiddle];
+			[self tableView:karaokeTable didSelectRowAtIndexPath:curCellPath];
+
+			self.activeCell = (KaraokeTableCell*)[karaokeTable cellForRowAtIndexPath:curCellPath];
+			
+			[activeCell.time becomeFirstResponder];
 		}
-		
-		NSIndexPath *newSelection = [NSIndexPath indexPathForRow:newRow inSection:0];
-		
-		NSArray *visibleCells = [karaokeTable indexPathsForVisibleRows];
-		if(![visibleCells containsObject:newSelection])
+		else if(editingTextField.tag == 2)	// Time field
 		{
-			[karaokeTable scrollToRowAtIndexPath:newSelection atScrollPosition:UITableViewScrollPositionMiddle animated:NO];
+			NSInteger newRow = curCellPath.row < lyricsDataArray.count - 1 ? curCellPath.row + 1 : 0;
+			NSString *rowType = [[lyricsDataArray objectAtIndex:newRow] objectForKey:kTypeKey];
+			while([rowType isEqualToString:@"Add"])
+			{
+				if(++newRow >= lyricsDataArray.count - 1)
+				{
+					newRow = 0;
+				}
+				rowType = [[lyricsDataArray objectAtIndex:newRow] objectForKey:kTypeKey];
+			}
+			
+			NSIndexPath *newSelection = [NSIndexPath indexPathForRow:newRow inSection:0];
+			
+			NSArray *visibleCells = [karaokeTable indexPathsForVisibleRows];
+			if(![visibleCells containsObject:newSelection])
+			{
+				[karaokeTable scrollToRowAtIndexPath:newSelection atScrollPosition:UITableViewScrollPositionMiddle animated:NO];
+			}
+			
+			[karaokeTable selectRowAtIndexPath:newSelection animated:YES scrollPosition:UITableViewScrollPositionMiddle];
+			[self tableView:karaokeTable didSelectRowAtIndexPath:newSelection];
+			
+			self.activeCell = (KaraokeTableCell*)[karaokeTable cellForRowAtIndexPath:newSelection];
+			
+			[activeCell.words becomeFirstResponder];
 		}
-        
-        [karaokeTable selectRowAtIndexPath:newSelection animated:YES scrollPosition:UITableViewScrollPositionMiddle];
-        [self tableView:karaokeTable didSelectRowAtIndexPath:newSelection];
-		
-		self.activeCell = (KaraokeTableCell*)[karaokeTable cellForRowAtIndexPath:newSelection];
-		
-        [activeCell.words becomeFirstResponder];
 	}
 }
 
@@ -409,9 +656,9 @@
 {
     if([sourceIndexPath row] != [destinationIndexPath row])
     {
-        NSLog(@"moveRowAtIndexPath from %d to %d", [sourceIndexPath row], [destinationIndexPath row]);
+		// NSLog(@"moveRowAtIndexPath from %d to %d", [sourceIndexPath row], [destinationIndexPath row]);
         
-        [dataSourceArray exchangeObjectAtIndex:[sourceIndexPath row] withObjectAtIndex:[destinationIndexPath row]];
+        [lyricsDataArray exchangeObjectAtIndex:[sourceIndexPath row] withObjectAtIndex:[destinationIndexPath row]];
     }
 }
 
@@ -422,9 +669,9 @@
     {
         case UITableViewCellEditingStyleDelete:
         {
-            NSLog(@"commitEditingStyle: Delete row %d", [indexPath row]);
+            // NSLog(@"commitEditingStyle: Delete row %d", [indexPath row]);
             
-            [dataSourceArray removeObjectAtIndex:[indexPath row]];
+            [lyricsDataArray removeObjectAtIndex:[indexPath row]];
 
             if([indexPath row] == [karaokeTable indexPathForCell:activeCell].row)
             {
@@ -443,10 +690,10 @@
             
         case UITableViewCellEditingStyleInsert:
         {
-            NSLog(@"commitEditingStyle: Insert row %d", [indexPath row]);
+            // NSLog(@"commitEditingStyle: Insert row %d", [indexPath row]);
             
             id obj = [NSDictionary dictionaryWithObjectsAndKeys:@"Normal", kTypeKey, @"", kWordsKey, [NSNumber numberWithDouble:0.0], kTimeKey, nil];
-            [dataSourceArray insertObject:obj atIndex:[indexPath row]];
+            [lyricsDataArray insertObject:obj atIndex:[indexPath row]];
             
             NSArray *rowArray = [NSArray arrayWithObject:indexPath];
             [karaokeTable insertRowsAtIndexPaths:rowArray withRowAnimation:UITableViewRowAnimationMiddle];
@@ -478,7 +725,7 @@
     // Determine the editing style based on whether the cell is a placeholder for adding content or already
     // existing content. Existing content can be deleted.
     NSUInteger row = [indexPath row];
-    NSDictionary *rowDict = [dataSourceArray objectAtIndex:row];
+    NSDictionary *rowDict = [lyricsDataArray objectAtIndex:row];
     assert(rowDict != nil);
     NSString *rowType = [rowDict objectForKey:kTypeKey];
     assert(rowType != nil);
@@ -504,15 +751,15 @@
     if(self.isEditing)
     {
         id obj = [NSDictionary dictionaryWithObjectsAndKeys:@"Add", kTypeKey, nil];
-        [dataSourceArray addObject:obj];
+        [lyricsDataArray addObject:obj];
     }
     else
     {
         NSPredicate *filter = [NSPredicate predicateWithFormat:@"typeKey = 'Add'"];
-        NSArray *fakeRowArr = [dataSourceArray filteredArrayUsingPredicate:filter];
+        NSArray *fakeRowArr = [lyricsDataArray filteredArrayUsingPredicate:filter];
         if([fakeRowArr count] > 0)
         {
-            [dataSourceArray removeObject:[fakeRowArr objectAtIndex:0]];
+            [lyricsDataArray removeObject:[fakeRowArr objectAtIndex:0]];
         }
     }
     
@@ -522,7 +769,7 @@
 
 - (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    NSDictionary *rowDict = [dataSourceArray objectAtIndex:[indexPath row]];
+    NSDictionary *rowDict = [lyricsDataArray objectAtIndex:[indexPath row]];
     assert(rowDict != nil);
     NSString *rowType = [rowDict objectForKey:kTypeKey];
     assert(rowType != nil);    
@@ -593,18 +840,21 @@
 
 - (void) textFieldDidBeginEditing:(UITextField *)textField
 {
-	KaraokeTableCell *curCell = (KaraokeTableCell*)[[textField superview] superview];
-	NSIndexPath *curCellPath = [NSIndexPath indexPathForRow:curCell.tag inSection:0];
-	
-	NSArray *visibleCells = [karaokeTable indexPathsForVisibleRows];
-	if(![visibleCells containsObject:curCellPath])
-	{
-		[karaokeTable scrollToRowAtIndexPath:curCellPath atScrollPosition:UITableViewScrollPositionMiddle animated:NO];
+	if(textField.tag < 100)
+	{	
+		KaraokeTableCell *curCell = (KaraokeTableCell*)[[textField superview] superview];
+		NSIndexPath *curCellPath = [NSIndexPath indexPathForRow:curCell.tag inSection:0];
+		
+		NSArray *visibleCells = [karaokeTable indexPathsForVisibleRows];
+		if(![visibleCells containsObject:curCellPath])
+		{
+			[karaokeTable scrollToRowAtIndexPath:curCellPath atScrollPosition:UITableViewScrollPositionMiddle animated:NO];
+		}
+		
+		[karaokeTable selectRowAtIndexPath:curCellPath animated:YES scrollPosition:UITableViewScrollPositionMiddle];
+		[self tableView:karaokeTable didSelectRowAtIndexPath:curCellPath];
 	}
 	
-	[karaokeTable selectRowAtIndexPath:curCellPath animated:YES scrollPosition:UITableViewScrollPositionMiddle];
-	[self tableView:karaokeTable didSelectRowAtIndexPath:curCellPath];
-		
     editingTextField = textField;
     
     [textField setInputAccessoryView:keyboardToolbar];
@@ -619,7 +869,7 @@
         NSString *text = textField.text;
         if(text.length == 0)
         {
-            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error!" message:@"The Text can't be empty" delegate:self
+            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error!" message:@"The Text can't be empty" delegate:nil
                                                   cancelButtonTitle:@"OK" otherButtonTitles:nil];
             [alert show];
  
@@ -633,8 +883,8 @@
         double value = [text doubleValue];
         if(text.length == 0 || (value < 0.0 || value > 300))
         {
-            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error!" message:@"The value for the Time must be defined and between 0 and 300 seconds."
-                                                           delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error!" message:@"The value for the Time must be defined and between 0 and 300 seconds"
+                                                           delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
             [alert show];
             return NO;
         }
@@ -646,37 +896,40 @@
 
 - (void) textFieldDidEndEditing:(UITextField*)textField
 {
-	KaraokeTableCell *cell = (KaraokeTableCell*)[[textField superview] superview];
-    NSIndexPath *cellPath = [NSIndexPath indexPathForRow:cell.tag inSection:0];
-	assert(cellPath != nil);
+	if(textField.tag < 100)
+	{
+		KaraokeTableCell *cell = (KaraokeTableCell*)[[textField superview] superview];
+		NSIndexPath *cellPath = [NSIndexPath indexPathForRow:cell.tag inSection:0];
+		assert(cellPath != nil);
 
-	if(textField.tag == 1)
-    {
-        NSMutableDictionary *rowDict = [NSMutableDictionary dictionaryWithDictionary:[dataSourceArray objectAtIndex:[cellPath row]]];
-        assert(rowDict != nil);
-		if(![textField.text isEqualToString:[rowDict objectForKey:kWordsKey]])
+		if(textField.tag == 1)
 		{
-			[rowDict setObject:textField.text forKey:kWordsKey];
-			[dataSourceArray setObject:[NSDictionary dictionaryWithDictionary:rowDict] atIndexedSubscript:[cellPath row]];
+			NSMutableDictionary *rowDict = [NSMutableDictionary dictionaryWithDictionary:[lyricsDataArray objectAtIndex:[cellPath row]]];
+			assert(rowDict != nil);
+			if(![textField.text isEqualToString:[rowDict objectForKey:kWordsKey]])
+			{
+				[rowDict setObject:textField.text forKey:kWordsKey];
+				[lyricsDataArray setObject:[NSDictionary dictionaryWithDictionary:rowDict] atIndexedSubscript:[cellPath row]];
+			}
 		}
-    }
-    else if(textField.tag == 2)
-    {
-        NSMutableDictionary *rowDict = [NSMutableDictionary dictionaryWithDictionary:[dataSourceArray objectAtIndex:[cellPath row]]];
-        assert(rowDict != nil);
-		NSString *timeStr = [[rowDict objectForKey:kTimeKey] stringValue];
-		if(![textField.text isEqualToString:timeStr])
+		else if(textField.tag == 2)
 		{
-			[rowDict setObject:[NSNumber numberWithDouble:[textField.text doubleValue]] forKey:kTimeKey];
-			[dataSourceArray setObject:[NSDictionary dictionaryWithDictionary:rowDict] atIndexedSubscript:[cellPath row]];
+			NSMutableDictionary *rowDict = [NSMutableDictionary dictionaryWithDictionary:[lyricsDataArray objectAtIndex:[cellPath row]]];
+			assert(rowDict != nil);
+			NSString *timeStr = [[rowDict objectForKey:kTimeKey] stringValue];
+			if(![textField.text isEqualToString:timeStr])
+			{
+				[rowDict setObject:[NSNumber numberWithDouble:[textField.text doubleValue]] forKey:kTimeKey];
+				[lyricsDataArray setObject:[NSDictionary dictionaryWithDictionary:rowDict] atIndexedSubscript:[cellPath row]];
+			}
 		}
-    }
+	}
 }
 
 
 - (BOOL) textFieldShouldReturn:(UITextField*)textField
 {
-    NSLog(@"textFieldShouldReturn: %@", textField.text);
+    // NSLog(@"textFieldShouldReturn: %@", textField.text);
     
     [textField resignFirstResponder];
     
@@ -712,7 +965,7 @@
     if(tableBarItem.leftBarButtonItem == tableBarEditButton)
     {
         [self setEditing:YES];                              // Set the controller as editing
-        [karaokeTable setEditing:YES animated:YES];    // Set the table editing
+        [karaokeTable setEditing:YES animated:YES];			// Set the table editing
 
         [tableBarItem setLeftBarButtonItem:tableBarDoneButton];
         
@@ -731,8 +984,8 @@
 	}
     else
     {
-        [self setEditing:NO];                              // Set the controller as editing
-        [karaokeTable setEditing:NO animated:YES];    // Set the table editing
+        [self setEditing:NO];							// Set the controller as editing
+        [karaokeTable setEditing:NO animated:YES];		// Set the table editing
 
         [tableBarItem setLeftBarButtonItem:tableBarEditButton];
 
@@ -752,18 +1005,70 @@
 
 - (IBAction) doSaveLyricsFile:(id)sender
 {
-	UIAlertView * alert = [[UIAlertView alloc] initWithTitle:@"Save Lyric" message:@"Please enter Title and Author" delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"Save", nil];
-	alert.alertViewStyle = UIAlertViewStyleLoginAndPasswordInput; // Two edit fields
+	NSDictionary *error = [self checkKaraokeData:lyricsDataArray];
+	if(error != nil)
+	{
+		NSMutableString *msg = [NSMutableString stringWithString:@"There is one or more errors in the karaoke data.\r"];
+		if([[error objectForKey:@"kErrorNumber"] integerValue] == 1)
+		{
+			[msg appendString:[NSString stringWithFormat:@"The Text of row %d is longer than 128 characters.",
+							   [[error objectForKey:@"kErrorRow"] integerValue]]];
+		}
+		else
+		{
+			[msg appendString:[NSString stringWithFormat:@"The Time of row %d is lower or equal to the Time of the previous row.",
+							   [[error objectForKey:@"kErrorRow"] integerValue]]];
+		}
+		UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
+		[alert show];
+		[alert release];
+		
+		return;
+	}
+
+	SaveKaraokeAlertView *alert = [[SaveKaraokeAlertView alloc] initWithTitle:@"Save Lyrics File"
+																message:@"Please enter at least the Title\n\n\n\n\n"
+																delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"Save", nil];
 	
-	UITextField * titleTextField = [alert textFieldAtIndex:0];
-	titleTextField.keyboardType = UIKeyboardTypeDefault;
-	titleTextField.placeholder = @"Title";
+	UITextField *titleField = [[UITextField alloc] initWithFrame:CGRectMake(12, 74, 260, 26)];
+	titleField.borderStyle = UITextBorderStyleLine;
+	titleField.backgroundColor = [UIColor whiteColor];
+	titleField.delegate	= self;
+	titleField.tag = 101;
+	titleField.autocorrectionType = UITextAutocorrectionTypeNo;
+	titleField.placeholder = @"Title";
+	titleField.text = [self getLyricsTag:@"ti"];
 	
-	UITextField * artistTextField = [alert textFieldAtIndex:1];
-	[artistTextField setSecureTextEntry:NO];
-	artistTextField.keyboardType = UIKeyboardTypeDefault;
-	artistTextField.placeholder = @"Artist";
+	UITextField *artistField = [[UITextField alloc] initWithFrame:CGRectMake(12, 99, 260, 26)];
+	artistField.borderStyle = UITextBorderStyleLine;
+	artistField.backgroundColor = [UIColor whiteColor];
+	artistField.delegate = self;
+	artistField.tag = 102;
+	artistField.autocorrectionType = UITextAutocorrectionTypeNo;
+	artistField.placeholder = @"Artist";
+	artistField.text = [self getLyricsTag:@"ar"];
+
+	UITextField *authorField = [[UITextField alloc] initWithFrame:CGRectMake(12, 124, 260, 26)];
+	authorField.borderStyle = UITextBorderStyleLine;
+	authorField.backgroundColor = [UIColor whiteColor];
+	authorField.delegate = self;
+	authorField.tag = 103;
+	authorField.autocorrectionType = UITextAutocorrectionTypeNo;
+	authorField.placeholder = @"Author";
+	authorField.text = [self getLyricsTag:@"au"];
+
+	[alert addSubview:titleField];
+	[alert addSubview:artistField];
+	[alert addSubview:authorField];
+
+	NSString *input = [[alert textFieldAtIndex:0] text];
+    if([input length] < 1 || [input length] > 64)
+    {
+        [[alert buttonAtIndex:1] setEnabled:NO];
+    }
 	
+	[titleField becomeFirstResponder];
+
 	[alert show];
 	[alert release];
 }
@@ -771,6 +1076,13 @@
 
 - (void) alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex;
 {
+	if(alertView.tag == 100)
+	{
+		return;
+	}
+
+	((SaveKaraokeAlertView*)alertView).dontDismiss = NO;
+
 	if(buttonIndex == 0)
 	{
 		return;
@@ -790,10 +1102,61 @@
 */
 	NSString *title = [alertView textFieldAtIndex:0].text;
 	NSString *artist = [alertView textFieldAtIndex:1].text;
-	NSData *fileContent = [self lyricsToFileData:dataSourceArray title:title artist:artist];
-	
+	NSString *author = [alertView textFieldAtIndex:2].text;
 	NSString *fileName = [NSString stringWithFormat:@"%@.lrc", title];
 	NSString *filePath = [userDocDirPath stringByAppendingPathComponent:fileName];
+
+	if([fileMgr fileExistsAtPath:filePath])
+	{
+		NSString *msg = [NSString stringWithFormat:@"There is already a Lyrics File called \"%@\".\rDo you want to replace it?", title];
+		NSInteger btnIndex = [ModalAlert ModalAlertWithTitle:@"Save Lyrics File" text:msg firstButton:@"Cancel" secondButton:@"Replace"];
+		if(btnIndex == 0)
+		{
+			((SaveKaraokeAlertView*)alertView).dontDismiss = YES;
+			return;
+		}
+	}
+	
+	// Replace the tags below with values input from the alertView...
+	NSInteger fieldsSet = 0;
+	for(NSMutableDictionary *tagDict in lyricsTagArray)
+	{
+		NSString *tag = [tagDict objectForKey:kTagKey];
+		if(title.length != 0 && [tag isEqualToString:@"ti"])
+		{
+			[tagDict setObject:title forKey:kTextKey];
+			fieldsSet |= 1;
+		}
+		else if(artist.length != 0 && [tag isEqualToString:@"ar"])
+		{
+			[tagDict setObject:artist forKey:kTextKey];
+			fieldsSet |= 2;
+		}
+		else if(author.length != 0 && [tag isEqualToString:@"au"])
+		{
+			[tagDict setObject:author forKey:kTextKey];
+			fieldsSet |= 4;
+		}
+	}
+	
+	if(title.length != 0 && !(fieldsSet & 1))
+	{
+		NSMutableDictionary *tagDict = [NSMutableDictionary dictionaryWithObjectsAndKeys:@"ti", kTagKey, title, kTextKey, nil];
+		[lyricsTagArray addObject:tagDict];
+	}
+	if(artist.length != 0 && !(fieldsSet & 2))
+	{
+		NSMutableDictionary *tagDict = [NSMutableDictionary dictionaryWithObjectsAndKeys:@"ar", kTagKey, artist, kTextKey, nil];
+		[lyricsTagArray addObject:tagDict];
+	}
+	if(author.length != 0 && !(fieldsSet & 4))
+	{
+		NSMutableDictionary *tagDict = [NSMutableDictionary dictionaryWithObjectsAndKeys:@"au", kTagKey, author, kTextKey, nil];
+		[lyricsTagArray addObject:tagDict];
+	}
+	
+	NSData *fileContent = [self lyricsToFileData:lyricsDataArray];
+	
 	if(![fileMgr createFileAtPath:filePath contents:fileContent attributes:nil])
 	{
 		NSLog(@"Can't create file %@", filePath);
@@ -804,17 +1167,36 @@
 }
 
 
-- (BOOL) alertViewShouldEnableFirstOtherButton:(UIAlertView*)alertView
+- (BOOL) textField:(UITextField*)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString*)string
 {
-    NSString *input = [[alertView textFieldAtIndex:0] text];
-    if([input length] < 1 || [input length] > 50)
-    {
-        return NO;
-    }
-    else
-    {
-        return YES;
-    }
+	if(textField.tag == 101)
+	{
+		SaveKaraokeAlertView *alert = (SaveKaraokeAlertView*)[textField superview];
+		
+		NSMutableString *text = [NSMutableString stringWithString:[textField text]];
+		[text replaceCharactersInRange:range withString:string];
+		
+		if([text length] < 1 || [text length] > 64)
+		{
+			UIButton *btn = [alert buttonAtIndex:1];
+			
+			[btn setEnabled:NO];
+		}
+		else
+		{
+			UIButton *btn = [alert buttonAtIndex:1];
+
+			[btn setEnabled:YES];
+		}
+	}
+	
+	return YES;
+}
+
+
+- (void) alertViewCancel:(UIAlertView*)alertView
+{
+	[alertView dismissWithClickedButtonIndex:0 animated:YES];
 }
 
 
@@ -842,7 +1224,7 @@
 	{
 		NSString *lyricTitle = [lyricFiles objectAtIndex:[selectedIndex integerValue]];	
 		karaokeTitle.text = lyricTitle;
-		
+				
 		NSString *lyricFile = [NSString stringWithFormat:@"%@.lrc", lyricTitle];		
 		if([self fileDataToLyrics:lyricFile])
 		{
@@ -851,6 +1233,9 @@
 	}
 	else if(reference == deleteFileButton)
 	{
+#pragma message "Confirmation before deleting"
+#pragma message "Also fix crash when file picker is empty"
+
  		NSString *lyricFile = [NSString stringWithFormat:@"%@.lrc", [lyricFiles objectAtIndex:[selectedIndex integerValue]]];
 		NSString *filePath = [userDocDirPath stringByAppendingPathComponent:lyricFile];
 		if([[NSFileManager defaultManager] removeItemAtPath:filePath error:nil])
@@ -861,9 +1246,27 @@
 }
 
 
+- (NSString*) getLyricsTag:(NSString*)tag
+{
+	if(tag != nil)
+	{
+		for(NSDictionary *tagDict in lyricsTagArray)
+		{
+			if([tag isEqualToString:[tagDict objectForKey:kTagKey]])
+			{
+				return [tagDict objectForKey:kTextKey];
+			}
+		}
+	}
+	
+	return nil;
+}
+
+
 - (BOOL) fileDataToLyrics:(NSString*)fileName
 {
-	NSMutableArray *lyrics = [NSMutableArray array];
+	[lyricsDataArray removeAllObjects];
+	[lyricsTagArray removeAllObjects];
 	
 	NSString *filePath = [userDocDirPath stringByAppendingPathComponent:fileName];
 	NSString *fileData = [NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:nil];
@@ -884,8 +1287,6 @@
 		{
 			continue;
 		}
-		
-		// NSLog(@"%@", row);
 
 		NSScanner *rowScan = [NSScanner scannerWithString:row];
 		NSString *timeStr = nil;
@@ -908,18 +1309,35 @@
 
 		if(timeStr != nil)
 		{
-			// Ignore all tag defined (checked on wikipedia "LRC (file format)" article)
-			if([timeStr rangeOfString:@"ar:"].location == 0 ||
-			   [timeStr rangeOfString:@"al:"].location == 0 ||
-			   [timeStr rangeOfString:@"ti:"].location == 0 ||
+			// Ignore all tag defined. Checked on wikipedia "LRC (file format)" article.
+			if([timeStr rangeOfString:@"ti:"].location == 0 ||
+			   [timeStr rangeOfString:@"ar:"].location == 0 ||
 			   [timeStr rangeOfString:@"au:"].location == 0 ||
+			   [timeStr rangeOfString:@"al:"].location == 0 ||
 			   [timeStr rangeOfString:@"length:"].location == 0 ||
 			   [timeStr rangeOfString:@"by:"].location == 0 ||
 			   [timeStr rangeOfString:@"offset:"].location == 0 ||
 			   [timeStr rangeOfString:@"re:"].location == 0 ||
 			   [timeStr rangeOfString:@"ve:"].location == 0)
 			{
-				[rowScan scanUpToCharactersFromSet:[NSCharacterSet newlineCharacterSet] intoString:&words];
+				NSScanner *tagScan = [NSScanner scannerWithString:timeStr];
+
+				NSString *tag = nil;
+				[tagScan scanUpToString:@":" intoString:&tag];
+				if(tag.length != 0)
+				{
+					[tagScan setScanLocation:[tagScan scanLocation] + 1];
+					
+					NSString *text = nil;
+					[tagScan scanUpToString:@"" intoString:&text];
+					if(tag.length != 0)
+					{
+						NSMutableDictionary *tagDict = [NSMutableDictionary dictionaryWithObjectsAndKeys:tag, kTagKey, text, kTextKey, nil];
+						[lyricsTagArray addObject:tagDict];
+					}
+				}
+				
+				continue;
 			}
 			else
 			{
@@ -949,15 +1367,13 @@
 		
 		words = [words stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
 		
-		// NSLog(@"time:%g words:%@", time, words);
 		NSDictionary *lyric = [NSDictionary dictionaryWithObjectsAndKeys:@"Normal", kTypeKey, [NSNumber numberWithFloat:time], kTimeKey, words, kWordsKey, nil];
-		[lyrics addObject:lyric];
+		[lyricsDataArray addObject:lyric];
 	}
 	
-	self.dataSourceArray = lyrics;
 	[karaokeTable reloadData];
 	
-	return (lyrics.count > 0);
+	return (lyricsDataArray.count > 0);
 }
 
 
@@ -974,6 +1390,8 @@
 	[dateReader setDateFormat:@"mm:ss:SS"];
 	NSDate *startDate = [dateReader dateFromString:@"00:00:00"];
 	
+	NSTimeInterval time = 3.0;
+
 	NSArray *rows = [string componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
 	for(NSString *row in rows)
 	{
@@ -982,11 +1400,8 @@
 			continue;
 		}
 		
-		// NSLog(@"%@", row);
-		
 		NSScanner *rowScan = [NSScanner scannerWithString:row];
 		NSString *timeStr = nil;
-		NSTimeInterval time = 0.0;
 		NSString *words = nil;
 		
 		if([row characterAtIndex:0] == '[')
@@ -997,19 +1412,15 @@
 			{
 				[rowScan scanUpToCharactersFromSet:validCharsSet intoString:nil];
 			}
-			else
-			{
-				time = nil;
-			}
 		}
 		
 		if(timeStr != nil)
 		{
 			// Ignore all tag defined (checked on wikipedia "LRC (file format)" article)
-			if([timeStr rangeOfString:@"ar:"].location == 0 ||
-			   [timeStr rangeOfString:@"al:"].location == 0 ||
-			   [timeStr rangeOfString:@"ti:"].location == 0 ||
+			if([timeStr rangeOfString:@"ti:"].location == 0 ||
+			   [timeStr rangeOfString:@"ar:"].location == 0 ||
 			   [timeStr rangeOfString:@"au:"].location == 0 ||
+			   [timeStr rangeOfString:@"al:"].location == 0 ||
 			   [timeStr rangeOfString:@"length:"].location == 0 ||
 			   [timeStr rangeOfString:@"by:"].location == 0 ||
 			   [timeStr rangeOfString:@"offset:"].location == 0 ||
@@ -1046,9 +1457,10 @@
 		
 		words = [words stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
 		
-		// NSLog(@"time:%g words:%@", time, words);
 		NSDictionary *lyric = [NSDictionary dictionaryWithObjectsAndKeys:@"Normal", kTypeKey, [NSNumber numberWithFloat:time], kTimeKey, words, kWordsKey, nil];
 		[lyrics addObject:lyric];
+		
+		time += 3.0;
 	}
 	
 	NSInteger insertRow = 0;
@@ -1058,7 +1470,7 @@
 	}
 	else
 	{
-		for(NSDictionary *row in dataSourceArray)
+		for(NSDictionary *row in lyricsDataArray)
 		{
 			if([[row objectForKey:kTypeKey] isEqualToString:@"Add"])
 			{
@@ -1071,7 +1483,7 @@
 		
 	for(NSDictionary *row in lyrics)
 	{
-		[dataSourceArray insertObject:row atIndex:insertRow++];
+		[lyricsDataArray insertObject:row atIndex:insertRow++];
 	}
 	
 	[karaokeTable reloadData];
@@ -1080,19 +1492,16 @@
 }
 
 
-- (NSData*) lyricsToFileData:(NSArray*)lyricsArray title:(NSString*)title artist:(NSString*)artist
+- (NSData*) lyricsToFileData:(NSArray*)lyricsArray
 {
 	NSMutableData *fileData = [NSMutableData data];
-
-	if([title length] > 0)
-	{
-		NSString *rowStr = [NSString stringWithFormat:@"[ti:%@]\r", title];
-		[fileData appendData:[rowStr dataUsingEncoding:NSUTF8StringEncoding]];
-	}
 	
-	if([artist length] > 0)
+	for(NSDictionary *tagDict in lyricsTagArray)
 	{
-		NSString *rowStr = [NSString stringWithFormat:@"[ar:%@]\r", artist];
+		NSString *tag = [tagDict objectForKey:kTagKey];
+		NSString *text = [tagDict objectForKey:kTextKey];
+		NSString *rowStr = [NSString stringWithFormat:@"[%@:%@]\r", tag, text];
+
 		[fileData appendData:[rowStr dataUsingEncoding:NSUTF8StringEncoding]];
 	}
 	
@@ -1114,6 +1523,11 @@
 		float seconds = [[lyricDict objectForKey:kTimeKey] floatValue];
 		NSString *words = [lyricDict objectForKey:kWordsKey];
 		
+		if(seconds == 0.0 || words.length == 0)
+		{
+			continue;
+		}
+
 		NSDate *time = [startDate dateByAddingTimeInterval:seconds];
 		NSString *timeStr = [timeFormat stringFromDate:time];
 		
@@ -1147,15 +1561,18 @@
 {
 	karaokeTitle.text = @"Untitled";
 
-	[dataSourceArray removeAllObjects];
-	[dataSourceArray addObject:[NSDictionary dictionaryWithObjectsAndKeys:@"Add", kTypeKey, nil]];
+	[lyricsDataArray removeAllObjects];
+	[lyricsDataArray addObject:[NSDictionary dictionaryWithObjectsAndKeys:@"Add", kTypeKey, nil]];
+	
+	[lyricsTagArray removeAllObjects];
+
 	[karaokeTable reloadData];
 }
 
 
 - (IBAction) doCopyLyrics:(id)sender
 {
-	NSData *content = [self lyricsToFileData:dataSourceArray title:nil artist:nil];
+	NSData *content = [self lyricsToFileData:lyricsDataArray];
 	NSString *strData = [[[NSString alloc] initWithData:content encoding:NSUTF8StringEncoding] autorelease];
 	
 	UIPasteboard *pasteBoard = [UIPasteboard generalPasteboard];
@@ -1179,9 +1596,73 @@
 
 - (IBAction) doDeleteLyrics:(id)sender
 {
-	[dataSourceArray removeAllObjects];
-	[dataSourceArray addObject:[NSDictionary dictionaryWithObjectsAndKeys:@"Add", kTypeKey, nil]];
+	[lyricsDataArray removeAllObjects];
+	[lyricsDataArray addObject:[NSDictionary dictionaryWithObjectsAndKeys:@"Add", kTypeKey, nil]];
+	
+	[lyricsTagArray removeAllObjects];
+	
 	[karaokeTable reloadData];
+}
+
+
+- (NSDictionary*) checkKaraokeData:(NSArray*)lyricsArray
+{
+	NSInteger row = 0;
+	float prevSeconds = -0.1;
+	
+	for(NSDictionary *lyricDict in lyricsArray)
+	{
+		row++;
+		
+		NSString *type = [lyricDict objectForKey:kTypeKey];
+		if([type isEqualToString:@"Add"])
+		{
+			continue;
+		}
+		
+		NSString *words = [lyricDict objectForKey:kWordsKey];
+		if(words.length > 128)
+		{
+			NSDictionary *error = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInteger:row], @"kErrorRow" , [NSNumber numberWithInteger:1], @"kErrorNumber", nil];
+			return error;
+		}
+
+		float seconds = [[lyricDict objectForKey:kTimeKey] floatValue];
+		if(seconds != 0.0 and seconds <= prevSeconds)
+		{
+			NSDictionary *error = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInteger:row], @"kErrorRow" , [NSNumber numberWithInteger:2], @"kErrorNumber", nil];
+			return error;
+		}
+				
+		prevSeconds = seconds;
+	}
+	
+	return nil;
+}
+
+
+- (BOOL) writeKaraokeToFile:(NSArray*)karaokeData filePath:(NSString*)path
+{
+	NSMutableArray *data = [NSMutableArray arrayWithArray:karaokeData];
+	
+	NSMutableArray *dataToRemove = [NSMutableArray array];
+	
+	for(NSDictionary *lyricDict in data)
+	{
+		if([lyricDict isKindOfClass:[NSDictionary class]])
+		{			
+			NSString *words = [lyricDict objectForKey:kWordsKey];
+			float seconds = [[lyricDict objectForKey:kTimeKey] floatValue];		
+			if(seconds == 0.0 || words.length == 0)
+			{
+				[dataToRemove addObject:lyricDict];
+			}
+		}
+	}
+	
+	[data removeObjectsInArray:dataToRemove];
+
+	return [data writeToFile:path atomically:YES];
 }
 
 

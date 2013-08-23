@@ -5,7 +5,6 @@
 //  Created by Luca Severini on 6/1/2012.
 //
 
-#import <Foundation/Foundation.h>
 #import <AudioToolbox/AudioFile.h>
 #import <sys/time.h>
 
@@ -86,7 +85,7 @@
 
 - (void) freeStuff;     // Free the buffers just in case they contain some data
 
-- (NSMutableData*) ReadAudioData:(NSURL*)audioFileURL;
+- (NSMutableData*) readAudioData:(NSURL*)audioFileURL;
 
 @end
 

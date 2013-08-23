@@ -19,7 +19,7 @@ void propListener (void *inClientData, AudioSessionPropertyID inID, UInt32 inDat
 	// RemoteIOPlayer *THIS = (RemoteIOPlayer*)inClientData;
 	if(inID == kAudioSessionProperty_AudioRouteChange)
     {
-        NSLog(@"Property Listener: kAudioSessionProperty_AudioRouteChange");
+        // NSLog(@"Property Listener: kAudioSessionProperty_AudioRouteChange");
 		
 		NSDictionary *routeChangeDictionary = (NSDictionary*)inData;
 		// NSLog(@"routeChangeDictionary: %@", routeChangeDictionary);
@@ -29,21 +29,31 @@ void propListener (void *inClientData, AudioSessionPropertyID inID, UInt32 inDat
 		for(id output in newRouteOutputs)
 		{
 			NSString *outputsName = [output objectForKey:@"RouteDetailedDescription_UID"];
+			// NSLog(@"RouteDetailedDescription_UID: %@", outputsName);
+			
 			if([outputsName isEqualToString:@"Wired Headphones"])
 			{
 				NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 				if([defaults boolForKey:@"autoSetAudioInputOn"])
 				{
-					MusicAppDelegate *appDelegate = [MusicAppDelegate shared];
+					MusicAppDelegate *appDelegate = [MusicAppDelegate sharedInstance];
 					[appDelegate.djMixerViewController enableAudioInput];
 				}
 			}
 			else if([outputsName isEqualToString:@"Built-In Receiver"])
 			{
+				// Set output to internal (bottom) speaker
+				UInt32 audioRouteOverride = kAudioSessionOverrideAudioRoute_Speaker;
+				OSStatus status = AudioSessionSetProperty(kAudioSessionProperty_OverrideAudioRoute, sizeof (audioRouteOverride), &audioRouteOverride);
+				if(status != noErr)
+				{
+					NSLog(@"Could not override the audio route to internal speaker");
+				}
+				
 				NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 				if([defaults boolForKey:@"autoSetAudioInputOn"])
 				{
-					MusicAppDelegate *appDelegate = [MusicAppDelegate shared];
+					MusicAppDelegate *appDelegate = [MusicAppDelegate sharedInstance];
 					[appDelegate.djMixerViewController disableAudioInput];
 				}
 			}
@@ -58,7 +68,7 @@ void propListener (void *inClientData, AudioSessionPropertyID inID, UInt32 inDat
 
 void rioInterruptionListener (void *inClientData, UInt32 inInterruption)
 {
-	NSLog(@"%s", inInterruption == kAudioSessionBeginInterruption ? "Begin Interruption" : "End Interruption");
+	// NSLog(@"%s", inInterruption == kAudioSessionBeginInterruption ? "Begin Interruption" : "End Interruption");
 	
 	if(inInterruption == kAudioSessionEndInterruption) 
     {
@@ -374,7 +384,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 		bufferList->mBuffers[i].mDataByteSize = (packetsInBuffer * 2);    // 16bit packets
         
 		bufferList->mBuffers[i].mData = malloc(bufferList->mBuffers[i].mDataByteSize);
-        NSAssert(bufferList->mBuffers[i].mData != NULL, @"Memory Allocation Error.");
+        NSAssert(bufferList->mBuffers[i].mData != NULL, @"Memory Allocation Error");
         inputAudioData = (UInt16*)bufferList->mBuffers[i].mData;
 	}
 }
@@ -436,14 +446,18 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	{
 		// NSLog(@"Channel %d fader:%.1f", channel, volume);
 	}
-	else
+	else if(channel == 9)
 	{
 		// NSLog(@"Playback fader:%.1f", volume);
 	}
+	else if(channel == 0)
+	{
+		// NSLog(@"Sequencer fader:%.1f", volume);
+	}
 	
-	// set the volume levels on the two input channels to the crossfader
-	OSStatus err = AudioUnitSetParameter(crossFaderMixer, kMultiChannelMixerParam_Volume, kAudioUnitScope_Input, channel, volume, 0);
-    NSAssert(err == noErr, @"Error setting Cross Fader");
+	// Set the volume levels on the two input channels to the crossfader
+	OSStatus status = AudioUnitSetParameter(crossFaderMixer, kMultiChannelMixerParam_Volume, kAudioUnitScope_Input, channel, volume, 0);
+    NSAssert1(status == noErr, @"Error %ld setting Cross Fader", status);
 }
 
 
@@ -544,6 +558,8 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 
 - (void) startPlay
 {
+	NSLog(@"DJMixer Start:");
+
     OSStatus status = noErr;
     
 	Boolean graphRunning;
@@ -551,7 +567,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	if(!graphRunning)
 	{        
         packetIndex = 0;
-		durationPacketsIndex = playPosition * 44100.0;
+		durationPacketsIndex = playPosition * kSamplingRate;
 
 		[playback start]; // Start Playback channel
 		
@@ -569,7 +585,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 		[NSThread sleepForTimeInterval:0.1];
 
 		status = AUGraphStart(graph);
-		NSAssert(status == noErr, @"Error starting graph.");
+		NSAssert1(status == noErr, @"Error %ld starting graph", status);
 	}
 
 	status = AudioOutputUnitStart(output);
@@ -592,6 +608,8 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 
 - (void) stopPlay
 {
+	NSLog(@"DJMixer Stop:");
+	
 	OSStatus status = noErr;
 
 	//status = AudioOutputUnitStop(masterFaderMixer);
@@ -615,7 +633,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	if(graphRunning)
 	{
         status = AUGraphStop(graph);
-        NSAssert(status == noErr, @"Error stopping graph.");
+        NSAssert1(status == noErr, @"Error %ld stopping graph", status);
         
 		[playback stop];	// Stop Playback channel
 		
@@ -629,6 +647,8 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
                 [channels[idx] stop];
             }
         }
+		
+		[sequencer.operation setStartPlayPosition:playPosition reset:YES];
 /*
 		// Set next start position to stop position
         for(int idx = 0; idx < kNumChannels; idx++)
@@ -661,7 +681,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
     UInt32 inputAvailable = 0;
     UInt32 size = sizeof(inputAvailable);
     OSStatus status = AudioSessionGetProperty(kAudioSessionProperty_AudioInputAvailable, &size, &inputAvailable);
-	NSAssert(status == noErr, @"Error getting property kAudioSessionProperty_AudioInputAvailable.");
+	NSAssert(status == noErr, @"Error getting property kAudioSessionProperty_AudioInputAvailable");
 	if(inputAvailable == 0)
     {
 		missingAudioInput = YES;
@@ -675,38 +695,41 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	UInt32 otherAudioIsPlaying = 0;
     size = sizeof(otherAudioIsPlaying);
     status = AudioSessionGetProperty(kAudioSessionProperty_OtherAudioIsPlaying, &size, &otherAudioIsPlaying);
-	NSAssert(status == noErr, @"Error getting property kAudioSessionProperty_OtherAudioIsPlaying.");
+	NSAssert(status == noErr, @"Error getting property kAudioSessionProperty_OtherAudioIsPlaying");
 	if(otherAudioIsPlaying != 0)
     {
         NSLog(@"Other Audio Software is Playing");
  	}
  
     status = AudioSessionAddPropertyListener(kAudioSessionProperty_AudioRouteChange, propListener, self);
-	NSAssert(status == noErr, @"Error adding kAudioSessionProperty_AudioRouteChange property listener.");
+	NSAssert(status == noErr, @"Error adding kAudioSessionProperty_AudioRouteChange property listener");
 
     // we also need to listen to see if input availability changes
     status = AudioSessionAddPropertyListener(kAudioSessionProperty_AudioInputAvailable, propListener, self);
-	NSAssert(status == noErr, @"Error adding kAudioSessionProperty_AudioInputAvailable property listener.");
+	NSAssert(status == noErr, @"Error adding kAudioSessionProperty_AudioInputAvailable property listener");
  
 	Float64 sampleRate;
-	sampleRate = 44100.0; // Supports and changes to 22050.0 or 48000.0 too!
+	sampleRate = kSamplingRate; // Supports and changes to 22050.0 or 48000.0 too!
 	status = AudioSessionSetProperty(kAudioSessionProperty_PreferredHardwareSampleRate, sizeof(sampleRate), &sampleRate);
+	NSAssert(status == noErr, @"Error setting kAudioSessionProperty_PreferredHardwareSampleRate property");
 	
 	size = sizeof(sampleRate);
 	status = AudioSessionGetProperty(kAudioSessionProperty_CurrentHardwareSampleRate, &size, &sampleRate);
+	NSAssert(status == noErr, @"Error getting kAudioSessionProperty_CurrentHardwareSampleRate property");
 	NSLog(@"Device sample rate %f", sampleRate);
 
 	// Set preferred hardward buffer size of 1024; part of assumptions in callbacks
-	Float32 preferredBufferSize = (double)packetsInBuffer / 44100.0;
+	Float32 preferredBufferSize = (double)packetsInBuffer / kSamplingRate;
 	status = AudioSessionSetProperty(kAudioSessionProperty_PreferredHardwareIOBufferDuration, sizeof(preferredBufferSize), &preferredBufferSize);
-	NSAssert(status == noErr, @"Error setting io buffer duration.");
+	NSAssert(status == noErr, @"Error setting io buffer duration");
 
     Float32 ioBufferSize;
 	size = sizeof(ioBufferSize);
 	status = AudioSessionGetProperty(kAudioSessionProperty_CurrentHardwareIOBufferDuration, &size, &ioBufferSize);
+	NSAssert(status == noErr, @"Error getting kAudioSessionProperty_CurrentHardwareIOBufferDuration property");
 	NSLog(@"Hardware buffer size %f", ioBufferSize);
 	
-	// set the audio category
+	// Set the audio category
 	UInt32 audioCategory = kAudioSessionCategory_PlayAndRecord;
 	AudioSessionSetProperty(kAudioSessionProperty_AudioCategory, sizeof(audioCategory), &audioCategory);
 	
@@ -716,17 +739,28 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	{
 		NSLog(@"Could not get kAudioSessionCategory_PlayAndRecord");
 	}
-    
+	
+	if(![self headsetPluggedIn])
+	{
+		// Set output to internal (bottom) speaker
+		UInt32 audioRouteOverride = kAudioSessionOverrideAudioRoute_Speaker;
+		status = AudioSessionSetProperty(kAudioSessionProperty_OverrideAudioRoute, sizeof(audioRouteOverride), &audioRouteOverride);
+		if(status != noErr)
+		{
+			NSLog(@"Could not override the audio route to internal speaker");
+		}
+	}
+		
     UInt32 numchannels;
 	size = sizeof(numchannels);
 	// Problematic: gives number of potential inputs, not number actually connected
 	status = AudioSessionGetProperty(kAudioSessionProperty_CurrentHardwareInputNumberChannels, &size, &numchannels);
-	NSAssert(status == noErr, @"Error getting number input channels.");
+	NSAssert(status == noErr, @"Error getting number input channels");
 	NSLog(@"Input Channels %ld", numchannels);
 	
 	size = sizeof(numchannels);
 	status = AudioSessionGetProperty(kAudioSessionProperty_CurrentHardwareOutputNumberChannels, &size, &numchannels);
-	NSAssert(status == noErr, @"Error getting number output channels.");
+	NSAssert(status == noErr, @"Error getting number output channels");
 	NSLog(@"Output Channels %ld", numchannels);
      
 	// The descriptions for the components
@@ -736,7 +770,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	
 	// The graph
 	status = NewAUGraph(&graph);
-	NSAssert(status == noErr, @"Error creating graph.");
+	NSAssert(status == noErr, @"Error creating graph");
 
 	// the cross fader mixer
 	crossFaderMixerDescription.componentFlags = 0;
@@ -745,7 +779,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	crossFaderMixerDescription.componentSubType = kAudioUnitSubType_MultiChannelMixer;
 	crossFaderMixerDescription.componentManufacturer = kAudioUnitManufacturer_Apple;
 	status = AUGraphAddNode(graph, &crossFaderMixerDescription, &crossFaderMixerNode);
-	NSAssert(status == noErr, @"Error creating mixer node.");
+	NSAssert(status == noErr, @"Error creating mixer node");
 		
 	// the master mixer
 	masterFaderDescription.componentFlags = 0;
@@ -754,7 +788,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	masterFaderDescription.componentSubType = kAudioUnitSubType_MultiChannelMixer;
 	masterFaderDescription.componentManufacturer = kAudioUnitManufacturer_Apple;
 	status = AUGraphAddNode(graph, &masterFaderDescription, &masterMixerNode);
-	NSAssert(status == noErr, @"Error creating mixer node.");
+	NSAssert(status == noErr, @"Error creating mixer node");
 	
 	// the output
 	outputDescription.componentFlags = 0;
@@ -763,17 +797,22 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	outputDescription.componentSubType = kAudioUnitSubType_RemoteIO;
 	outputDescription.componentManufacturer = kAudioUnitManufacturer_Apple;
 	status = AUGraphAddNode(graph, &outputDescription, &outputNode);
-	NSAssert(status == noErr, @"Error creating output node.");
+	NSAssert(status == noErr, @"Error creating output node");
 	
 	status = AUGraphOpen(graph);
-	NSAssert(status == noErr, @"Error opening graph.");
+	NSAssert(status == noErr, @"Error opening graph");
 	
-	// Gget the cross fader
+	// Get the cross fader
 	status = AUGraphNodeInfo(graph, crossFaderMixerNode, &crossFaderMixerDescription, &crossFaderMixer);
+	NSAssert(status == noErr, @"Error AUGraphNodeInfo for Cross Fader");
+	
 	// Get the master fader
 	status = AUGraphNodeInfo(graph, masterMixerNode, &masterFaderDescription, &masterFaderMixer);
+	NSAssert(status == noErr, @"Error AUGraphNodeInfo for Master Fader");
+	
 	// Get the output
 	status = AUGraphNodeInfo(graph, outputNode, &outputDescription, &output);
+	NSAssert(status == noErr, @"Error AUGraphNodeInfo for Output");
  
     // Enable output node for recording
 	UInt32 kInputBus = 1;
@@ -784,11 +823,11 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 								  kInputBus,
 								  &flag,
 								  sizeof(flag));
-	NSAssert(status == noErr, @"Error enabling output node for recording.");
+	NSAssert(status == noErr, @"Error enabling output node for recording");
 
 	// Will be used by code below for defining bufferList, critical that this is set-up second
 	// Describe input format; not stereo for audio input!
-	audioFormat.mSampleRate			= 44100.0;
+	audioFormat.mSampleRate			= kSamplingRate;
 	audioFormat.mFormatID			= kAudioFormatLinearPCM;
 	audioFormat.mFormatFlags		= kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
 	audioFormat.mFramesPerPacket	= 1;
@@ -804,7 +843,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 								  kInputBus,
 								  &audioFormat,
 								  sizeof(audioFormat));
-	NSAssert(status == noErr, @"Error setting input audio format.");
+	NSAssert(status == noErr, @"Error setting input audio format");
 	
 	// Set input callback
 	AURenderCallbackStruct callbackStruct;
@@ -818,11 +857,12 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 								  kInputBus,
 								  &callbackStruct,
 								  sizeof(callbackStruct));
-	NSAssert(status == noErr, @"Error setting input audio callback.");
+	NSAssert(status == noErr, @"Error setting input audio callback");
     
-    UInt32 elementsCount = 8 + 1 + 1;   // sequencer + 8 channels + playback
+    UInt32 elementsCount = 1 + 8 + 1;   // Sequencer + 8 Channels + Playback
     UInt32 dataSize = sizeof(UInt32);
 	status = AudioUnitSetProperty(crossFaderMixer, kAudioUnitProperty_ElementCount, kAudioUnitScope_Input, 0, &elementsCount, dataSize);
+	NSAssert(status == noErr, @"Error setting kAudioUnitProperty_ElementCount Input property");
 		
 	// The cross fader mixer
 	AURenderCallbackStruct callbackCrossFader;
@@ -835,7 +875,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 		status = AUGraphSetNodeInputCallback(graph, crossFaderMixerNode, idx, &callbackCrossFader);
 		if(status != noErr)
 		{
-			NSString *msg = [NSString stringWithFormat:@"Error setting render callback Cross Fader for channel %d.", idx];
+			NSString *msg = [NSString stringWithFormat:@"Error setting render callback Cross Fader for channel %d", idx];
 			NSLog(@"%@", msg);
 			NSAssert(status == noErr, msg);
 		}
@@ -848,10 +888,10 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	playbackCallbackStruct.inputProcRefCon = self;
 	
 	status = AUGraphSetNodeInputCallback(graph, outputNode, 0, &playbackCallbackStruct);
-	NSAssert(status == noErr, @"Error setting effects callback.");
+	NSAssert(status == noErr, @"Error setting effects callback");
 			
 	// Describe output format
-	audioFormat.mSampleRate			= 44100.0;
+	audioFormat.mSampleRate			= kSamplingRate;
 	audioFormat.mFormatID			= kAudioFormatLinearPCM;
 	audioFormat.mFormatFlags		= kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
 	audioFormat.mFramesPerPacket	= 1;
@@ -866,7 +906,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 							   0, 
 							   &audioFormat, 
 							   sizeof(audioFormat));
-	NSAssert(status == noErr, @"Error setting RIO input property.");
+	NSAssert(status == noErr, @"Error kAudioUnitProperty_StreamFormat Input property of Output");
 	
 	// Set the master fader input properties
 	status = AudioUnitSetProperty(masterFaderMixer,
@@ -875,7 +915,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 							   0, 
 							   &audioFormat, 
 							   sizeof(audioFormat));
-	NSAssert(status == noErr, @"Error setting Master Fader property.");
+	NSAssert(status == noErr, @"Error setting kAudioUnitProperty_StreamFormat Input property of Master Fader");
 	
 	// Set the master fader input properties
 	status = AudioUnitSetProperty(masterFaderMixer,
@@ -884,7 +924,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 							   0, 
 							   &audioFormat, 
 							   sizeof(audioFormat));
-	NSAssert(status == noErr, @"Error setting Master Fader property.");
+	NSAssert(status == noErr, @"Error setting kAudioUnitProperty_StreamFormat Output property of Master Fader");
 	
 	// Set the crossfader output properties
 	status = AudioUnitSetProperty(crossFaderMixer,
@@ -893,7 +933,7 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 							   0, 
 							   &audioFormat, 
 							   sizeof(audioFormat));
-	NSAssert(status == noErr, @"Error setting output property format.");
+	NSAssert(status == noErr, @"Error setting kAudioUnitProperty_StreamFormat Output property of Cross Fader");
 
 	// Set the crossfader input properties
 	for(int idx = 0; idx < elementsCount; idx++)
@@ -906,14 +946,14 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 									  sizeof(audioFormat));
 		if(status != noErr)
 		{
-			NSString *msg = [NSString stringWithFormat:@"Error setting Cross Fader input property format for channel %d.", idx];
+			NSString *msg = [NSString stringWithFormat:@"Error setting Cross Fader input property format for channel %d", idx];
 			NSLog(@"%@", msg);
 			NSAssert(status == noErr, msg);
 		}
 	}
 
 	status = AUGraphInitialize(graph);
-	NSAssert(status == noErr, @"Error initializing graph.");
+	NSAssert1(status == noErr, @"Error %ld initializing graph", status);
 }
 
 
@@ -954,6 +994,23 @@ static OSStatus recordingCallback (void* inRefCon, AudioUnitRenderActionFlags* i
 	}
 
 	playPosition = time;
+}
+
+- (BOOL) headsetPluggedIn
+{
+    UInt32 routeSize = sizeof(CFStringRef);
+    CFStringRef route;	
+    OSStatus status = AudioSessionGetProperty (kAudioSessionProperty_AudioRoute, &routeSize, &route);
+    if (status ==  noErr && (route != NULL))
+	{
+        NSRange headphoneRange = [(NSString*)route rangeOfString:@"Head"];
+        if(headphoneRange.location != NSNotFound)
+		{
+			return YES;
+		}
+    }
+	
+    return NO;
 }
 
 @end

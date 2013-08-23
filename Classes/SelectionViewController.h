@@ -5,8 +5,6 @@
 //  Created by Luca Severini on 6/1/2012.
 //
 
-#import <UIKit/UIKit.h>
-#import <MediaPlayer/MediaPlayer.h>
 
 @class UICheckBox;
 @class FileTableController;

@@ -5,18 +5,17 @@
 //  Created by Luca Severini on 6/1/2012.
 //
 
+
+#import <objc/runtime.h>
 #import "MusicAppAppDelegate.h"
 #import "DJMixer.h"
 #import "DJMixerViewController.h"
 #import "SettingsViewController.h"
 #import "SelectionViewController.h"
-#import "CoreText/CoreText.h"
 #import "UITextScroll.h"
 #import "Karaoke.h"
 #import "LoadAudioOperation.h"
 #import "SequencerOperation.h"
-#import "AudioToolbox/AudioToolbox.h"
-#import <objc/runtime.h>
 
 
 @interface UIButton (SequencerExtension)
@@ -69,14 +68,14 @@ static const char *kAssociationKey = "RecTime";
 @synthesize channel8Label;
 @synthesize audioInputLabel;
 @synthesize playButton;
-@synthesize pauseSwitch;
+@synthesize pauseButton;
 @synthesize selectButton;
 @synthesize karaokeButton;
 @synthesize karaokeText;
 @synthesize karaokeActivated;
 
 @synthesize playButtonLS;
-@synthesize pauseSwitchLS;
+@synthesize pauseButtonLS;
 @synthesize selectButtonLS;
 @synthesize karaokeButtonLS;
 @synthesize karaokeTextLS;
@@ -91,6 +90,8 @@ static const char *kAssociationKey = "RecTime";
 @synthesize recordingPlayLS;
 @synthesize recordingShiftLS;
 @synthesize recordingEnableLS;
+@synthesize sequencerLabelLS;
+@synthesize sequencerSliderLS;
 
 @synthesize djMixer;
 @synthesize karaoke;
@@ -150,7 +151,8 @@ static const char *kAssociationKey = "RecTime";
 						channel6Label, @"Channel-6",
 						channel7Label, @"Channel-7",
 						channel8Label, @"Channel-8",
-						audioInputLabel, @"Playback", nil];
+						audioInputLabel, @"Playback",
+						sequencerLabelLS, @"Sequencer", nil];
 	
 	channelSliders = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
 						channel1Slider, @"Channel-1",
@@ -161,7 +163,8 @@ static const char *kAssociationKey = "RecTime";
 						channel6Slider, @"Channel-6",
 						channel7Slider, @"Channel-7",
 						channel8Slider, @"Channel-8",
-						audioInputSlider, @"Playback", nil];
+						audioInputSlider, @"Playback",
+						sequencerSliderLS, @"Sequencer", nil];
 }
 
 
@@ -171,7 +174,7 @@ static const char *kAssociationKey = "RecTime";
  
     [self saveControlsValue];
     
-    if(self.karaoke != nil)
+    if(karaoke != nil)
     {
         if(karaokeTimer != nil)
         {
@@ -182,8 +185,8 @@ static const char *kAssociationKey = "RecTime";
         [self.karaokeButton setHighlighted:NO];
         [self.karaokeButtonLS setHighlighted:NO];
 
-        [self.karaoke release];
-        self.karaoke = nil;
+        [karaoke release];
+        karaoke = nil;
     }
 	
 	[positionSliderLS removeTarget:self action:@selector(setPlayPositionEnded:) forControlEvents:UIControlEventTouchUpInside];
@@ -198,12 +201,18 @@ static const char *kAssociationKey = "RecTime";
 	[sequencerButtons removeAllObjects];
 	
 	selectedRecording = nil;
+	
+	textOffset = [karaokeText contentOffset];
+	textOffsetLS = [karaokeTextLS contentOffset];
 }
 
 
 - (void) viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+
+	[karaokeText setContentOffset:textOffset];
+	[karaokeTextLS setContentOffset:textOffsetLS];
 
     int totLoadedChannels = 0;
     
@@ -230,10 +239,14 @@ static const char *kAssociationKey = "RecTime";
 			{
 				[djMixer.channels[idx] removeLoadOperation]; // Remove the previous operation if present
 				
-				LoadAudioOperation *loadOperation = [[LoadAudioOperation alloc] initWithAudioFile:url];
+				// ** IMPORTANT!! *****************************************
+				// Verify if [[obj retain] autorelease] it works corrreclty
+				// ********************************************************
+				LoadAudioOperation *loadOperation = [[[[LoadAudioOperation alloc] initWithAudioFile:url] retain] autorelease];
 				if(loadOperation != nil)
 				{
 					[djMixer.loadAudioQueue addOperation:loadOperation];
+					
 					[djMixer.channels[idx] setLoadOperation:loadOperation mixer:djMixer];
 				}
 				else
@@ -242,9 +255,9 @@ static const char *kAssociationKey = "RecTime";
 				}
 			}
 		}
-		
-		UILabel *label = [channelLabels objectForKey:channelStr];
+
 		UISlider *slider = [channelSliders objectForKey:channelStr];
+		UILabel *label = [channelLabels objectForKey:channelStr];
 		
 		if(djMixer.channels[idx].loaded)
 		{
@@ -287,7 +300,7 @@ static const char *kAssociationKey = "RecTime";
 
 	// Find a better way to compute duration and durationPackets internally to DJMixer
 	djMixer.duration = maxDuration;
-	djMixer.durationPackets = maxDuration * 44100.0;
+	djMixer.durationPackets = maxDuration * kSamplingRate;
 	
 	[djMixer setStartPosition:0.0 reset:NO];
 	
@@ -315,12 +328,26 @@ static const char *kAssociationKey = "RecTime";
 	{
 		[self disableAudioInput];
 	}
+	
+	// Init the Sequencer channel
+	NSString *channelStr = @"Sequencer";
+	NSDictionary *channelDict = [defaults objectForKey:channelStr];
+	if(channelDict != nil)
+	{
+		double sliderValue = [[channelDict objectForKey:@"AudioVolume"] doubleValue];
+		
+		UISlider *slider = [channelSliders objectForKey:channelStr];
+		[slider setEnabled:YES];
+		[slider setValue:sliderValue];
+		
+		[djMixer changeCrossFaderAmount:sliderValue forChannel:0];
+	}
 /*
     [playButton setEnabled:(totLoadedChannels != 0)];
     [playButtonLS setEnabled:(totLoadedChannels != 0)];
 */
-    [pauseSwitch setEnabled:NO];
-    [pauseSwitchLS setEnabled:NO];
+    [pauseButton setEnabled:NO];
+    [pauseButtonLS setEnabled:NO];
    	
 	// Seems better to use applicationDidEnterBackground in app delegate
     // [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationWillResignActive:) name:UIApplicationWillResignActiveNotification object:nil];
@@ -422,6 +449,10 @@ static const char *kAssociationKey = "RecTime";
 	{
 		channel = 9;
 	}
+	else if([channelStr isEqualToString:@"Sequencer"])
+	{
+		channel = 0;
+	}
 	else
 	{
 		NSScanner *scanner = [NSScanner scannerWithString:channelStr];
@@ -465,11 +496,11 @@ static const char *kAssociationKey = "RecTime";
         [selectButton setEnabled:YES];
         [selectButtonLS setEnabled:YES];
         
-        [pauseSwitch setEnabled:NO];       
-        [pauseSwitchLS setEnabled:NO];
+        [pauseButton setEnabled:NO];
+        [pauseButtonLS setEnabled:NO];
         
-        [pauseSwitch setOn:NO];
-        [pauseSwitchLS setOn:NO];
+        [pauseButton setHighlighted:NO];
+        [pauseButtonLS setHighlighted:NO];
     }
     else
     {
@@ -496,8 +527,8 @@ static const char *kAssociationKey = "RecTime";
         [selectButton setEnabled:NO];
         [selectButtonLS setEnabled:NO];
         
-        [pauseSwitch setEnabled:YES];
-        [pauseSwitchLS setEnabled:YES];
+        [pauseButton setEnabled:YES];
+        [pauseButtonLS setEnabled:YES];
     }
 }
 
@@ -506,7 +537,7 @@ static const char *kAssociationKey = "RecTime";
 {
     if(!self.isPortrait)
     {
-		UIAlertView *anAlert = [[UIAlertView alloc] initWithTitle:@"Error!"  message:@"The Settings can be accessed only with the Screen in Portrait orientation."
+		UIAlertView *anAlert = [[UIAlertView alloc] initWithTitle:@"Error!"  message:@"The Settings can be accessed only with the Screen in Portrait orientation"
                                                          delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
 		[anAlert show];        
         return;
@@ -526,9 +557,22 @@ static const char *kAssociationKey = "RecTime";
 }
 
 
-- (IBAction) doPause:(UISwitch*)sender
+- (IBAction) doPause:(UIButton*)sender
 {
-    [djMixer pause:sender.on];
+	if([djMixer paused])
+	{
+		[djMixer pause:NO];
+
+		[pauseButton setHighlighted:NO];
+		[pauseButtonLS setHighlighted:NO];
+	}
+	else
+	{
+		[djMixer pause:YES];
+		
+		[self performSelector:@selector(doHighlight:) withObject:pauseButton afterDelay:0];
+		[self performSelector:@selector(doHighlight:) withObject:pauseButtonLS afterDelay:0];
+	}
 }
 
 
@@ -568,8 +612,13 @@ static const char *kAssociationKey = "RecTime";
 			[self recordStop];
 		}
 		
-		[checkPositionTimer setFireDate:[NSDate distantFuture]];
+		if(karaokeActivated)
+		{		
+			[karaokeTimer setFireDate:[NSDate distantFuture]];
+		}
 		
+		[checkPositionTimer setFireDate:[NSDate distantFuture]];
+
 		// ADD A TIMER to check Slider value. If it remains the same for a little then play audio from there...
 
 		// NSLog(@"Set current play position to %.1f", playPosition);
@@ -578,17 +627,6 @@ static const char *kAssociationKey = "RecTime";
 	{
 		// NSLog(@"Set start position to %.1f", playPosition);
 	}
-}
-
-
-- (void) updateRecView
-{
-	double percent = (double)djMixer.durationPackets / (double)djMixer.savingFilePackets;
-	CGFloat totalWidth = positionSliderLS.bounds.size.width - 20.0;
-	CGFloat barWidth = (totalWidth / percent);
-	CGRect frame = sequencerRecViewLS.frame;
-	frame.size.width = ceil(barWidth);
-	[sequencerRecViewLS setFrame:frame];
 }
 
 
@@ -616,7 +654,7 @@ static const char *kAssociationKey = "RecTime";
 	else
 	{
 		UInt32 totalPackets = [djMixer getTotalPackets];
-		djMixer.playPosition = (double)totalPackets / 44100.0;	
+		djMixer.playPosition = (double)totalPackets / kSamplingRate;
 		double sliderPosition = 1.0 / (djMixer.duration / djMixer.playPosition);
 		
 		if(fabs(positionSliderLS.value - sliderPosition) > 0.0001) // Don't go inside here if nothing gonna displayed different...
@@ -644,6 +682,19 @@ static const char *kAssociationKey = "RecTime";
 
 		[checkPositionTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:PLAYPOSITION_TIMER_FREQUENCY]];
 	}
+	
+	[self karaokeSetPosition:playPosition];
+}
+
+
+- (void) updateRecView
+{
+	double percent = (double)djMixer.durationPackets / (double)djMixer.savingFilePackets;
+	CGFloat totalWidth = positionSliderLS.bounds.size.width - 20.0;
+	CGFloat barWidth = (totalWidth / percent);
+	CGRect frame = sequencerRecViewLS.frame;
+	frame.size.width = ceil(barWidth);
+	[sequencerRecViewLS setFrame:frame];
 }
 
 
@@ -1026,7 +1077,7 @@ static const char *kAssociationKey = "RecTime";
 	{
 		NSLog(@"Error %@ in AVAudioPlayer initialization", [error description]);
 		
-		NSString *msg = [NSString stringWithFormat:@"The audio file %@ can't be played.\rError %@.", fileName, [error description]];
+		NSString *msg = [NSString stringWithFormat:@"The audio file %@ can't be played.\rError %@", fileName, [error description]];
 		alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
 		[alert show];
 		
@@ -1037,7 +1088,7 @@ static const char *kAssociationKey = "RecTime";
 	
 	if(![audioPlayer prepareToPlay] || [audioPlayer duration] == 0.0)
 	{
-		NSString *msg = [NSString stringWithFormat:@"The audio file %@ is empty or unplayable.", fileName ];
+		NSString *msg = [NSString stringWithFormat:@"The audio file %@ is empty or unplayable", fileName ];
 		alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
 		[alert show];
 		
@@ -1058,7 +1109,7 @@ static const char *kAssociationKey = "RecTime";
 		[audioPlayer release];
 		audioPlayer = nil;
 		
-		NSString *msg = [NSString stringWithFormat:@"The audio file %@ can't be played.", fileName ];
+		NSString *msg = [NSString stringWithFormat:@"The audio file %@ can't be played", fileName ];
 		alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
 		[alert show];
 	}
@@ -1194,7 +1245,7 @@ static const char *kAssociationKey = "RecTime";
 	
 	if([self checkDiskSize:NO] < 10)
 	{
-		NSString *msg = @"Is not possible to start recording with less than 10 Mib of free space.";
+		NSString *msg = @"Is not possible to start recording with less than 10 Mib of free space";
 		alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
 		[alert show];
 		return;
@@ -1204,7 +1255,7 @@ static const char *kAssociationKey = "RecTime";
 	
 	AudioStreamBasicDescription stereoStreamFormat;
 	memset(&stereoStreamFormat, 0, sizeof(stereoStreamFormat));
-    stereoStreamFormat.mSampleRate        = 44100.0;
+    stereoStreamFormat.mSampleRate        = kSamplingRate;
     stereoStreamFormat.mFormatID          = kAudioFormatLinearPCM;
     stereoStreamFormat.mFormatFlags       = kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
     stereoStreamFormat.mFramesPerPacket   = 1;
@@ -1218,7 +1269,7 @@ static const char *kAssociationKey = "RecTime";
 	
 	if(fileType == kAudioFileCAFType || fileType == kAudioFileWAVEType)
 	{
-		dstFormat.mSampleRate =       44100.0;
+		dstFormat.mSampleRate =       kSamplingRate;
 		dstFormat.mFormatID =         kAudioFormatLinearPCM;
 		dstFormat.mFormatFlags =      kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
 		dstFormat.mFramesPerPacket =  1;
@@ -1329,7 +1380,7 @@ static const char *kAssociationKey = "RecTime";
 		
 		NSInteger startPacket = djMixer.savingFileStartPacket;
 		NSInteger endPacket = startPacket + djMixer.savingFilePackets;
-		double duration = (double)(endPacket - startPacket) / 44100.0;
+		double duration = (double)(endPacket - startPacket) / kSamplingRate;
 				
 		NSString *fileName = [filePath lastPathComponent];
 		NSString *fileExt = [fileName pathExtension];
@@ -1382,7 +1433,8 @@ static const char *kAssociationKey = "RecTime";
 		NSString *recordsPList = [userDocDirPath stringByAppendingPathComponent:@"Records.plist"];
 		[djMixer.sequencer.operation setRecords:recordsPList];
 		
-		[djMixer.sequencer.operation reset];
+		NSUInteger packetPosition = djMixer.playPosition * kSamplingRate;
+		[djMixer.sequencer.operation reset:packetPosition];
 
 		if(wasActive && sortedRecords.count > 0)
 		{
@@ -1411,7 +1463,7 @@ static const char *kAssociationKey = "RecTime";
 			[self recordStop];
 		}
 		
-		NSString *msg = @"Is not possible to start recording with less than 10 Mib of free space.";
+		NSString *msg = @"Is not possible to start recording with less than 10 Mib of free space";
 		alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
 		[alert show];
 	}
@@ -1446,86 +1498,101 @@ static const char *kAssociationKey = "RecTime";
     }
     else
     {
-        [self karaokeStart];
+       [self karaokeStart:djMixer.playPosition];
     }
 }
 
 
 - (void) karaokeStep
 {
-	BOOL advanced = [self.karaoke advanceRedRow];
-	if(advanced)
+	BOOL rowAdvanced = [karaoke advanceRedRow];
+	if(rowAdvanced)
 	{
 		// Do for Portrait
-		[karaokeText setAttributedText:self.karaoke.attribText];
+		[karaokeText setAttributedText:karaoke.attribText];
 			
 		CGPoint position = [karaokeText contentOffset];                
-		CGFloat LINE_HEIGHT = 20.2f;  // Line height is fixed for now (find a way for get it from used font).
-		position.y += LINE_HEIGHT;
+		position.y += (karaoke.font.lineHeight * karaoke.advancedRows);
 
 		[karaokeText setContentOffset:position animated:YES];
 
 		// Do for Landscape
-		[karaokeTextLS setAttributedText:self.karaoke.attribTextLS];
+		[karaokeTextLS setAttributedText:karaoke.attribTextLS];
 
 		position = [karaokeTextLS contentOffset];                
-		CGFloat LINE_HEIGHT_LS = 31.0f;  // Line height is fixed for now (find a way for get it from used font).
-		position.y += LINE_HEIGHT_LS;
+		position.y += (karaoke.fontLS.lineHeight * karaoke.advancedRowsLS);
 			
 		[karaokeTextLS setContentOffset:position animated:YES];
 	}
-	else
-	{
-		[self karaokeStop];
-		
-		return;
-	}
      
-    if(++self.karaoke.step < self.karaoke.time.count)
+    if(karaoke.step < karaoke.time.count)
     {
-        NSTimeInterval newInterval = [[self.karaoke.time objectAtIndex:self.karaoke.step] doubleValue];
-        NSDate *fireDate = [NSDate dateWithTimeIntervalSinceNow:newInterval];
-        [karaokeTimer setFireDate:fireDate];
+        NSTimeInterval newInterval = [[karaoke.time objectAtIndex:karaoke.step] doubleValue];
+        [karaokeTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:newInterval]];
     }
     else
     {
-        [self karaokeStop];
+        [karaokeTimer setFireDate:[NSDate distantFuture]];
     }
 }
 
 
-- (void) karaokeStart
+- (void) karaokeStart:(NSTimeInterval)startPosition
 {
-    [karaokeText setAttributedText:nil];
+	NSLog(@"karaokeStart: %g", startPosition);
+
+	[karaokeText setAttributedText:nil];
     [karaokeTextLS setAttributedText:nil];
     
     NSString *karaokePList = [userDocDirPath stringByAppendingPathComponent:@"KaraokeData.plist"];
-    if([[NSFileManager defaultManager] fileExistsAtPath:karaokePList])
-    {
-        NSLog(@"Karaoke file %@ is available", karaokePList);
-        
-        NSArray *data = [NSArray arrayWithContentsOfFile:karaokePList];
-        self.karaoke = [[Karaoke alloc] initKaraoke:data];
-    }
-    else
+    if(![[NSFileManager defaultManager] fileExistsAtPath:karaokePList])
     {
         NSLog(@"Karaoke file %@ is missing", karaokePList);
+		return;
     }
 
-    [self.karaoke resetRedRow];
+	NSLog(@"Karaoke file %@ is available", karaokePList);
+	
+	if(karaoke != nil)
+	{
+		[karaoke release];
+		karaoke = nil;
+	}
+	
+	NSArray *data = [NSArray arrayWithContentsOfFile:karaokePList];
+	
+	karaoke = [[Karaoke alloc] initKaraoke:data portraitSize:karaokeText.contentSize landscapeSize:karaokeTextLS.contentSize];
+
+    [karaoke resetRedRow];
     
 	// Do for Portrait
-	[karaokeText setAttributedText:self.karaoke.attribText];	
+	[karaokeText setAttributedText:karaoke.attribText];
 	CGPoint position = [karaokeText contentOffset];
 	[karaokeText setContentOffset:position animated:YES];
 
 	// Do for Landscape
-	[karaokeTextLS setAttributedText:self.karaoke.attribTextLS];
+	[karaokeTextLS setAttributedText:karaoke.attribTextLS];
 	position = [karaokeTextLS contentOffset];
 	[karaokeTextLS setContentOffset:position animated:YES];
 
-    NSTimeInterval interval = [[self.karaoke.time objectAtIndex:self.karaoke.step] doubleValue];
-    karaokeTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(karaokeStep) userInfo:nil repeats:YES];
+	NSInteger step = 0;
+	NSTimeInterval interval = 0.0;
+	for(NSNumber *time in karaoke.time)
+	{
+		interval += [time doubleValue];
+
+		if(interval >= startPosition)
+		{
+			interval -= startPosition;
+			break;
+		}
+		
+		step++;
+	}
+	
+	[self setKaraokeStep:step];
+	
+	karaokeTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(karaokeStep) userInfo:nil repeats:YES];
     
     [self performSelector:@selector(doHighlight:) withObject:self.karaokeButton afterDelay:0];
     [self performSelector:@selector(doHighlight:) withObject:self.karaokeButtonLS afterDelay:0];
@@ -1541,11 +1608,82 @@ static const char *kAssociationKey = "RecTime";
     
     [karaokeTimer invalidate];
     karaokeTimer = nil;
-	
-	[self.karaoke release];
-	self.karaoke = nil;
     
     karaokeActivated = NO;
+}
+
+
+- (void) setKaraokeStep:(NSInteger)step
+{
+	NSLog(@"setKaraokeStep: %d", step);
+
+	if(step >= karaoke.step)
+	{
+		NSInteger stepsForward = step - karaoke.step;
+		
+		for(int idx = karaoke.step; idx < step; idx++)
+		{
+			if(![karaoke advanceRedRow])
+			{
+				break;
+			}
+		}
+
+		// Do for Portrait
+		CGPoint position = [karaokeText contentOffset];		
+		for(int idx = 0; idx < stepsForward; idx++)
+		{
+			position.y += (karaoke.font.lineHeight * karaoke.advancedRows);
+		}
+
+		[karaokeText setAttributedText:karaoke.attribText];
+		[karaokeText setContentOffset:position animated:NO];
+
+		// Do for Landscape
+		position = [karaokeTextLS contentOffset];
+		for(int idx = 0; idx < stepsForward; idx++)
+		{
+			position.y += (karaoke.fontLS.lineHeight * karaoke.advancedRowsLS);
+		}
+		
+		[karaokeTextLS setAttributedText:karaoke.attribTextLS];
+		[karaokeTextLS setContentOffset:position animated:NO];
+	}
+	else
+	{
+		NSInteger stepsBack = karaoke.step - step;
+		
+		[karaoke resetRedRow];
+		
+		for(int idx = 0; idx < step; idx++)
+		{
+			if(![karaoke advanceRedRow])
+			{
+				break;
+			}
+		}
+		
+		// Do for Portrait
+		CGPoint position = [karaokeText contentOffset];
+		for(int idx = 0; idx < stepsBack; idx++)
+		{
+			position.y -= (karaoke.font.lineHeight * karaoke.advancedRows);
+
+		}
+		
+		[karaokeText setAttributedText:karaoke.attribText];
+		[karaokeText setContentOffset:position animated:NO];
+		
+		// Do for Landscape
+		position = [karaokeTextLS contentOffset];
+		for(int idx = 0; idx < stepsBack; idx++)
+		{
+			position.y -= (karaoke.fontLS.lineHeight * karaoke.advancedRowsLS);
+		}
+		
+		[karaokeTextLS setAttributedText:karaoke.attribTextLS];
+		[karaokeTextLS setContentOffset:position animated:NO];
+	}
 }
 
 
@@ -1568,6 +1706,39 @@ static const char *kAssociationKey = "RecTime";
     [karaokePauseStart release];
     
     [karaokePrevFireDate release];
+}
+
+
+- (void) karaokeSetPosition:(NSTimeInterval)position
+{
+    NSLog(@"karaokeSetPosition: %g", position);
+	
+	if(karaokeActivated)
+	{
+		[karaokeTimer setFireDate:[NSDate distantFuture]];
+	}
+	
+	NSInteger step = 0;
+	NSTimeInterval interval = 0.0;
+	for(NSNumber *time in karaoke.time)
+	{
+		interval += [time doubleValue];
+		
+		if(interval >= position)
+		{
+			interval -= position;
+			break;
+		}
+		
+		step++;
+	}
+	
+	[self setKaraokeStep:step];
+	
+	if(karaokeActivated)
+	{
+		[karaokeTimer setFireDate:[NSDate dateWithTimeIntervalSinceNow:interval]];
+	}
 }
 
 

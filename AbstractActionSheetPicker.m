@@ -135,9 +135,10 @@
     [pickerToolbar setBarStyle:UIBarStyleBlackTranslucent];
     [masterView addSubview:pickerToolbar];
     self.pickerView = [self configuredPickerView];
-    NSAssert(_pickerView != NULL, @"Picker view failed to instantiate, perhaps you have invalid component data.");
+    NSAssert(_pickerView != NULL, @"Picker view failed to instantiate, perhaps you have invalid component data");
     [masterView addSubview:_pickerView];
     [self presentPickerForView:masterView];
+	[masterView release];
 }
 
 - (IBAction)actionPickerDone:(id)sender {
@@ -175,6 +176,7 @@
         value = [NSNumber numberWithInt:0];
     NSDictionary *buttonDetails = [[NSDictionary alloc] initWithObjectsAndKeys:title, @"buttonTitle", value, @"buttonValue", nil];
     [self.customButtons addObject:buttonDetails];
+	[buttonDetails release];
 }
 
 - (IBAction)customButtonPressed:(id)sender {
@@ -201,49 +203,56 @@
     pickerToolbar.barStyle = UIBarStyleBlackOpaque;
     NSMutableArray *barItems = [[NSMutableArray alloc] init];
     NSInteger index = 0;
-    for (NSDictionary *buttonDetails in self.customButtons) {
+    for (NSDictionary *buttonDetails in self.customButtons)
+	{
         NSString *buttonTitle = [buttonDetails objectForKey:@"buttonTitle"];
       //NSInteger buttonValue = [[buttonDetails objectForKey:@"buttonValue"] intValue];
         UIBarButtonItem *button = [[UIBarButtonItem alloc] initWithTitle:buttonTitle style:UIBarButtonItemStyleBordered target:self action:@selector(customButtonPressed:)];
         button.tag = index;
         [barItems addObject:button];
+		[button release];
         index++;
     }
-    if (NO == self.hideCancel) {
+    if (NO == self.hideCancel)
+	{
         UIBarButtonItem *cancelBtn = [self createButtonWithType:UIBarButtonSystemItemCancel target:self action:@selector(actionPickerCancel:)];
         [barItems addObject:cancelBtn];
     }
-    if (title){
+    if (title)
+	{
         UIBarButtonItem *labelButton = [self createToolbarLabelWithTitle:title];
-        [barItems addObject:labelButton];    
+        [barItems addObject:labelButton];
     }
-    UIBarButtonItem *doneButton = [self createButtonWithType:UIBarButtonSystemItemDone target:self action:@selector(actionPickerDone:)];
 	
+    UIBarButtonItem *doneButton = [self createButtonWithType:UIBarButtonSystemItemDone target:self action:@selector(actionPickerDone:)];
     [barItems addObject:doneButton];
+	
     [pickerToolbar setItems:barItems animated:YES];
-    return pickerToolbar;
+	[barItems release];
+	
+    return [pickerToolbar autorelease];
 }
 
 - (UIBarButtonItem *)createToolbarLabelWithTitle:(NSString *)aTitle {
-    UILabel *toolBarItemlabel = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, 180,30)];
+    UILabel *toolBarItemlabel = [[[UILabel alloc]initWithFrame:CGRectMake(0, 0, 180,30)] autorelease];
     [toolBarItemlabel setTextAlignment:NSTextAlignmentCenter];
     [toolBarItemlabel setTextColor:[UIColor whiteColor]];    
     [toolBarItemlabel setFont:[UIFont boldSystemFontOfSize:16]];    
     [toolBarItemlabel setBackgroundColor:[UIColor clearColor]];    
     toolBarItemlabel.text = aTitle;    
     UIBarButtonItem *buttonLabel = [[UIBarButtonItem alloc]initWithCustomView:toolBarItemlabel];
-    return buttonLabel;
+    return [buttonLabel autorelease];
 }
 
 - (UIBarButtonItem *)createButtonWithType:(UIBarButtonSystemItem)type target:(id)target action:(SEL)buttonAction
 {
 	if(type == UIBarButtonSystemItemDone && _doneButtonTitle != nil)
 	{
-		return [[UIBarButtonItem alloc] initWithTitle:_doneButtonTitle style:UIBarButtonItemStyleDone target:target action:buttonAction];
+		return [[[UIBarButtonItem alloc] initWithTitle:_doneButtonTitle style:UIBarButtonItemStyleDone target:target action:buttonAction] autorelease];
 	}
 	else
 	{
-		return [[UIBarButtonItem alloc] initWithBarButtonSystemItem:type target:target action:buttonAction];
+		return [[[UIBarButtonItem alloc] initWithBarButtonSystemItem:type target:target action:buttonAction] autorelease];
 	}
 }
 
@@ -320,6 +329,7 @@
     viewController.view = aView;
     viewController.contentSizeForViewInPopover = viewController.view.frame.size;
     _popOverController = [[UIPopoverController alloc] initWithContentViewController:viewController];
+	[viewController release];
     [self presentPopover:_popOverController];
 }
 

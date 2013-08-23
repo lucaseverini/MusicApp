@@ -19,12 +19,19 @@
     DJMixer *djMixer;
 }
 
-@property (nonatomic, retain) IBOutlet UIWindow *window;
-@property (nonatomic, retain) DJMixerViewController *djMixerViewController;
-@property (nonatomic, retain) NSMutableArray *karaokeData;
-@property (atomic, assign) BOOL inBackGround;
+@property (retain, nonatomic) IBOutlet UIWindow *window;
 
-+ (MusicAppDelegate*) shared;
+@property (retain, nonatomic) DJMixerViewController *djMixerViewController;
+@property (retain, nonatomic) NSMutableArray *karaokeData;
+@property (assign, atomic) BOOL inBackGround;
+@property (assign, nonatomic) NSInteger deviceIdiom;
+@property (assign, nonatomic) BOOL retinaDisplay;
+@property (retain, nonatomic) NSString *appVersion;
+
++ (MusicAppDelegate*) sharedInstance;
++ (NSInteger) deviceIdiom;
++ (BOOL) isRetinaDisplay;
++ (NSString*) appVersion;
 
 @end
 

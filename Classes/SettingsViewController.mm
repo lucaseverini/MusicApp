@@ -5,7 +5,7 @@
 //  Created by Luca Severini on 14/1/2012.
 //
 
-#import <UIKit/UIKit.h>
+
 #import "SettingsViewController.h"
 #import "SelectionViewController.h"
 #import "KaraokeViewController.h"
@@ -213,7 +213,7 @@
 		NSArray *audioFiles = [dirFiles filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"(self ENDSWITH '.caf') OR (self ENDSWITH '.wav') OR (self ENDSWITH '.m4a')"]];
 		if(audioFiles.count == 0)
 		{
-			NSString *msg = @"No Audio Files to play.";
+			NSString *msg = @"No Audio Files to play";
 			alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
 			[alert show];
 			return;
@@ -235,7 +235,7 @@
 			{
 				NSLog(@"Error %@ in AVAudioPlayer initialization", [error description]);
 
-				NSString *msg = [NSString stringWithFormat:@"The audio file %@ can't be played.\rError %@.", fileName, [error description]];
+				NSString *msg = [NSString stringWithFormat:@"The audio file %@ can't be played.\rError %@", fileName, [error description]];
 				alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
 				[alert show];
 				break;
@@ -245,7 +245,7 @@
 
 			if(![player prepareToPlay] || [player duration] == 0.0)
 			{
-				NSString *msg = [NSString stringWithFormat:@"The audio file %@ is empty or unplayable.", fileName ];
+				NSString *msg = [NSString stringWithFormat:@"The audio file %@ is empty or unplayable", fileName ];
 				alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
 				[alert show];
 			}
@@ -260,7 +260,7 @@
 			{
 				[player release];
 				
-				NSString *msg = [NSString stringWithFormat:@"The audio file %@ can't be played.", fileName ];
+				NSString *msg = [NSString stringWithFormat:@"The audio file %@ can't be played", fileName ];
 				alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
 				[alert show];
 			}			
@@ -365,7 +365,7 @@
 			{
 				NSLog(@"Error %@ removing audio file %@", [error description], filePath);
 				
-				NSString *msg = [NSString stringWithFormat:@"The recorded audio can't be deleted.\rError %@.", [error description]];
+				NSString *msg = [NSString stringWithFormat:@"The recorded audio can't be deleted.\rError %@", [error description]];
 				alert = [[[UIAlertView alloc] initWithTitle:@"Error!" message:msg delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil] autorelease];
 				[alert show];
 			}
